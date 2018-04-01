@@ -18,12 +18,14 @@ grayboxes contributes to the creation and evaluation of hybrid models. A Python 
 
     doc/fig
         Figures used in wiki
+
+    doc/logo
+        Logos used in wiki
         
 
 ## Installation
 
     $ wget https://github.com/dwweiss/grayboxes.git
-
 or
 
     $ git clone https://github.com/dwweiss/grayboxes.git
