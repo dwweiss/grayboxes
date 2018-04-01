@@ -17,21 +17,21 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-02-02 DWW
+      2018-04-01 DWW
 """
 
 import os
 import sys
 
 
-# if True, this init file is placed in a pmLib sub-folder
-pmLibSubFolder = False
+# if True, this init file is placed in a myLib sub-folder
+myLibSubFolder = False
 
 # sub-folders containing a string from blackList are not added to sys.path
 blackList = ['archive', '__pycache__', '/', '-', 'workbench']
 
-# get pmLib folder
-if not pmLibSubFolder:
+# get myLib folder
+if not myLibSubFolder:
     folder = os.getcwd()
 else:
     folder = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
