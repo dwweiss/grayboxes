@@ -17,10 +17,7 @@ _grayBoxes_ contributes to the creation and evaluation of hybrid models. A Pytho
         Selected test cases
 
     doc/fig
-        Figures used in wiki
-
-    doc/logo
-        Logos used in wiki
+        Figures and manuals used in wiki
         
 
 ## Installation
