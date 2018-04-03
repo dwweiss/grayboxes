@@ -1,4 +1,4 @@
-### Installation proposal
+### Linux installation proposal
 
 <!-- Version: 2018-03-20 Dietmar Wilhelm Weiss -->
 
