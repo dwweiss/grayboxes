@@ -220,12 +220,12 @@ class Optimum(Forward):
         if self.bounds is not None:
             for limit, _x in zip(self.bounds, x):
                 if limit[0] is not None and limit[0] > _x:
-                    print('+++ penalty limit[0]:', limit[0], ' > x:', _x,
-                          'penalty:', penaltyValue)
+                    self.write('+++ penalty limit[0]:', limit[0], ' > x:', _x,
+                               'penalty:', penaltyValue)
                     return penaltyValue
                 if limit[1] is not None and _x > limit[1]:
-                    print('+++ penalty limit[1]:', limit[1], ' < x:', _x,
-                          'penalty:', penaltyValue)
+                    self.write('+++ penalty limit[1]:', limit[1], ' < x:', _x,
+                               'penalty:', penaltyValue)
                     return penaltyValue
         return 0.0
 
@@ -360,8 +360,8 @@ class Optimum(Forward):
 
     def plotHistory(self):
         for iTrial, trialHist in enumerate(self._history):
-            print('+++ Plot[iTrial: ' + str(iTrial) + ']',
-                  trialHist[-1][1], ' = f(' + str(trialHist[-1][0]) + ')')
+            self.write('+++ Plot[iTrial: ' + str(iTrial) + ']',
+                       trialHist[-1][1], ' = f(' + str(trialHist[-1][0]) + ')')
             assert len(trialHist[0]) > 1
 
             # self._history[iTrial][ [x0..nInp-1], [y0..nOut-1], obj ]
@@ -460,7 +460,7 @@ class Optimum(Forward):
         nOut = len(self._history[0][0][1])
 
         if nInp >= 2:
-            print('+++ Trajectory of objective versus (x0, x1), all trials')
+            self.write('+++ Trajectory of objective versus (x0, x1), all trials')
             mpl.rcParams['legend.fontsize'] = 10
             fig = plt.figure(figsize=(10, 8))
             ax = fig.gca(projection='3d')
@@ -485,7 +485,7 @@ class Optimum(Forward):
             plt.show()
 
         if nInp >= 3:
-            print('+++ Trajectories of x[2..nInp] vs. (x0, x1), all trials')
+            self.write('+++ Trajectory of x[2..nInp] vs. (x0, x1), all trials')
             for jInpZ in range(2, nInp):
                 mpl.rcParams['legend.fontsize'] = 10
                 fig = plt.figure(figsize=(10, 8))

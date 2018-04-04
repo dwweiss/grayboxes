@@ -230,7 +230,6 @@ class Move(Loop):
         """
         if t is None:
             # way from start to stop point
-            print('full way')
             w = 0.
             for i in range(1, len(self._wayPoints)):
                 w += (self._wayPoints[i] - self._wayPoints[i-1]).magnitude()

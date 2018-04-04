@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-03-14 DWW
+      2018-03-16 DWW
 """
 
 import inspect
@@ -25,8 +25,11 @@ import random
 from collections import OrderedDict
 import numpy as np
 from pandas import DataFrame
-import parallel
 from Base import Base
+try:
+    import parallel
+except ImportError:
+    print("!!! Module 'parallel' not imported")
 
 
 def randInit(ranges, n=20):
@@ -138,7 +141,6 @@ def gridInit(ranges, n=5):
     """
     N = list(np.atleast_1d(n))
     n = N + [N[-1]] * (len(ranges) - len(N))
-    print('3n r:', n, ranges)
     assert len(n) == len(ranges), 'n:' + str(n) + ' ranges:' + str(ranges)
 
     ranges = np.asfarray(ranges)
@@ -688,7 +690,8 @@ class Model(Base):
 
     def predict(self, x=None, **kwargs):
         """
-        Executes white box or light gray box model
+        Executes white box or light gray box model. If MPI is available,
+        the execution is distributed on the physical cores
 
         Args:
             x (2D or 1D array_like of float, optional):
@@ -710,11 +713,11 @@ class Model(Base):
         # self.x is a setter ensuring 2D numpy array
         self.x = self.x if x is None else x
 
-        if not parallel.communicator() or x.shape[0] < 2:
+        if not parallel.communicator() or x.shape[0] <= 1:
             # self.y is a setter ensuring 2D numpy array
             self.y = [np.atleast_1d(self.f(x, **kwargs)) for x in self.x]
         else:
-            self.y = parallel.predict(self.f, self.x, **kwargs)
+            self.y = parallel.predict_scatter(self.f, self.x, **kwargs)
         return self.y
 
     def error(self, X=None, Y=None, **kwargs):
@@ -752,11 +755,11 @@ class Model(Base):
         iAbsMax = np.abs(dy).argmax()
 
         if not kwargs.get('silent', True):
-            print('    L2-norm: ', np.round(L2_norm, 4))
-            print('    max(abs(err)): ',
-                  np.round(dy[iAbsMax], 5), ' @ (X,Y)+[',
-                  str(iAbsMax), ']: (', np.round(X.ravel()[iAbsMax], 3),
-                  ', ', np.round(Y.ravel()[iAbsMax], 3), ')', sep='')
+            self.write('    L2-norm: ', np.round(L2_norm, 4))
+            self.write('    max(abs(err)): ',
+                       np.round(dy[iAbsMax], 5), ' @ (X,Y)+[',
+                       str(iAbsMax), ']: (', np.round(X.ravel()[iAbsMax], 3),
+                       ', ', np.round(Y.ravel()[iAbsMax], 3), ')')
 
         return L2_norm, Y.ravel()[iAbsMax], iAbsMax
 

@@ -168,7 +168,7 @@ class Sensitivity(Forward):
                     plt.show()
 
             plotBarArrays(yArrays=self.dy_dx.T, legendPosition=(1.1, 1.03),
-                          title=r'Gradient $d y_k \ / \ d x_i$', grid=True,
+                          title=r'Gradient $d y_k \ / \ d x_j$', grid=True,
                           figsize=(6, 4))
 
 
@@ -189,3 +189,4 @@ if __name__ == '__main__':
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()
         print('dy_dx:', dy_dx)
+        print('x_ref:', xRef)

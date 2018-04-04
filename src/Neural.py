@@ -243,10 +243,8 @@ class Neural(object):
                 use self._yKeys keys if yKeys is None,
                 default: ['y0', 'y1', ... ]
         """
-        #print('nn X.shape:', X.shape, 'Y.shape:', Y.shape)
         self._X = np.atleast_2d(X)
         self._Y = np.atleast_2d(Y)
-        #print('nn self.X.shape:',self._X.shape,'self.Y.shape:',self._Y.shape)
         if self._X.shape[0] < self._X.shape[1]:
             self._X = self._X.transpose()
         if self._Y.shape[0] < self._Y.shape[1]:
@@ -476,10 +474,9 @@ class Neural(object):
         iBest = self._trainers.index(self._bestTrainer)
         if not silent:
             if len(self._trainers) > 1:
-                print("    best trainer: '" +
-                      self._trainers[iBest] +
-                      "' out of: [" + ' '.join(self._trainers) + '], error:',
-                      round(self._finalErrors[iBest], 5))
+                print("    best trainer: '" + self._trainers[iBest] +
+                      "' out of: [" + ' '.join(self._trainers) +
+                      '], error:', round(self._finalErrors[iBest], 5))
                 if len(self._finalErrors) > 1:
                     print("    (trainer:err): [", end='')
                     s = ''

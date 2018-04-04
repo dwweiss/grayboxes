@@ -130,7 +130,7 @@ class Empirical(Model):
         assert X.shape[0] > 2, 'X.shape: ' + str(X.shape)
 
         if self.isNeural():
-            print('+++ neural network')
+            self.write('+++ neural network')
             if self._net is not None:
                 del self._net
             self._net = Neural()

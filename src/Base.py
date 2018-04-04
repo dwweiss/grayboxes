@@ -724,8 +724,7 @@ class Base(object):
             execTime = time() - self._execTimeStart
             if execTime >= self._minExecTimeShown:
                 self.write('    Execution time: ', format(round(execTime, 2)))
-            self.write('*** ', message)
-            print()
+            self.write('*** ', message, '\n')
 
         if self._logFile is not None:
             self._logFile.close()

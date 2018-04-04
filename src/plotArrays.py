@@ -104,22 +104,28 @@ def toRegularMesh(x, y, z, nx=50, ny=None):
         return (x, y, z)
 
 
-def clip_xyz(x, y, z, xrange=[0., 0.], yrange=[0., 0.], zrange=[0., 0.]):
+def clip_xyz(x, y, z, z2=None, xrange=[0., 0.], yrange=[0., 0.],
+             zrange=[0., 0.]):
     """
-    Clips irregular arrays for x, y, z (1D arrays of same length)
-
-    Assigns array of size 2 to ranges if size is not 2
-    Clips x, y, z arrays according to x-, y- and z-ranges if lower and upper
-    bound of a range is not equal
+    - Clips irregular arrays for x, y, z (1D arrays of same length)
+    - Assigns array of size 2 to ranges if size is not 2
+    - Clips x, y, z, z2 arrays according to x-, y- and z-ranges if lower and
+      upper bound of a range is not equal
 
     Args:
-        x, y, z (array_like of float):
+        x, y, z (1D array_like of float):
             data as 1D-arrays
+
+        z2 (1D array_like of float, optional):
+            second z-data as 1D-array
+
         xrange, yrange, zrange: (list of float):
             ranges in x-, y- and z-direction
 
     Returns:
-        x, y, z: clipped arrays (no clipping if mesh is not irregular)
+        (three 1D arrays of float) if z2 is None
+        (four 1D arrays of float) otherwise
+            clipped arrays (no clipping if mesh is not irregular)
     """
     x = np.asfarray(x)
     y = np.asfarray(y)
@@ -158,14 +164,24 @@ def clip_xyz(x, y, z, xrange=[0., 0.], yrange=[0., 0.], zrange=[0., 0.]):
                     indices.append(i)
     nInd = len(indices)
     if nInd == len(z):
-        return (x, y, z)
+        if z2 is None:
+            return (x, y, z)
+        else:
+            return (x, y, z, z2)
 
-    x2, y2, z2 = np.empty(nInd), np.empty(nInd), np.empty(nInd)
+    xx, yy, zz = np.empty(nInd), np.empty(nInd), np.empty(nInd)
+    if z2 is not None:
+        zz2 = np.empty(nInd)
     for iSel, iOriginal in enumerate(indices):
-        x2[iSel] = x[iOriginal]
-        y2[iSel] = y[iOriginal]
-        z2[iSel] = z[iOriginal]
-    return (x2, y2, z2)
+        xx[iSel] = x[iOriginal]
+        yy[iSel] = y[iOriginal]
+        zz[iSel] = z[iOriginal]
+        if z2 is not None:
+            zz2[iSel] = z2[iOriginal]
+    if z2 is not None:
+        return (xx, yy, zz)
+    else:
+        return (xx, yy, zz, zz2)
 
 
 def plt_pre(xLabel='x', yLabel='y', title='', xLog=False, yLog=False,
@@ -603,7 +619,7 @@ def plotVector(x, y,
         plt.xlabel(labels[0] + ' ' + units[0])
     if len(labels) > 1 and labels[1] != '[ ]':
         plt.ylabel(labels[1] + ' ' + units[1])
-      
+
     if figsize is None:
         figsize = (8, 6)
 #    fig = plt.figure(figsize=figsize)
@@ -628,11 +644,11 @@ def plotVector(x, y,
         fontsize = round(0.5 * (figsize[0] * 3)) * 1.33
     plt.rcParams.update({'font.size': fontsize})
     plt.rcParams['legend.fontsize'] = fontsize
-     
+
     plt.quiver(x, y, vx, vy, angles='xy', scale_units='xy')
     plt_post(file=file, legendPosition=legendPosition)
-                                                   
-                       
+
+
 def plotTrajectory(x, y, z,                   # trajectory to be plotted
                    x2=[], y2=[], z2=[],       # second trajectory to be plotted
                    x3=[], y3=[], z3=[],       # third trajectory to be plotted
