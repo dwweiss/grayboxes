@@ -17,17 +17,22 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-04-17 DWW
+      2018-04-30 DWW
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
-from Forward import Forward
+
+from White import White
+from LightGray import LightGray
+from MediumGray import MediumGray
+from DarkGray import DarkGray
+from Black import Black
 
 
 def F_true(x):
     """
-    Conventional true value of Y(X)
+    True value of Y(X)
     """
     return np.sin(2 * x[0]) + x[0] + 1
 
@@ -42,7 +47,7 @@ def F_noise(x, noise=0.2):
 
 def f(x, c0=1, c1=1, c2=0.5, c3=0, c4=0, c5=0, c6=0, c7=0):
     """
-    Theoretical model, subject to modelling error
+    Theoretical model, subject to error by the human modeller
     """
     return c0 + c1 * x[0] + c2 * x[0]**2
 
@@ -52,45 +57,72 @@ if __name__ == '__main__':
     Source code for generating the example 'sine curve' in the grayBoxes' wiki
     """
 
+    # training and test data
     nTst, xTstRng = 100, [-1 * np.pi, 1.5 * np.pi]                 # test input
     nTrn, xTrnRng = 20, [-0.5 * np.pi, 1 * np.pi]              # training input
-
     X = np.atleast_2d(np.linspace(xTrnRng[0], xTrnRng[1], nTrn)).T
-    Y = np.atleast_2d([np.atleast_1d(F_noise(x)) for x in X])
+    Y = np.atleast_2d([np.atleast_1d(F_noise(_x)) for _x in X])
     x = np.atleast_2d(np.linspace(xTstRng[0], xTstRng[1], nTst)).T
     y = np.atleast_2d([np.atleast_1d(F_true(_x)) for _x in x])
 
-    models = ['white', 'light gray',
-              # 'medium gray-a',
-              'dark gray', 'black']
+    models = [White(f), LightGray(f),
+              # MediumGray(f),
+              DarkGray(f), Black()
+              ]
+
+    opt = {'neural': [2], 'regularization': 0.5,  'epochs': 500,
+           'goal': 1e-5, 'trainers': 'rprop bfgs', 'trials': 5}
+
     results = {'noise': (X, Y), 'true': (x, y)}   # collection of results (x,y)
-
-    opt = {'regularization': 0.5, 'hidden': [2], 'epochs': 2000,
-           'goal': 1e-6, 'trainers': 'rprop bfgs', 'trials': 5}  # neural opt.
-
     for model in models:
-        print('++++ model:', model)
-        Y = results['noise'][1]
-        results[model] = Forward(f=f, model=model)(X=X, Y=Y, x=x, **opt)
+        print('+++ model:', model.identifier)
+        y = model(X=X, Y=Y, x=x, **opt)
+        results[model.identifier] = (x, y)
 
     plt.title('Sine curve with wrong white box')
-    plt.xlabel('$x$')
-    plt.xlabel('$y$')
-    for model in models + ['true', 'noise']:
-        x, y = results[model][0], results[model][1]
-        ls = '-' if model not in ('true', 'noise') else ':'
-        plt.plot(x[:, 0], y[:, 0], label=model, ls=ls)
+    plt.xlabel('$x\, /\, \pi$')
+    plt.ylabel('$y$')
+    plt.axvline(x=xTrnRng[0]/np.pi, ls='--', lw=1.5, c='tab:gray')
+    plt.axvline(x=xTrnRng[1]/np.pi, ls='--', lw=1.5, c='tab:gray',
+                label=r'$\Delta x_{train}$')
+
+    for modelType in list(results.keys()):
+        (_x, _y) = results[modelType]
+        ls = '-' if modelType not in ('true', 'noise') else ':'
+        plt.plot(_x[:, 0]/np.pi, _y[:, 0], label=modelType, ls=ls)
     plt.legend(bbox_to_anchor=(1.1, 1.05), loc='upper left')
+    plt.ylim(-5, 10)
     plt.grid()
     plt.show()
 
-    plt.title('Difference to true values')
-    plt.xlabel(r'$\Delta y$')
-    for model in models:
-        x, y = results[model][0], results[model][1] - results['true'][1]
-        ls = '-' if model not in ('white', 'black') else ':'
-        plt.plot(x[:, 0], y[:, 0], label=r'$\Delta$ '+model, ls=ls)
+    plt.title('Difference to noisy data (train data)')
+    plt.xlabel('$x\, /\, \pi$')
+    plt.ylabel(r'$y_{true} - y$')
+    plt.axvline(x=xTrnRng[0]/np.pi, ls='--', lw=1.5, c='tab:gray')
+    plt.axvline(x=xTrnRng[1]/np.pi, ls='--', lw=1.5, c='tab:gray',
+                label=r'$\Delta x_{train}$')
+    for key, xy in results.items():
+        if key != 'noise':
+            dy = xy[1] - F_noise(x=xy[0])
+            ls = '-' if not key.lower().startswith(('white', 'black')) else ':'
+            plt.plot(xy[0][:, 0]/np.pi, dy[:, 0], label=key, ls=ls)
     plt.legend(bbox_to_anchor=(1.1, 1.05), loc='upper left')
-    plt.ylim(-5, 5)
+    plt.ylim(-2, 6)
+    plt.grid()
+    plt.show()
+
+    plt.title('Difference to true data')
+    plt.xlabel('$x\, /\, \pi$')
+    plt.ylabel(r'$y_{true} - y$')
+    plt.axvline(x=xTrnRng[0]/np.pi, ls='--', lw=1.5, c='tab:gray')
+    plt.axvline(x=xTrnRng[1]/np.pi, ls='--', lw=1.5, c='tab:gray',
+                label=r'$\Delta x_{train}$')
+    for key, xy in results.items():
+        if key != 'true':
+            dy = xy[1] - F_true(x=xy[0])
+            ls = '-' if not key.lower().startswith(('white', 'black')) else ':'
+            plt.plot(xy[0][:, 0]/np.pi, dy[:, 0], label=key, ls=ls)
+    plt.legend(bbox_to_anchor=(1.1, 1.05), loc='upper left')
+    plt.ylim(-2, 6)
     plt.grid()
     plt.show()
