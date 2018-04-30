@@ -17,14 +17,14 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-03-26 DWW
+      2018-04-26 DWW
 
-Note on excution of a python file in from file manager on Windows:
+Note on excution of a python script in from file manager on Windows:
     1. Install Python 3.0 or newer
     2. Find location of "python.exe" employing windows command "where.exe":
-        >>> where python.exe
+       > where python.exe
     3. In file manager, [Properties] -> [Change] -> [Browse] to: 'python.exe'
-    4. Now this program starts in file manager with double-click
+    4. Now this python script starts in file manager with double-click
 
 Note on program arguments:
     - no arguments                 : program starts in default mode
@@ -47,6 +47,7 @@ from re import sub
 from sys import version_info, exit, stdout, argv, modules
 from tempfile import gettempdir
 from time import time
+import numpy as np
 try:
     from tkinter import Button
     from tkinter import Entry
@@ -161,7 +162,7 @@ class Base(object):
         self._identifier = str(identifier)
         self.argv = argv
         self.program = self.__class__.__name__
-        self.version = '070318_dww'
+        self.version = '260418_dww'
 
         self._execTimeStart = 0.0       # start measuring execution time
         self._minExecTimeShown = 1.0    # times less than limit are not shown
@@ -172,6 +173,8 @@ class Base(object):
         self._batch = False             # no user interaction if True
         self._silent = False            # no console output if True
         self._silentPrevious = False    # previous value of self._silent
+
+        self._ready = True              # if True, successful train/prediction
 
         self._preDone = False           # internal use: True if  pre() is done
         self._taskDone = False          # internal use: True if task() is done
@@ -364,6 +367,14 @@ class Base(object):
 
     def restoreSilent(self):
         self.silent = self._silentPrevious
+
+    @property
+    def ready(self):
+        return self._ready
+
+    @ready.setter
+    def ready(self, value):
+        self._ready = value
 
     @property
     def path(self):
@@ -568,7 +579,7 @@ class Base(object):
 
     def kwargsDel(self, kwargs, remove):
         """
-        Removes selected items from keyword dictionary
+        Makes copy of keyword dictionary and removes given keys
 
         Args:
             kwargs (dict):
@@ -581,7 +592,7 @@ class Base(object):
             dict of keyword arguments without removed items
         """
         dic = kwargs.copy()
-        for key in list(remove):
+        for key in np.atleast_1d(remove):
             if key in dic:
                 del dic[key]
         return dic
@@ -870,11 +881,13 @@ if __name__ == '__main__':
                 b = 7.0
                 for i in range(int(1e6)):
                     b = b / 3.0
+                self.y = b
                 return 0.0
 
             def post(self, **kwargs):
                 super().post()
                 self.write('    x: ', self.x)
+                self.write('    y: ', self.y)
 
         # creates instance
         foo = Foo('root')

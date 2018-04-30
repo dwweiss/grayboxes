@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-02-23 DWW
+      2018-04-30 DWW
 """
 
 import numpy as np
@@ -29,11 +29,10 @@ from plotArrays import plotBarArrays
 
 class Sensitivity(Forward):
     """
-    Analyses the sensitivity of the generic model for a given input range:
-    x_analysis = x_ref +/- Delta x
+    Analyses sensitivity of generic model $\phi(x)$ for a given input range
 
     Examples:
-        foo = Sensitivity()
+        foo = Sensitivity(LightGray('demo'))
 
         X = [[... ]]  input of training
         Y = [[... ]]  target of training
@@ -41,31 +40,20 @@ class Sensitivity(Forward):
         ranges = [(x0min, x0max), (x1min, x1max)]
 
         dy_dx = foo(X=X, Y=Y, x=xCross)              # training and sensitivity
-        dy_dx = foo(x=xCross)        # sensitivity only, x has all cross points
-        dy_dx = foo(ranges=ranges, cross=5) # sens. only, compute x from ranges
-
-    Note:
-        Parent class Forward is not derived from class Model.
-        The instance of the generic model has to be assigned to: self.model
+        dy_dx = foo(x=xCross)       # sensitivity only, x contains cross points
+        dy_dx = foo(ranges=ranges, cross=5)  # generate x from ranges and cross
     """
 
-    def __init__(self, identifier='Sensitivity', model=None, f=None,
-                 trainer=None):
+    def __init__(self, model, identifier='Sensitivity'):
         """
         Args:
-            identifier (string):
-                class identifier
+            model (Model_like):
+                generic model object
 
-            model (method):
-                generic model
-
-            f (method):
-                white box model f(x)
-
-            trainer (method):
-                training method
+            identifier (string, optional):
+                object identifier
         """
-        super().__init__(identifier, model=model, f=f, trainer=trainer)
+        super().__init__(model=model, identifier=identifier)
 
         self.axisIndices = None         # point indices for which x[j] is equal
         self.dy_dx = None
@@ -177,6 +165,8 @@ class Sensitivity(Forward):
 if __name__ == '__main__':
     ALL = 1
 
+    from White import White
+
     def f(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
         return np.sin(x[0]) + (x[1] - 1)**2
 
@@ -184,8 +174,19 @@ if __name__ == '__main__':
         s = 'Sensitivity 1'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        foo = Sensitivity(f=f)
-        xRef, dy_dx = foo(ranges=[(2, 3), (3, 4), (4, 5)], cross=3)
+        op = Sensitivity(White(f))
+        xRef, dy_dx = op(ranges=[(2, 3), (3, 4), (4, 5)], cross=3)
+        if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
+            dy_dx = dy_dx.tolist()
+        print('dy_dx:', dy_dx)
+        print('x_ref:', xRef)
+
+    if 1 or ALL:
+        s = 'Sensitivity 2'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+
+        op = Sensitivity(White('demo1'))
+        xRef, dy_dx = op(ranges=[(2, 3), (3, 4), (4, 5)], cross=3)
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()
         print('dy_dx:', dy_dx)

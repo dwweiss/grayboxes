@@ -17,67 +17,59 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-02-23 DWW
+      2018-04-30 DWW
 """
 
 import numpy as np
 
 from Base import Base
-from Model import randInit, crossInit, gridInit
-from Empirical import Empirical
-from Theoretical import Theoretical
-from Hybrid import Hybrid
+from Model import Model
+from White import White
+
+from Model import gridInit, crossInit, randInit
 
 
 class Forward(Base):
     """
-    Predicts with generic model for series of data points: x(iPoint, jInp)
+    Predicts $y = \phi(x)$ for series of data points, x.shape: (nPoint, nInp)
 
     Examples:
-        foo = Forward()
-
         X_prc = [[... ]]  input of training
         Y_prc = [[... ]]  target of training
-        x_mod = [[... ]]  input of prediction
+        x_prc = [[... ]]  input of prediction
 
-        def function(x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+        def func(x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
             return 2.2 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
-        def method(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+        def meth(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
             return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
-        # 'f' has to be assigned only one time
-        y = foo(X=X_prc, Y=Y_prc, x=x_mod, f=function)   # train and predict
-        y = foo(X=X_prc, Y=Y_prc, x=x_mod, f=method)     # train and predict
-        y = foo(x=x_mod)      # predict only, 'f' assignment is still active
+        # create operation on generic model phi(x)
+        op = Forward(White(func))
+        op = Forward(White(meth))
+
+        # compact training and prediction with phi(x)
+        _, y = op(X=X_prc, Y=Y_prc, x=x_prc)
+
+        # separated training and prediction
+        op(X=X_prc, Y=Y_prc)     # train
+        _, y = op(x=x_mod)       # predict
 
     Note:
-        - Class Forward is not derived from class Model
-        - The instance of the generic model has to be assigned to: self.model
+        - Forward.__call__() returns 2-tuple of 2D arrays of float (x and y)
     """
 
-    def __init__(self, identifier='Forward', model=None, f=None, trainer=None):
+    def __init__(self, model, identifier='Forward'):
         """
         Args:
+            model (Model_like):
+                generic model object
+
             identifier (string, optional):
-                class identifier
-
-            model (method, optional):
-                generic model
-
-            f (method, optional):
-                white box model f(x)
-
-            trainer (method, optional):
-                training method
+                object identifier
         """
         super().__init__(identifier)
-
-        self._model = model if model is not None else Theoretical()
-        if f is not None:
-            self.model.f = f
-        if trainer is not None:
-            self.model.trainer = trainer
+        self.model = model
 
     @property
     def model(self):
@@ -97,41 +89,16 @@ class Forward(Base):
             value (Model_like):
                 generic model
         """
-        if isinstance(value, str):
-            value = value.lower()
-            Type = type(self.method)
-            if value[0] in ('w', 'l'):
-                if not issubclass(Type, Theoretical):
-                    self.model = Theoretical()
-            elif value[0] == 'b':
-                if not issubclass(Type, Empirical):
-                    self.model = Empirical()
-            if value[0] in ('m', 'd'):
-                if not issubclass(Type, Hybrid):
-                    self.model = Hybrid()
-                    self.model.hybridType = value
-            else:
-                assert 0, 'value:' + value
-        else:
-            assert issubclass(type(value), (Theoretical, Empirical, Hybrid)), \
+        self._model = value
+        if self._model is not None:
+            assert issubclass(type(value), Model), \
                 'invalid model type: ' + str(type(value))
-            xx, ff, tt = None, None, None
-            if self._model is not None:
-                xx, ff, tt = self.model.x, self.model.f, self.model.trainer
-            self._model = value
-            if self._model is not None:
-                if xx is not None:
-                    self.model.x = xx
-                if ff is not None:
-                    self.model.f = ff
-                if tt is not None:
-                    self.model.trainer = tt
-                self._model.logFile = self.logFile
+            self._model.logFile = self.logFile
 
-    def initialInput(self, ranges, n=5, shape='cross'):
+    def _initialInput(self, ranges, n=5, shape='cross'):
         """
         Sets uniformly spaced or randomly distributed input, for instance for
-        3 input with 5 axis points: initialInput(ranges=[(2, 3), (-5, -4),
+        3 input with 5 axis points: _initialInput(ranges=[(2, 3), (-5, -4),
             (4, 9)], n=5, shape='cross') ==>
         [[2 -5 4] [2.25 -4.75  5.25] [2.5 -4.5 6.5] [2.75 -4.25 7.75] [3 -4 9]]
 
@@ -173,24 +140,19 @@ class Forward(Base):
 
     def pre(self, **kwargs):
         """
-        1) Assigns Model instance
-        2) Assigns f() method, both variants: with or without 'self' argument
-        3) Sets training data set (X, Y) or XY, and model input x
-        4) Trains model if (X, Y) or XY are not None
-        5) Generates model input x from 'ranges' and shape ('cross', 'grid',
-           'rand') if x is None
+        - Assigns Model instance
+        - Sets training data set (X, Y) or XY, and model input x
+        - Trains model if (X, Y) or XY are not None
+        - Generates model input x if x is None (from 'ranges' and ('cross',
+           or 'grid' or 'rand'))
 
         Args:
             kwargs (dict, optional):
                 keyword arguments:
 
-                model (Model_like or string):
-                    model to be assigned to attribute self.model or
-                    string defining the model type ('w', 'l', 'm', 'd', 'b')
 
-                f (method):
-                    method with or without 'self' argument to be assigned to
-                    attribute self.model.f
+                XY (2-tuple of 2D array_like of float):
+                    input and target of training, this argument supersedes X, Y
 
                 X (2D array_like of float):
                     input of training
@@ -202,19 +164,19 @@ class Forward(Base):
                     input to forward prediction or to sensitivity analysis
 
                 ranges (2D array_like of float):
-                    array of min/max pairs if cross should be generated
+                    array of min/max pairs
 
                 cross (int or list of int):
-                    number of cross point per axis if cross should be generated
+                    number of cross points per axis if cross is generated
 
                 grid (int or list of int):
-                    number of grid point per axis if grid should be generated
+                    number of grid points per axis if grid is generated
 
                 rand (int):
-                    number of points if random array should be generated
+                    number of points if random array is generated
 
                 n (int):
-                    number of cross point per axis if cross should be generated
+                    number of points per axis. if 'rand', n is total number
 
         Note:
             1) 'x' keyword overrules 'ranges' keyword
@@ -223,56 +185,49 @@ class Forward(Base):
         """
         super().pre(**kwargs)
 
-        # assign model to operation
-        model = kwargs.get('model', None)
-        if model is not None:
-            self.model = model
-
-        # assigns f() method to model
-        f = kwargs.get('f', None)
-        if f is not None:
-            self.model.f = f
-
         # trains model
-        X, Y = kwargs.get('X', None), kwargs.get('Y', None)
-        if X is not None and Y is not None:
-            self.model.train(X, Y, **self.kwargsDel(kwargs, ['X', 'Y']))
-            # assert self.model.ready()
+        XY = kwargs.get('XY', None)
+        if isinstance(XY, (list, tuple, np.ndarray)) and len(XY) > 1:
+            X, Y = XY[0], XY[1]
+        else:
+            X, Y = kwargs.get('X', None), kwargs.get('Y', None)
+        if not isinstance(self.model, White):
+            if X is not None and Y is not None:
+                self.model.train(X, Y, **self.kwargsDel(kwargs, ['X', 'Y']))
 
-        # sets input for prediction
+        # - assigns x to self.model.x for prediction or
+        # - generates x from ranges=[(xl, xu),(xl, xu), ..] and from 1) or 2):
+        #    1) grid=(nx,ny,..), grid=nx, cross=(nx,ny,..), cross=nx, or rand=n
+        #    2) shape='grid', shape='cross', or shape='rand' and n=(nx,ny, ..)
         x = kwargs.get('x', None)
         if x is None:
             ranges = kwargs.get('ranges', None)
             if ranges is not None:
-                for shape in ['cross', 'grid', 'rand', 'n']:
+                n = None
+                for shape in ('cross', 'grid', 'rand'):
                     if shape in kwargs:
                         n = kwargs[shape]
-                        if shape == 'n':
-                            shape = 'cross'
-                        if not n:
-                            n = 5
-                        x = self.initialInput(ranges, n, shape)
                         break
-            else:
-                self.write("!!! Forward: neither 'x' nor 'ranges' is not None")
-                self.write("!!! Continues with build-in: Theoretical.f()")
-                x = None
-        if type(self).__name__ in ('Optimum', 'Inverse'):
+                if n is None:
+                    print('??? ranges given without: cross/grid/rand=n')
+                else:
+                    x = self._initialInput(ranges=ranges, n=n, shape=shape)
+        if type(self).__name__ in ('Minimum', 'Maximum', 'Inverse'):
             self.x = np.atleast_2d(x) if x is not None else None
         else:
             self.model.x = np.atleast_2d(x) if x is not None else None
 
     def task(self, **kwargs):
         """
-        This task() method is only for Forward and Sensitivity; Optimum has its
-        own task() method implementation
+        This task() method is only for Forward and Sensitivity.
+        Minimum, Maximum and Inverse have another implementation of task()
 
         Args:
             kwargs (dict, optional):
                 keyword arguments passed to super.task()
 
         Return:
-            x, y (2D arrays of float):
+            x, y (2-tuple of 2D arrays of float):
                 input and output of model prediction
         """
         super().task(**kwargs)
@@ -305,6 +260,11 @@ if __name__ == '__main__':
     ALL = 1
 
     import matplotlib.pyplot as plt
+    from plotArrays import plotIsoMap
+    from LightGray import LightGray
+    from MediumGray import MediumGray
+    from DarkGray import DarkGray
+    from Black import Black
 
     # function without access to 'self' attributes
     def function(x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
@@ -316,69 +276,73 @@ if __name__ == '__main__':
         print('1')
         return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
-    if 0 or ALL:
-        s = "Test of initialInput()"
+    if 1 or ALL:
+        s = 'Forward() with demo function build-in into Model'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        foo = Forward(f=function)
+        x = gridInit(ranges=[(0, 1), (0, 1)], n=3)
+        x, y = Forward(White(function))(x=x)
+        plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
+
+    if 0 or ALL:
+        s = 'Forward() with demo function build-in into Model'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+        x, y = Forward(White('demo'))(ranges=[(1, 2), (3, 4)], cross=5)
+        plotIsoMap(x[:, 0], x[:, 1], y[:, 0], scatter=True)
+
+    if 0 or ALL:
+        s = "Test of _initialInput()"
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+
+        op = Forward(White(function))
         for shape in ['cross', 'grid', 'rand']:
-            s = "initialInput(), shape: '" + shape + "'"
+            s = "_initialInput(), shape: '" + shape + "'"
             print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-            x = foo.initialInput(ranges=[(2, 4), (3, 7)], n=7, shape=shape)
+            x = op._initialInput(ranges=[(2, 4), (3, 7)], n=7, shape=shape)
 
-            plt.title('test: initialInput() shape: ' + shape)
+            plt.title('test: _initialInput() shape: ' + shape)
             plt.scatter(x.T[0], x.T[1])
             plt.show()
 
-        foo(ranges=[[2, 2], [4, 5], [3, 3]], cross=(3, 5, 4))
-        print('x:', foo.model.x)
+        op(ranges=[[2, 2], [4, 5], [3, 3]], cross=(3, 5, 4))
+        print('x:', op.model.x)
         plt.title('test: cross 3x1x8')
-        plt.scatter(foo.model.x.T[0], foo.model.x.T[1])
+        plt.scatter(op.model.x.T[0], op.model.x.T[1])
         plt.show()
 
-        foo(ranges=[[2, 3], [3, 4]], n=4)
+        op(ranges=[(2, 3), (3, 4)], grid=4)
         plt.title('test: n --> cross')
-        plt.scatter(foo.model.x.T[0], foo.model.x.T[1])
+        plt.scatter(op.model.x.T[0], op.model.x.T[1])
         plt.show()
 
-        foo(ranges=[[2, 3], [3, 4]], grid=4)
+        op(ranges=[[2, 3], [3, 4]], grid=4)
         plt.title('test: grid 4x4')
-        plt.scatter(foo.model.x.T[0], foo.model.x.T[1])
+        plt.scatter(op.model.x.T[0], op.model.x.T[1])
         plt.show()
 
-        foo(ranges=[[2, 3], [3, 4]], grid=(3, 5))
+        op(ranges=[[2, 3], [3, 4]], grid=(3, 5))
         plt.title('test: grid 3x5')
-        plt.scatter(foo.model.x.T[0], foo.model.x.T[1])
+        plt.scatter(op.model.x.T[0], op.model.x.T[1])
         plt.show()
 
-        foo(ranges=[[2, 3], [3, 4]], rand=50)
+        op(ranges=[[2, 3], [3, 4]], rand=50)
         plt.title('test: rand')
-        plt.scatter(foo.model.x.T[0], foo.model.x.T[1])
+        plt.scatter(op.model.x.T[0], op.model.x.T[1])
         plt.show()
 
     if 0 or ALL:
         s = "Forward, assign external function (without self-argument) to f"
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        foo = Forward(f=function)
-        y = foo(x=[[2, 3], [3, 4], [4, 5], [5, 6], [6, 7]])
-        print('x:', foo.model.x, '\ny1:', foo.model.y)
+        op = Forward(White(function))
+        _, y = op(x=[[2, 3], [3, 4], [4, 5], [5, 6], [6, 7]])
+        print('x:', op.model.x, '\ny1:', op.model.y)
 
     if 0 or ALL:
         s = "Forward, assign method (with 'self'-argument) to f"
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        foo = Forward(f=function)
-        y = foo(x=[[2, 3], [3, 4], [4, 5], [5, 6], [6, 7]])
-        print('x:', foo.model.x, '\ny1:', foo.model.y)
-
-    if 0 or ALL:
-        s = "Forward, assign new 'model'  to model"
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-        foo = Forward()
-        model = foo.model
-        model.f = method.__get__(model, Theoretical)
-        y = foo(x=[[2, 3], [3, 4], [4, 5], [5, 6], [6, 7]], model=model)
-        print('x:', foo.model.x, '\ny1:', foo.model.y)
+        op = Forward(White(function))
+        _, y = op(x=[[2, 3], [3, 4], [4, 5], [5, 6], [6, 7]])
+        print('x:', op.model.x, '\ny1:', op.model.y)
