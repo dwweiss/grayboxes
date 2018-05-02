@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-04-30 DWW
+      2018-05-02 DWW
 """
 
 import numpy as np
@@ -28,22 +28,12 @@ from Model import Model
 
 class LightGray(Model):
     """
+    Light gray box model y=f(x, c)
+
     Extends the functionality of class Model by a train() method which fits
-    the theoretical model f(x) with constant coefficients
-
-    1) Computes y = f(x) through predict(x, **kwargs)
-    2) Model training is defined in train(X, Y, **kwargs)
-    3) self.ready returns True if model is trained
-
-    Upper case 'X' and 'Y' are 2D training input and target
-    Lower case 'x' and 'y' are 2D input and prediction
+    the theoretical model f(x) with constant coefficients 'c'
 
     Notes:
-        Array definition: Input array X[i,j] and output array Y[i,k] are 2D.
-            First index is data point index, second index is input/output index
-            If X or Y passed as 1D array_like, they are transformed to:
-            X = np.atleast_2d(X).T and/or Y = np.atleast_2d(Y).T
-
         The curve fit is currently limited to nOut=1, see self._nMaxOut
 
     Examples:
@@ -56,7 +46,8 @@ class LightGray(Model):
 
         # assign theoretical model f(x) as method (with 'self') or function.
         # alternatively, method can be passed as argument for train or predict
-        foo = LightGray(f=f)
+        foo = LightGray(f=function)  or
+        foo = LightGray(f=method)
 
         # (X, Y): training data
         X = [(1,2), (2,3), (4,5), (6,7), (7,8)]
@@ -69,11 +60,13 @@ class LightGray(Model):
         y = foo(x)
 
         # train light gray box model with training data (X, Y)
-        y = foo(X=X, Y=Y, x=x)    # train and predict with light gray box model
-        y = foo(X=X, Y=Y)                          # train light gray box model
+        y = foo(X=X, Y=Y)                     # only train light gray box model
 
         # after model is trained, it keeps its weights for further preddictions
         y = foo(x=x)                        # predict with light gray box model
+
+        # combined traing and prediction
+        y = foo(X=X, Y=Y, x=x)    # train and predict with light gray box model
 
         # compact form
         y = LightGray(f=f)(X=X, Y=Y, x=x, fitMethod='lm')
@@ -115,12 +108,9 @@ class LightGray(Model):
                 bounds (2-tuple of float or 2-tuple of 1D array_like of float):
                     pairs (xMin, xMax) limiting x
 
-                silent (bool):
-                    If True, L2-norm printing is suppressed
-
         Returns:
             (3-tuple of float):
-                (L2-norm, max(abs(Delta_Y)), index(max(abs(Delta_Y)))
+                (L2-norm, max{|y-Y|}, index(max{|y-Y|})
 
         Note:
             L2-norm = np.sqrt(np.mean(np.square(y - Y)))
@@ -170,7 +160,7 @@ class LightGray(Model):
                 str(self._nMaxWeights) + ' ' + str(self._nWeights)
             self.write([float(str(round(_c, 3))) for _c in c])
 
-        error = self.error(X=X, Y=Y, silent=kwargs.get('silent', None))
+        error = self.error(X=X, Y=Y, silent=self.silent)
         self._L2norm = error[0]
         return error
 
@@ -256,10 +246,10 @@ if __name__ == '__main__':
             print('y:', lgr.y.shape)
             print('X:', lgr.X.shape)
             print('Y:', lgr.Y.shape)
-            print('+++ L2-norm(' + str(fitMethod) + '):', lgr._bestTrain[0],
+            print('+++ L2-norm(' + str(fitMethod) + '):', lgr._best[0],
                   '\n\n')
-            if L2norm > lgr._bestTrain[0]:
-                L2norm = lgr._bestTrain[0]
+            if L2norm > lgr._best[0]:
+                L2norm = lgr._best[0]
                 Y_fit = y
                 fitMethod = fitMethod
 

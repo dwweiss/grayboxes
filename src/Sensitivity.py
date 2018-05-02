@@ -98,15 +98,55 @@ class Sensitivity(Forward):
         return xRef, self.dy_dx
 
     def plot(self):
-        if not self.silent:
-            nPoint, nInp = self.model.x.shape
-            nOut = self.model.y.shape[1]
+        """
+        Plots gradient df(x)/dx
+        """
+        if self.silent:
+            return
 
-            for k in range(nOut):
-                for j in range(nInp):
-                    plt.title('y' + str(k) + ' (x' + str(j) + ')')
+        nPoint, nInp = self.model.x.shape
+        nOut = self.model.y.shape[1]
+
+        for k in range(nOut):
+            for j in range(nInp):
+                plt.title('y' + str(k) + ' (x' + str(j) + ')')
+                plt.xlabel('x' + str(j))
+                plt.ylabel('y' + str(k))
+                xx, yy = [], []
+                for i in range(nPoint):
+                    if i not in self.indicesWithEqualXj[j]:
+                        xx.append(self.model.x[i, j])
+                        yy.append(self.model.y[i, k])
+                    yy = [a for _, a in sorted(zip(xx, yy))]
+                    xx = sorted(xx)
+                plt.plot(xx, yy, '-o')
+                plt.grid()
+                plt.legend(bbox_to_anchor=(1.1, 1.03), loc='upper left')
+                plt.show()
+
+        for k in range(nOut):
+            plt.title('y' + str(k) + ' (x0..' + str(nInp-1) + ')')
+            for j in range(nInp):
+                plt.xlabel('x0..' + str(nInp-1))
+                plt.ylabel('y' + str(k))
+                xx, yy = [], []
+                for i in range(nPoint):
+                    if i not in self.indicesWithEqualXj[j]:
+                        xx.append(self.model.x[i, j])
+                        yy.append(self.model.y[i, k])
+                    yy = [a for _, a in sorted(zip(xx, yy))]
+                    xx = sorted(xx)
+                plt.plot(xx, yy, '-o', label='y'+str(k)+'(x'+str(j)+')')
+            plt.grid()
+            plt.legend(bbox_to_anchor=(1.1, 1.04), loc='upper left')
+            plt.show()
+
+        if nOut > 1:
+            for j in range(nInp):
+                plt.title('y0..' + str(nOut-1) + ' (x' + str(j) + ')')
+                for k in range(nOut):
                     plt.xlabel('x' + str(j))
-                    plt.ylabel('y' + str(k))
+                    plt.ylabel('y0..' + str(nOut-1))
                     xx, yy = [], []
                     for i in range(nPoint):
                         if i not in self.indicesWithEqualXj[j]:
@@ -114,50 +154,15 @@ class Sensitivity(Forward):
                             yy.append(self.model.y[i, k])
                         yy = [a for _, a in sorted(zip(xx, yy))]
                         xx = sorted(xx)
-                    plt.plot(xx, yy, '-o')
-                    plt.grid()
-                    plt.legend(bbox_to_anchor=(1.1, 1.03), loc='upper left')
-                    plt.show()
-
-            for k in range(nOut):
-                plt.title('y' + str(k) + ' (x0..' + str(nInp-1) + ')')
-                for j in range(nInp):
-                    plt.xlabel('x0..' + str(nInp-1))
-                    plt.ylabel('y' + str(k))
-                    xx, yy = [], []
-                    for i in range(nPoint):
-                        if i not in self.indicesWithEqualXj[j]:
-                            xx.append(self.model.x[i, j])
-                            yy.append(self.model.y[i, k])
-                        yy = [a for _, a in sorted(zip(xx, yy))]
-                        xx = sorted(xx)
-                    plt.plot(xx, yy, '-o', label='y'+str(k)+'(x'+str(j)+')')
+                    plt.plot(xx, yy, '-o',
+                             label='y'+str(k)+' (x'+str(j)+')')
                 plt.grid()
                 plt.legend(bbox_to_anchor=(1.1, 1.04), loc='upper left')
                 plt.show()
 
-            if nOut > 1:
-                for j in range(nInp):
-                    plt.title('y0..' + str(nOut-1) + ' (x' + str(j) + ')')
-                    for k in range(nOut):
-                        plt.xlabel('x' + str(j))
-                        plt.ylabel('y0..' + str(nOut-1))
-                        xx, yy = [], []
-                        for i in range(nPoint):
-                            if i not in self.indicesWithEqualXj[j]:
-                                xx.append(self.model.x[i, j])
-                                yy.append(self.model.y[i, k])
-                            yy = [a for _, a in sorted(zip(xx, yy))]
-                            xx = sorted(xx)
-                        plt.plot(xx, yy, '-o',
-                                 label='y'+str(k)+' (x'+str(j)+')')
-                    plt.grid()
-                    plt.legend(bbox_to_anchor=(1.1, 1.04), loc='upper left')
-                    plt.show()
-
-            plotBarArrays(yArrays=self.dy_dx.T, legendPosition=(1.1, 1.03),
-                          title=r'Gradient $d y_k \ / \ d x_j$', grid=True,
-                          figsize=(6, 4))
+        plotBarArrays(yArrays=self.dy_dx.T, legendPosition=(1.1, 1.03),
+                      title=r'Gradient $d y_k \ / \ d x_j$', grid=True,
+                      figsize=(6, 4))
 
 
 # Examples ####################################################################

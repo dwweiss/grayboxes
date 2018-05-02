@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-04-26 DWW
+      2018-05-01 DWW
 """
 
 import numpy as np
@@ -69,6 +69,16 @@ class MediumGray(Model):
         self.xTun, self.xCom, self.xUnq = None, None, None
         self.xMod, self.xPrc = None, None
         self.yMod, self.yPrc, self.yCom = None, None, None
+
+    @property
+    def silent(self):
+        return self._silent
+
+    @silent.setter
+    def silent(self, value):
+        self._silent = value
+        self._white._silent = value
+        self._black._silent = value
 
     def isLocal(self):
         return 'loc' in self.variant
@@ -209,19 +219,19 @@ class MediumGray(Model):
         self.X = X if X is not None else self.xPrc
         self.Y = Y if Y is not None else self.yPrc
 
-        kw = self.kwargsDel(kwargs, ['X', 'Y'])
+        opt = self.kwargsDel(kwargs, ['X', 'Y'])
         if self.isLocal():
             self.write('+++ Trains medium gray box type loc-1')
-            norm = self.trainLocal(self.X, self.Y, f=self.f, **kw)
+            norm = self.trainLocal(self.X, self.Y, f=self.f, **opt)
         else:
             if self.variant.endswith('1'):
                 self.write('+++ Trains medium gray box type glob-1')
                 norm = self._black.train(self.X, self.Y, f=self.f,
-                                         trainers='genetic', **kw)
+                                         trainers='genetic', **opt)
             elif self.variant.endswith('2'):
                 self.write('+++ Trains medium gray box type glob-2')
                 norm = self._black.train(self.X, self.Y, f=self.f,
-                                         trainers='derivative', **kw)
+                                         trainers='derivative', **opt)
             else:
                 assert 0, str(self.variant)
 
@@ -248,15 +258,15 @@ class MediumGray(Model):
         assert self._black is not None and self._black.ready
 
         self.x = x if x is not None else self.x
-        kw = self.kwargsDel(kwargs, 'x')
+        opt = self.kwargsDel(kwargs, 'x')
 
         if self.isLocal():
-            xTun = self._black.predict(x=x, **kw)
+            xTun = self._black.predict(x=x, **opt)
             xMod = np.c_[self.xCom, xTun]
-            self.y = self._white.predict(x=xMod, **kw)
+            self.y = self._white.predict(x=xMod, **opt)
 
         elif self.isGlobal():
-            self.y = self._black.predict(x=x, **kw)
+            self.y = self._black.predict(x=x, **opt)
 
         else:
             assert 0
@@ -320,18 +330,16 @@ if __name__ == '__main__':
         s = 'Medium gray box model'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        foo = MediumGray(f='demo')
+        model = MediumGray(f='demo')
 
-        foo.setArrays(df, xModKeys=['x0', 'x2', 'x3'], xPrcKeys=['x0', 'x4'],
-                      yModKeys=['y0'], yPrcKeys=['y0'])
+        model.setArrays(df, xModKeys=['x0', 'x2', 'x3'], xPrcKeys=['x0', 'x4'],
+                        yModKeys=['y0'], yPrcKeys=['y0'])
         print('*'*20)
-        print(foo.xPrc, foo.yPrc)
-        foo.train(X=foo.xPrc, Y=foo.yPrc, silent=True, hidden=[])
-        y = foo.predict(x=foo.xPrc)
+        #print(foo.xPrc, foo.yPrc)
+        model(X=model.xPrc, Y=model.yPrc, silent=True, neural=[])
+        y = model(x=model.xPrc)
         print('*'*20)
-        foo(X=foo.xPrc, Y=foo.yPrc, x=foo.xPrc, silent=True, hidden=[])
-        print('*'*20)
-        print('*** x:', foo.x, 'y:', y)
+        print('*** x:', model.x, 'y:', y)
 
     if 0 or ALL:
         s = 'Medium gray box model, measured Y(X) = E(mDot, p)'

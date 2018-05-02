@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-04-30 DWW
+      2018-05-01 DWW
 """
 
 from Model import Model
@@ -29,9 +29,33 @@ class White(Model):
     """
 
     def __init__(self, f, identifier='White'):
+        """
+        Args:
+            f (method or function):
+                theoretical model y = f(x) for single data point
+
+            identifier (string, optional):
+                object identifier
+        """
         super().__init__(f=f, identifier=identifier)
 
     def train(self, X, Y, **kwargs):
+        """
+        Sets 'ready' to True without performing training
+
+        Args:
+            X (2D array_like of float):
+                training input, not used
+
+            Y (2D array_like of float):
+                training target, not used
+
+            kwargs (dict, optional):
+                keyword arguments, not used
+
+        Returns:
+            None
+        """
         self.ready = True
         return None
 

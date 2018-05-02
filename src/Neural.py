@@ -17,7 +17,11 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-04-30 DWW
+      2018-05-02 DWW
+
+  Aknowledgements:
+      Neural employs Neurolab, Copyright 2015- by E. Zuev,
+      see pypi.python.org/pypi/neurolab
 """
 
 from collections import OrderedDict
@@ -39,16 +43,24 @@ def proposeHiddenNeurons(X, Y, alpha=2, silent=False):
 
     Args:
         X, Y (2D array_like of float):
-            training data
+            input and target of training
 
         alpha (float, optional):
-            tuning parameter: alpha = 2..10 (2 supresses usually over-fitting)
+            tuning parameter: alpha = 2..10 (2.0 reduces over-fitting)
+
+        silent (bool, optional):
+            if True then suppress printed messages
+
+    Returns:
+        (list of int):
+            Estimate for optimal number of neurons of a single hidden layer
     """
     alpha = 2
     xShape, yShape = np.atleast_2d(X).shape, np.atleast_2d(Y).shape
 
+    assert xShape[0] > xShape[1], str(xShape)
     assert xShape[0] > 2, str(xShape)
-    assert xShape[0] == yShape[0], str(xShape) + ' ' + str(yShape)
+    assert xShape[0] == yShape[0], str(xShape) + str(yShape)
 
     nPoint, nInp, nOut = xShape[0], xShape[1], yShape[1]
     try:
@@ -64,16 +76,6 @@ def proposeHiddenNeurons(X, Y, alpha=2, silent=False):
 
 class Neural(object):
     """
-    Trains and executes neural network
-
-    Methods and attributes:
-        - (error, trainer, epochs) = train(X, Y, **kwargs)
-        - bool ready
-        - string bestTrainer
-        - y = predict(x, **kwargs)
-        - plot()
-        - y = __call__(X=None, Y=None, x=None, **kwargs)
-
     a) Wraps different neural network implementations from
         1) Neurolab: trains exclusively with backpropagation
         2) NeuralGenetic: trains exclusively with genetic algorithm
@@ -81,6 +83,21 @@ class Neural(object):
     b) Compares training algorithms and regularisation settings
 
     c) Presents graphically history of norms for each trial of training
+
+    Example of training and execution of neural network in compact form:
+            y = Neural()(X=X, Y=Y, x=x, hidden=[6])
+        or expanded form:
+            net = Neural()
+            net(X=X, Y=Y, hidden=[6])
+            y = net(x=x)
+
+    Major methods and attributes:
+        - y = self.__call__(X=None, Y=None, x=None, **kwargs)
+        - (float error, string trainer, int epochs) = self.train(X, Y,**kwargs)
+        - y = self.predict(x, **kwargs)
+        - bool self.ready
+        - (float error, string trainer, int epochs) self.best
+        - self.plot()
 
     References:
         - Recommended training algorithms:
@@ -97,10 +114,13 @@ class Neural(object):
         Args:
             f (method or function, optional):
                 theoretical model f(self, x) or f(x),
-                default is None.
+                default is None
+
                 if f is not None, genetic training or training with derivative
                 dE/dy and dE/dw is employed
         """
+        self.f = f               # theoretical model for single data point
+
         self._net = None         # network
         self._X = None           # input of training
         self._Y = None           # target
@@ -116,20 +136,15 @@ class Neural(object):
         self._bestEpochs = []    # epochs of best trial for each trainer
         self._ready = False      # flag indicating successful training
         self._best = None        # (error, trainer, epochs) of best train.trial
-
-        if f is not None:
-            firstArg = list(inspect.signature(f).parameters.keys())[0]
-            if firstArg == 'self':
-                f = f.__get__(self, self.__class__)
-        self.f = f
+        self._silent = False
 
         plt.rcParams.update({'font.size': 14})
-        plt.rcParams['legend.fontsize'] = 14
+        plt.rcParams['legend.fontsize'] = 14   # fonts in plots
 
     def __call__(self, X=None, Y=None, x=None, **kwargs):
         """
-        - Trains neural network if both X is not None and Y is not None and
-          sets self.ready to True if training is successful
+        - Trains neural network if X is not None and Y is not None
+        - Sets self.ready to True if training is successful
         - Predicts y for input x if x is not None and self.ready is True
 
         Args:
@@ -139,29 +154,57 @@ class Neural(object):
             x (1D or 2D array_like of float, optional):
                 input for prediction
 
+            kwargs (dict, optional):
+                keyword arguments
+
+                silent (bool):
+                    If True then suppress printing
+
         Returns:
             (2D array of float):
-                Prediction of neural network if x is not None
-            or (3-tuple of float):
+                Prediction of network if x is not None and self.ready is True
+            or (3-tuple of float, string, int):
                 (error, trainer, epochs) for best training trial if x is None
                     and both X and Y are not None
             or None:
                 if X, Y and x are None
 
         Note:
-            - The shape of X, Y and x is corrected to: (nPoint, nInp / nOut)
+            - The shape of X, Y and x is corrected to: (nPoint, nInp/nOut)
             - The references to X, Y, x and y are stored as self._X, self._Y,
-              self._x, self._y and be accessed via the coresponding decorators
+              self._x, self._y and accessable via the corresponding decorators
         """
+        self.silent = kwargs.get('silent', self.silent)
+
         if X is not None and Y is not None:
-            err = self.train(X, Y, **kwargs)
+            best = self.train(X=X, Y=Y, **kwargs)
         else:
-            err = None
+            best = None
         if x is not None:
-            assert self.ready
-            return self.predict(x=x)
+            if self.ready:
+                return self.predict(x=x, **kwargs)
         else:
-            return err
+            return best
+
+    @property
+    def f(self):
+        return self._f
+
+    @f.setter
+    def f(self, _f):
+        if _f is not None:
+            firstArg = list(inspect.signature(_f).parameters.keys())[0]
+            if firstArg == 'self':
+                _f = _f.__get__(self, self.__class__)
+        self._f = _f
+
+    @property
+    def silent(self):
+        return self._silent
+
+    @silent.setter
+    def silent(self, value):
+        self._silent = value
 
     @property
     def X(self):
@@ -187,16 +230,19 @@ class Neural(object):
     def best(self):
         """
         Returns:
-            (3-tuple of float):
+            (3-tuple of float, string, int):
                 (error, trainer, epochs) for best training trial
         """
         return self._best
 
     def importDataFrame(self, df, xKeys, yKeys):
         """
+        Imports input X and target Y of training
+        self.Y is the normalized target, but argument 'Y' stays unchanged
+
         Args:
-            df (DataFrame):
-                data  object
+            df (pandas.DataFrame):
+                data object
 
             xKeys (list of string):
                 input  keys for data selection
@@ -218,6 +264,9 @@ class Neural(object):
 
     def importArrays(self, X, Y, xKeys=None, yKeys=None):
         """
+        Imports input X and target Y of training
+        self.Y is the normalized target, but argument 'Y' stays unchanged
+
         Args:
             X (1D or 2D array_like of float):
                 X will be converted to 2D-array
@@ -266,13 +315,13 @@ class Neural(object):
         """
         Args:
             X (1D or 2D array_like of float, optional):
-                training input, X.shape: (nPoint, nInp)
+                training input, shape: (nPoint, nInp)
 
             Y (1D or 2D array_like of float, optional):
-                training target, Y.shape: (nPoint, nOut)
+                training target, shape: (nPoint, nOut)
 
             kwargs (dict, optional):
-                keywork arguments:
+                keyword arguments:
 
                 epochs (int):
                     max number of iterations of single trial,
@@ -282,16 +331,20 @@ class Neural(object):
                     error function: { nl.error.MSE() | nl.error.SSE() },
                     default is MSE
 
-                f (method or function, optional):
-                    theoretical model y = f(x) for single data point
-
                 goal (float):
                     limit of 'errorf' for stop of training (0 < goal < 1),
                     default is 1e-5
 
                 hidden (int or array_like of int):
                     array of number of neurons in hidden layers,
-                    default is max(1, round(nPoint / (alpha * (nInp + nOut))))
+                    default is estimate from: proposeHiddenNeurons()
+                    [same as 'layer' and 'neural']
+
+                layer (int or array_like of int):
+                    [same as 'hidden' and 'neural']
+
+                neural (int or array_like of int):
+                    [same as 'hidden' and 'layer']
 
                 outputf (function):
                     activation function of output layer,
@@ -302,9 +355,13 @@ class Neural(object):
                     default is 0 (no plot)
 
                 regularization (float):
-                    control of regularization (sum of all weights is added to
+                    regularization rate (sum of all weights is added to
                     cost function of training, 0. <= regularization <= 1,
                     default is 0 (no effect of sum of all weights)
+                    [same as 'rr']
+
+                rr (float):
+                    same as 'regularization'
 
                 show (int):
                     control of information about training, if show=0: no print,
@@ -312,7 +369,7 @@ class Neural(object):
 
                 silent (bool):
                     if True, no information is sent to console,
-                    default is False
+                    default is self.silent
 
                 smartTrials (bool):
                     if False, perform all trials even if goal has been reached,
@@ -321,7 +378,7 @@ class Neural(object):
                 trainers (string or list of string):
                     if no list, space separated string is converted to list
                     if 'all' or None, all training algorithms will be applied,
-                    default is 'bfgs'
+                    default is 'bfgs' if self.f is None else 'genetic'
 
                 transf (function):
                     activation function of hidden layers,
@@ -332,10 +389,11 @@ class Neural(object):
                     default is 3
 
         Returns:
-            (3-tuple of float):
+            (3-tuple of float, string, int):
                 (error, trainer, epochs) for best training trial
 
         Note:
+            - Reference to theoretical model is stored as self.f
             - Reference to training data is stored as self._X and self._Y
             - The best network has been assigned to 'self._net' before return
             - (error, trainer, epochs) for best training trial is stored as
@@ -347,14 +405,21 @@ class Neural(object):
 
         epochs         = kwargs.get('epochs',         1000)
         errorf         = kwargs.get('errorf',         nl.error.MSE())
-        f              = kwargs.get('f',              None)
         goal           = kwargs.get('goal',           1e-5)
         hidden         = kwargs.get('hidden',         None)
+        if hidden is None:
+            hidden     = kwargs.get('neural',         None)
+        if hidden is None:
+            hidden     = kwargs.get('layer',          None)
         outputf        = kwargs.get('outputf',        nl.trans.TanSig())
         plot           = kwargs.get('plot',           1)
-        regularization = kwargs.get('regularization', 1.0)
+        rr             = kwargs.get('regularization', None)
+        if rr is None:
+            rr         = kwargs.get('rr',             None)
+        if rr is None:
+            rr = 1.0
         show           = kwargs.get('show',           None)
-        silent         = kwargs.get('silent',         False)
+        self.silent    = kwargs.get('silent',         self.silent)
         smartTrials    = kwargs.get('smartTrials',    True)
         trainers       = kwargs.get('trainers',       'bfgs')
         transf         = kwargs.get('transf',         nl.trans.TanSig())
@@ -363,7 +428,7 @@ class Neural(object):
         self._ready = False
 
         # if theoretical model 'f' is provided, alternative training is used
-        if f is not None:
+        if self.f is not None:
             trainers = [x for x in trainers if x in ('genetic', 'derivative')]
             if not trainers:
                 trainers = 'genetic'
@@ -374,21 +439,21 @@ class Neural(object):
                 if trainers == 'all':
                     trainers = 'cg gd gdx gdm gda rprop bfgs genetic'
                 trainers = trainers.split()
-            trainers = list(OrderedDict.fromkeys(trainers))  # redundancy
+            trainers = list(OrderedDict.fromkeys(trainers))        # redundancy
         self._trainers = trainers
 
         if errorf is None:
             errorf = nl.error.MSE()
         if show is None:
             show = epochs // 10
-        if silent:
+        if self.silent:
             plot = False
 
         if isinstance(hidden, (int, float)):
             hidden = list([int(hidden)])
         if not hidden or len(hidden) == 0:
-            hidden = proposeHiddenNeurons(self._X, self._Y, alpha=2,
-                                          silent=silent)
+            hidden = proposeHiddenNeurons(X=self._X, Y=self._Y, alpha=2,
+                                          silent=self.silent)
         if not isinstance(hidden, list):
             hidden = list(hidden)
         size = hidden.copy()
@@ -408,7 +473,7 @@ class Neural(object):
 
         assert all([x in trainfDict for x in self._trainers]), \
             str(self._trainers)
-        if not silent:
+        if not self.silent:
             print('+++ trainers:', self._trainers)
 
         sequenceError = float('inf')
@@ -440,10 +505,10 @@ class Neural(object):
                                   goal=goal)
                 elif trainer.startswith(('gen', 'deriv')):
                     e = net.train(self._X, self._Y, f=self.f, epochs=epochs,
-                                  show=show, goal=goal, rr=regularization)
+                                  show=show, goal=goal, rr=rr)
                 else:
                     e = net.train(self._X, self._Y, epochs=epochs, show=show,
-                                  goal=goal, rr=regularization)
+                                  goal=goal, rr=rr)
                 trialErrors = e
                 if sequenceError > trialErrors[-1]:
                     sequenceError = trialErrors[-1]
@@ -480,14 +545,14 @@ class Neural(object):
                 plt.legend(bbox_to_anchor=(1.1, 1), loc='upper left')
                 plt.grid()
                 plt.show()
-            if not silent:
+            if not self.silent:
                 print('    ' + trainer + ':' + str(round(trainerErr, 5)) +
                       '[' + str(trainerEpochs) + '], ')
         if plot:
             self.plotTestWithTrainData()
 
         iBest = self._trainers.index(bestTrainer)
-        if not silent:
+        if not self.silent:
             if len(self._trainers) > 1:
                 print("    best trainer: '" + self._trainers[iBest] +
                       "' out of: [" + ' '.join(self._trainers) +
@@ -506,8 +571,28 @@ class Neural(object):
         return self._best
 
     def predict(self, x, **kwargs):
+        """
+        Executes network
+
+        Args:
+            x (2D array_like of float, optional):
+                input array
+
+            kwargs (dict, optional):
+                keyword arguments
+
+                silent (bool):
+                    if True, no information is sent to console,
+                    default is False
+
+        Returns:
+            self.y (2D array of float):
+                output y
+        """
         if x is None:
             return None
+
+        self.silent = kwargs.get('silent', self.silent)
 
         x = np.asfarray(x)
         if x.ndim == 1:
@@ -575,15 +660,24 @@ class Neural(object):
 
 
 def trainGenetic(self, X, Y, **kwargs):
-    epochs         = kwargs.get('epochs',   1000)
-    errorf         = kwargs.get('errorf',   nl.error.MSE())
-    f              = kwargs.get('f',        None)
-    goal           = kwargs.get('goal',     1.0001e-5)
-    hidden         = kwargs.get('hidden',   None)
-    outputf        = kwargs.get('outputf',  None)
-    regularization = kwargs.get('rr',       1.0)
-    show           = kwargs.get('show',     None)
-    transf         = kwargs.get('transf',   None)
+    epochs         = kwargs.get('epochs',         1000)
+    errorf         = kwargs.get('errorf',         nl.error.MSE())
+    goal           = kwargs.get('goal',           1.0001e-5)
+    hidden         = kwargs.get('hidden',         None)
+    if hidden is None:
+        hidden     = kwargs.get('neural',         None)
+    if hidden is None:
+        hidden     = kwargs.get('layer',          None)
+    outputf        = kwargs.get('outputf',        None)
+    rr             = kwargs.get('regularization', None)
+    if rr is None:
+        rr         = kwargs.get('rr',             None)
+    if rr is None:
+        rr         = 1.0
+    show           = kwargs.get('show',           None)
+    transf         = kwargs.get('transf',         None)
+    
+    f = self.f
 
     return [0]
 
@@ -591,7 +685,7 @@ def trainGenetic(self, X, Y, **kwargs):
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    ALL = 0
+    ALL = 1
 
     if 0 or ALL:
         s = 'Example 1 __call__()'

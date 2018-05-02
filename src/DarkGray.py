@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-04-30 DWW
+      2018-05-02 DWW
 """
 
 import numpy as np
@@ -42,6 +42,15 @@ class DarkGray(Model):
         """
         super().__init__(identifier=identifier, f=f)
         self._black = Black()
+
+    @property
+    def silent(self):
+        return self._silent
+
+    @silent.setter
+    def silent(self, value):
+        self._silent = value
+        self._black._silent = value
 
     def train(self, X, Y, **kwargs):
         """
@@ -89,6 +98,7 @@ class DarkGray(Model):
         self.X = X
         self.Y = Y
         opt = self.kwargsDel(kwargs, ('x'))
+
         y = Model.predict(self, x=self.X, **opt)
         norm = self._black.train(X=np.c_[self.X, y], Y=y - self.Y, **opt)
 
@@ -115,10 +125,10 @@ class DarkGray(Model):
         assert self._black is not None and self._black.ready
 
         self.x = x
-        kw = self.kwargsDel(kwargs, ('x', 'f'))
+        opt = self.kwargsDel(kwargs, ('x', 'f'))
 
-        self._y = Model.predict(self, x=x, **kw)
-        self._y -= self._black.predict(x=np.c_[x, self._y], **kw)
+        self._y = Model.predict(self, x=x, **opt)
+        self._y -= self._black.predict(x=np.c_[x, self._y], **opt)
 
         return self.y
 
@@ -126,7 +136,7 @@ class DarkGray(Model):
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    ALL = 0
+    ALL = 1
 
     from io import StringIO
     import pandas as pd
@@ -188,7 +198,7 @@ if __name__ == '__main__':
 
         print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
 
-    if 1 or ALL:
+    if 0 or ALL:
         s = 'Dark gray box model 2'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
@@ -209,7 +219,7 @@ if __name__ == '__main__':
 
         print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
 
-    if 1 or ALL:
+    if 0 or ALL:
         s = 'Black box model, measured Y(X) = E(mDot, p)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
@@ -220,7 +230,7 @@ if __name__ == '__main__':
         X = np.asfarray(df.loc[:, ['mDot', 'p']])
         Y = np.asfarray(df.loc[:, ['A']])
 
-        y = Black()(X=X, Y=Y, neural=[], x=X)
+        y = Black()(X=X, Y=Y, neural=[], silent=True, x=X)
 
         plotIsoMap(X.T[0], X.T[1], Y.T[0] * 1e3, title=r'$A_{prc}\cdot 10^3$')
         plotIsoMap(X.T[0], X.T[1], y.T[0] * 1e3, title=r'$A_{blk}\cdot 10^3$')

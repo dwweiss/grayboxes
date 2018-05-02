@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-04-30 DWW
+      2018-05-02 DWW
 """
 
 import numpy as np
@@ -29,17 +29,10 @@ from Neural import Neural
 
 class Black(Model):
     """
-    Wraps empirical models based on:
-        - neural networks
-        - splines
-
-    Note:
-        - Array definition: input and output arrays are 2D, first index is data
-          point index. Extract 1D arrays with 'X[:, 0]', or 'X.T[0]'
+    Black box model y = f(x)
 
         - Neural network is employed if argument 'neural' is passed by kwargs
-          Best neural network of all trials is saved as 'self._method._net'
-
+          Best neural network of all trials is saved as 'self._empirical._net'
         - Splines are employed if the argument 'splines' is passed by kwargs
 
     Example:
@@ -47,13 +40,13 @@ class Black(Model):
         x = X * 2
         Y = X**2
 
-        # neural network (expanded)
-        foo = Black()
-        foo(X=X, Y=Y, neural=[2, 3])
-        yTrn = foo(X)
-        y = foo(x)
+        # black box, neural network, expanded:
+        model = Black()
+        model(X=X, Y=Y, neural=[2, 3])
+        yTrn = model(x=X)
+        yTst = model(x=x)
 
-        # neural network (compact)
+        # black box, neural network, compact:
         y = Black()(XY=(X, Y), neural=[2, 3], x=x)
     """
 
@@ -64,7 +57,17 @@ class Black(Model):
                 object identifier
         """
         super().__init__(f=None, identifier=identifier)
-        self._method = None   # instance of class with neural net, splines etc.
+        self._empirical = None         # holds instance of Neural, splines etc.
+
+    @property
+    def silent(self):
+        return self._silent
+
+    @silent.setter
+    def silent(self, value):
+        self._silent = value
+        if self._empirical is not None:
+            self._empirical._silent = value
 
     def train(self, X, Y, **kwargs):
         """
@@ -107,7 +110,7 @@ class Black(Model):
         if self._Y.shape[0] == 1:
             self._Y = self._Y.T
         assert self.X.shape[0] == self.Y.shape[0], \
-            str(self.X.shape) + str(self.X.shape)
+            str(self.X.shape) + str(self.Y.shape)
         assert self.X.shape[0] > 2, str(self.X.shape)
         assert self.Y.shape[0] > 2, str(self.Y.shape)
 
@@ -115,15 +118,18 @@ class Black(Model):
         splines = kwargs.get('splines', None) if neural is None else None
 
         if neural is not None:
-            self.write('+++ train neural network, neural options:', neural)
+            self.write('+++ train neural network, hidden:', neural)
 
-            kw = kwargs.copy()
-            kw['hidden'] = kw.pop('neural')               # rename 'neural' key
-            if self._method is not None:
-                del self._method
-            self._method = Neural()
-            self._method.train(self.X, self.Y, **kw)
-            self.ready = self._method.ready
+            opt = kwargs.copy()
+            opt['hidden'] = opt.pop('neural')             # rename 'neural' key
+            if self._empirical is not None:
+                del self._empirical
+            self._empirical = Neural()
+            self._empirical.silent = self.silent
+
+            self._empirical.train(self.X, self.Y, **opt)
+
+            self.ready = self._empirical.ready
 
         elif splines is not None:
             # ...
@@ -158,7 +164,7 @@ class Black(Model):
         assert self.ready, 'Black is not trained'
 
         self.x = x
-        self.y = self._method.predict(x=self.x)
+        self.y = self._empirical.predict(x=self.x)
         return self.y
 
 
@@ -179,7 +185,7 @@ if __name__ == '__main__':
         X, Y = np.atleast_2d(X).T, np.atleast_2d(Y).T
         print('X.shape:', X.shape, 'Y.shape:', Y.shape)
 
-        y = Black()(X=X, Y=Y, neural=[], x=X)
+        y = Black()(X=X, Y=Y, neural=[], x=X, silent=True)
 
         plt.plot(X, Y, '.', X, y, '-')
         plt.show()
@@ -323,7 +329,7 @@ if __name__ == '__main__':
             # print('row:', row, len(row), 'columns:', collect.keys)
             collect.loc[collect.shape[0]] = row
 
-            if isinstance(blk._method, Neural):
+            if isinstance(blk._empirical, Neural):
                 print('+++ neural network definition:', definition)
             plt.title('$' + str(definitionCopy) + '\ \ L_2(tr/te):\ ' +
                       str(round(L2Trn, 5)) + r', ' + str(round(L2Tst, 4)) +

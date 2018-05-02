@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-04-26 DWW
+      2018-05-01 DWW
 
 Note on excution of a python script in from file manager on Windows:
     1. Install Python 3.0 or newer
@@ -162,7 +162,7 @@ class Base(object):
         self._identifier = str(identifier)
         self.argv = argv
         self.program = self.__class__.__name__
-        self.version = '260418_dww'
+        self.version = '010518_dww'
 
         self._execTimeStart = 0.0       # start measuring execution time
         self._minExecTimeShown = 1.0    # times less than limit are not shown
@@ -172,7 +172,7 @@ class Base(object):
         self._gui = False               # no graphic user interface if False
         self._batch = False             # no user interaction if True
         self._silent = False            # no console output if True
-        self._silentPrevious = False    # previous value of self._silent
+#        self._silentPrevious = False    # previous value of self._silent
 
         self._ready = True              # if True, successful train/prediction
 
@@ -197,6 +197,8 @@ class Base(object):
             kwargs (dict, optional):
                 keyword arguments passed to pre(), control() and post()
 
+                silent (bool):
+                    if True then suppress printing
         Return:
             (float):
                 residuum from range 0.0 .. 1.0 indicating error of task
@@ -205,6 +207,8 @@ class Base(object):
         # skip model execution if parallelized with MPI and rank > 0
         if parallel.rank():
             return -1.0
+
+        self.silent = kwargs.get('silent', self.silent)
 
         self.prolog()
         self.pre(**kwargs)
@@ -359,14 +363,7 @@ class Base(object):
 
     @silent.setter
     def silent(self, value):
-        self._silentPrevious = self._silent
-        self._silent = bool(value)
-        for x in self._followers:
-            x._silentPrevious = x._silent
-            x._silent = bool(value)
-
-    def restoreSilent(self):
-        self.silent = self._silentPrevious
+        self._silent = value
 
     @property
     def ready(self):
@@ -712,10 +709,11 @@ class Base(object):
 
         if self.isRoot():
             self.write('+++ path: ', "'", self.path, "'")
+            silentPrevious = self.silent
             self.silent = True
             self.write('+++ date: ', str(datetime.now().date()),
                        ' ', str(datetime.now().time())[:8])
-            self.silent = self._silentPrevious
+            self.silent = silentPrevious
 
             self.write("\n*** This is: '", self.program, "'", None)
             if self.identifier and self.identifier != self.program:
@@ -754,15 +752,15 @@ class Base(object):
         return True
 
     def initialCondition(self):
-        # super().initialCondition() # use this(uncommented) in derived classes
+        # super().initialCondition()                # use it in derived classes
         pass
 
     def updateNonLinear(self):
-        # super().updateNonLinear() # use this (uncommented) in derived classes
+        # super().updateNonLinear()                 # use it in derived classes
         pass
 
     def updateTransient(self):
-        # super().updateTransient() # use this(uncommented) in derived classes
+        # super().updateTransient()                 # use it in derived classes
         pass
 
     def pre(self, **kwargs):

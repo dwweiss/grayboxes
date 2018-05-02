@@ -38,22 +38,23 @@ class Forward(Base):
         Y_prc = [[... ]]  target of training
         x_prc = [[... ]]  input of prediction
 
-        def func(x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+        def function(x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
             return 2.2 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
-        def meth(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+        def method(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
             return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
         # create operation on generic model phi(x)
-        op = Forward(White(func))
-        op = Forward(White(meth))
+        op = Forward(White(function))
+        op = Forward(White(method))
 
-        # compact training and prediction with phi(x)
-        _, y = op(X=X_prc, Y=Y_prc, x=x_prc)
-
-        # separated training and prediction
+        # training and prediction
         op(X=X_prc, Y=Y_prc)     # train
         _, y = op(x=x_mod)       # predict
+
+        # compact form
+        _, y = Forward(White(function))(X=X_prc, Y=Y_prc, x=x_prc)
+
 
     Note:
         - Forward.__call__() returns 2-tuple of 2D arrays of float (x and y)
@@ -150,7 +151,6 @@ class Forward(Base):
             kwargs (dict, optional):
                 keyword arguments:
 
-
                 XY (2-tuple of 2D array_like of float):
                     input and target of training, this argument supersedes X, Y
 
@@ -174,14 +174,10 @@ class Forward(Base):
 
                 rand (int):
                     number of points if random array is generated
-
-                n (int):
-                    number of points per axis. if 'rand', n is total number
-
         Note:
             1) 'x' keyword overrules 'ranges' keyword
-            2) if more than one arg. out of [cross, grid, rand, n] is given,
-                the order in this list defines the relevant argument
+            2) if more than one keyword out of [cross, grid, rand] is given,
+                the order in this list defines their priority
         """
         super().pre(**kwargs)
 
@@ -196,9 +192,10 @@ class Forward(Base):
                 self.model.train(X, Y, **self.kwargsDel(kwargs, ['X', 'Y']))
 
         # - assigns x to self.model.x for prediction or
-        # - generates x from ranges=[(xl, xu),(xl, xu), ..] and from 1) or 2):
-        #    1) grid=(nx,ny,..), grid=nx, cross=(nx,ny,..), cross=nx, or rand=n
-        #    2) shape='grid', shape='cross', or shape='rand' and n=(nx,ny, ..)
+        # - generates x from ranges=[(xl, xu),(xl, xu), ..] and from:
+        #    1) grid=(nx,ny,..), grid=nx, or
+        #    2) cross=(nx,ny,..), cross=nx, or
+        #    3) rand=n
         x = kwargs.get('x', None)
         if x is None:
             ranges = kwargs.get('ranges', None)
@@ -220,7 +217,7 @@ class Forward(Base):
     def task(self, **kwargs):
         """
         This task() method is only for Forward and Sensitivity.
-        Minimum, Maximum and Inverse have another implementation of task()
+        Minimum, Maximum and Inverse have a different implementation of task()
 
         Args:
             kwargs (dict, optional):
