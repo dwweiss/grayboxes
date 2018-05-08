@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-02 DWW
+      2018-05-08 DWW
 
   Aknowledgements:
       Neural employs Neurolab, Copyright 2015- by E. Zuev,
@@ -113,13 +113,13 @@ class Neural(object):
         """
         Args:
             f (method or function, optional):
-                theoretical model f(self, x) or f(x),
+                theoretical submodel f(self, x) or f(x),
                 default is None
 
                 if f is not None, genetic training or training with derivative
                 dE/dy and dE/dw is employed
         """
-        self.f = f               # theoretical model for single data point
+        self.f = f               # theoretical submodel for single data point
 
         self._net = None         # network
         self._X = None           # input of training
@@ -323,6 +323,11 @@ class Neural(object):
             kwargs (dict, optional):
                 keyword arguments:
 
+                alpha (float):
+                    factor for autodefinition of number of hidden neurons,
+                    see: proposeHiddenNeurons()
+                    default is 2.0
+
                 epochs (int):
                     max number of iterations of single trial,
                     default is 1000
@@ -380,6 +385,9 @@ class Neural(object):
                     if 'all' or None, all training algorithms will be applied,
                     default is 'bfgs' if self.f is None else 'genetic'
 
+                trainer (string or list of string):
+                    [same as 'trainers']
+
                 transf (function):
                     activation function of hidden layers,
                     default is TanSig()
@@ -393,7 +401,7 @@ class Neural(object):
                 (error, trainer, epochs) for best training trial
 
         Note:
-            - Reference to theoretical model is stored as self.f
+            - Reference to theoretical submodel is stored as self.f
             - Reference to training data is stored as self._X and self._Y
             - The best network has been assigned to 'self._net' before return
             - (error, trainer, epochs) for best training trial is stored as
@@ -403,6 +411,7 @@ class Neural(object):
             self.importArrays(X, Y)
         assert self._X is not None and self._Y is not None
 
+        alpha          = kwargs.get('alpha',          2.0)
         epochs         = kwargs.get('epochs',         1000)
         errorf         = kwargs.get('errorf',         nl.error.MSE())
         goal           = kwargs.get('goal',           1e-5)
@@ -418,16 +427,22 @@ class Neural(object):
             rr         = kwargs.get('rr',             None)
         if rr is None:
             rr = 1.0
-        show           = kwargs.get('show',           None)
+        show           = kwargs.get('show',           0)
         self.silent    = kwargs.get('silent',         self.silent)
         smartTrials    = kwargs.get('smartTrials',    True)
-        trainers       = kwargs.get('trainers',       'bfgs')
+        trainers       = kwargs.get('trainers',       None)
+        if trainers is None:
+            trainers   = kwargs.get('trainer',       'bfgs rprop')
         transf         = kwargs.get('transf',         nl.trans.TanSig())
         trials         = kwargs.get('trials',         3)
 
+        if self.silent:
+            show = 0
+            plot = 0
+
         self._ready = False
 
-        # if theoretical model 'f' is provided, alternative training is used
+        # if theoretical submodel 'f' is provided, alternative training is used
         if self.f is not None:
             trainers = [x for x in trainers if x in ('genetic', 'derivative')]
             if not trainers:
@@ -451,11 +466,13 @@ class Neural(object):
 
         if isinstance(hidden, (int, float)):
             hidden = list([int(hidden)])
-        if not hidden or len(hidden) == 0:
-            hidden = proposeHiddenNeurons(X=self._X, Y=self._Y, alpha=2,
+        if not hidden or len(hidden) == 0 or not all(hidden):
+            hidden = proposeHiddenNeurons(X=self._X, Y=self._Y, alpha=alpha,
                                           silent=self.silent)
         if not isinstance(hidden, list):
             hidden = list(hidden)
+        assert all(x > 0 for x in hidden), str(hidden)
+
         size = hidden.copy()
         size.append(self._Y.shape[1])
         assert size[-1] == self._Y.shape[1]

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-04-30 DWW
+      2018-05-07 DWW
 """
 
 import numpy as np
@@ -37,24 +37,24 @@ class Inverse(Minimum):
         yInv = (y0, y1, ... )
 
         def f(self, x): return (x[0])
-        op = Inverse(color='darkGray', f=f)
+        op = Inverse(DarkGray(f=f))
 
         x, y = op(XY=(X, Y, xKeys, yKeys))               # only training
         x, y = op(X=X, Y=Y, x=xIni, y=yInv)              # training & inverse
-        x, y = op(ranges=[(1,4),(0,9)], rand=5, y=yInv)  # only inverse
+        x, y = op(x=rand(5, [1, 4], [0, 9]), y=yInv)     # only inverse
         x, y = op(x=xIni, bounds=bounds, y=yInv)         # only inverse
 
-        x, y = Inverse(f='demo', color='lightGray')(XY=(X, Y), x=xIni, y=yInv)
+        x, y = Inverse(LightGray('demo'))(XY=(X, Y), x=xIni, y=yInv)
     """
 
     def __init__(self, model, identifier='Inverse'):
         """
         Args:
             model (Model_like):
-                generic model object, supersedes all following options
+                box type model object
 
             identifier (string, optional):
-                class identifier
+                object identifier
         """
         super().__init__(model=model, identifier=identifier)
 
@@ -88,13 +88,14 @@ class Inverse(Minimum):
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    ALL = 1
+    ALL = 0
 
-    from Model import gridInit
+    from plotArrays import plot_X_Y_Yref
+    import Model as md
+
     from White import White
     from LightGray import LightGray
     from Black import Black
-    from plotArrays import plot_X_Y_Yref
 
     def f(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
         return [np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2]
@@ -104,7 +105,7 @@ if __name__ == '__main__':
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         op = Inverse(White(f))
-        x, y = op(ranges=[(-1, 1), (4, 8), (3, 5)], grid=3, y=[0.5])
+        x, y = op(x=md.grid(3, [-1, 1], [4, 8], [3, 5]), y=[0.5])
         op.plot()
 
     if 0 or ALL:
@@ -112,50 +113,50 @@ if __name__ == '__main__':
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         op = Inverse(White('demo1'))
-        xInv, yInv = op(ranges=[(-10, 10), (-15, 15)], grid=(5, 4), y=[0.5])
+        xInv, yInv = op(x=md.grid((5, 4), [-10, 10], [-15, 15]), y=[0.5])
         op.plot()
 
-    if 0 or ALL:
+    if 1 or ALL:
         s = 'Inverse operation on light gray box model'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         noise = 0.9
         n = 5
-        X = gridInit(ranges=[(-1, 5), (0, 3)], n=n)
+        X = md.grid((n, n), [-1, 5], [0, 3])
 
         #################
 
-        Y_exa = White(f)(x=X)
-        Y_noise = Y_exa + (1 - 2 * np.random.rand(Y_exa.shape[0],
-                                                  Y_exa.shape[1])) * noise
-        plot_X_Y_Yref(X, Y_noise, Y_exa, ['X', 'Y_{nse}', 'Y_{exa}'])
+        Y_exact = White(f)(x=X, silent=True)
+        Y_noise = md.noise(Y_exact, absolute=noise)
+        plot_X_Y_Yref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
 
         #################
 
         model = LightGray(f)
-        Y_fit = model(X=X, Y=Y_noise, x=X)
-        plot_X_Y_Yref(X, Y_fit, Y_exa, ['X', 'Y_{fit}', 'Y_{exa}'])
+        Y_fit = model(X=X, Y=Y_noise, x=X, silent=True)
+        plot_X_Y_Yref(X, Y_fit, Y_exact, ['X', 'Y_{fit}', 'Y_{exa}'])
 
-        x, y = Inverse(model)(y=[0.5], ranges=[(-10, 0), (1, 19)], grid=(3, 2))
+        op = Inverse(model)
+        x, y = op(x=md.grid((3, 2), [-10, 0], [1, 19]), y=[0.5])
         op.plot()
 
-    if 1 or ALL:
+    if 0 or ALL:
         s = 'Inverse operation on empirical model'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        noise = 0.2
+        noise = 0.2random.
         n = 10
-        X = gridInit(ranges=((-1, 5), (0, 3)), n=n)
+        X = md.grid(n, [-1, 5], [0, 3])
 
-        Y_exa = White(f)(x=X)
-        delta = noise * (Y_exa.max() - Y_exa.min())
-        Y_noise = Y_exa + np.random.normal(-delta, +delta, size=Y_exa.shape)
+        Y_exact = White(f)(x=X)
+        Y_noise = md.noise(Y_exact, absolute=noise)
 
-        plot_X_Y_Yref(X, Y_noise, Y_exa, ['X', 'Y_{nos}', 'Y_{exa}'])
+        plot_X_Y_Yref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
         model = Black()
-        Y_blk = model(X=X, Y=Y_noise.copy(), neural=[8], n=3, epochs=500, x=X)
-        plot_X_Y_Yref(X, Y_blk, Y_exa, ['X', 'Y_{blk}', 'Y_{exa}'])
-        xInv, yInv = Inverse(model)(y=[0.5], x=[(-10, 0), (1, 19)])
+        Y_blk = model(X=X, Y=Y_noise, neural=[8], n=3, epochs=500, x=X)
+        plot_X_Y_Yref(X, Y_blk, Y_exact, ['X', 'Y_{blk}', 'Y_{exa}'])
+        op = Inverse(model)
+        xInv, yInv = op(y=[0.5], x=[(-10, 0), (1, 19)])
         op.plot()
 
     if 0 or ALL:
@@ -164,26 +165,25 @@ if __name__ == '__main__':
 
         noise = 0.1
         n = 10
-        X = gridInit(ranges=((-1, 5), (0, 3)), n=n)
+        X = md.grid(n, [-1, 5], [0, 3])
 
         # synthetic training data
-        Y_exa = White(f)(x=X)
-        delta = noise * (Y_exa.max() - Y_exa.min())
-        Y_noise = Y_exa + np.random.normal(-delta, +delta, size=(Y_exa.shape))
-        plot_X_Y_Yref(X, Y_noise, Y_exa, ['X', 'Y_{nos}', 'Y_{exa}'])
+        Y_exact = White(f)(x=X)
+        Y_noise = md.noise(Y_exact, absolute=noise)
+        plot_X_Y_Yref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
 
-        # trains and executes of theoretical model Y_fit=f(X,w)
+        # trains and executes theoretical model Y_fit=f(X,w)
         Y_fit = LightGray(f)(X=X, Y=Y_noise, x=X)
-        plot_X_Y_Yref(X, Y_fit, Y_exa, ['X', 'Y_{fit}', 'Y_{exa}'])
+        plot_X_Y_Yref(X, Y_fit, Y_exact, ['X', 'Y_{fit}', 'Y_{exa}'])
 
         # meta-model of theoretical model Y_emp=g(X,w)
         meta = Black()
         Y_meta = meta(X=X, Y=Y_fit, neural=[10], x=X)
-        plot_X_Y_Yref(X, Y_fit, Y_meta, ['X', 'Y_{mta}', 'Y_{exa}'])
+        plot_X_Y_Yref(X, Y_fit, Y_meta, ['X', 'Y_{met}', 'Y_{exa}'])
 
         # inverse solution with meta-model (emp.model of tuned theo.model)
         if 1:
             op = Inverse(meta)
-            xInv, yInv = op(y=[0.5], x=[(-10, 0)])
+            xInv, yInv = op(x=[(-10, 0)], y=[0.5])
             op.plot()
             print('id:', op.identifier, 'xInv:', xInv, 'yInv:', yInv)

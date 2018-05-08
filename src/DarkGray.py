@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-02 DWW
+      2018-05-07 DWW
 """
 
 import numpy as np
@@ -35,7 +35,7 @@ class DarkGray(Model):
         """
         Args:
             f (method or function):
-                theoretical model y = f(x) for single data point
+                theoretical submodel y = f(x) for single data point
 
             identifier (string, optional):
                 object identifier
@@ -54,7 +54,7 @@ class DarkGray(Model):
 
     def train(self, X, Y, **kwargs):
         """
-        Trains dark gray model
+        Trains dark gray box model
 
         Args:
             X (2D array_like of float):
@@ -69,7 +69,7 @@ class DarkGray(Model):
                 ... Black() options
 
         Returns:
-            (3-tuple of float):
+            (3-tuple of float, float, int):
                 (||y-Y||_2, max{|y-Y|}, index(max{|y-Y|}) if X and Y not None
             or (None):
                 if X is None or Y is None or training fails
@@ -85,22 +85,22 @@ class DarkGray(Model):
                 Y = [[..], [..], ..]
                 x = [[..], [..], ..]
 
-                foo = DarkGray(f=f)
-                foo.train(X, Y)
-                y_a = foo.predict(x)
+                # expanded form:
+                model = DarkGray(f=f)
+                norm = model.train(X, Y, neural=[5])
+                y = model.predict(x)
 
-                # compact form
-                y_b = DarkGray(f=f)(X=X, Y=Y, x=x, hidden=[5])
+                # compact form:
+                y = DarkGray(f=f)(X=X, Y=Y, x=x, neural=[5])
         """
         if X is None or Y is None:
             return None
 
-        self.X = X
-        self.Y = Y
+        self.X, self.Y = X, Y
         opt = self.kwargsDel(kwargs, ('x'))
 
         y = Model.predict(self, x=self.X, **opt)
-        norm = self._black.train(X=np.c_[self.X, y], Y=y - self.Y, **opt)
+        norm = self._black.train(X=np.c_[self.X, y], Y=y-self.Y, **opt)
 
         return norm
 

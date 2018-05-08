@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-01 DWW
+      2018-05-08 DWW
 """
 
 import inspect
@@ -32,10 +32,10 @@ except ImportError:
     print("!!! Module 'parallel' not imported")
 
 
-def gridInit(ranges, n=5):
+def grid(n, *ranges):
     """
     Sets intial (uniformly spaced) grid input, for instance for 2 input
-    with 4 nodes per axis: gridInit(ranges=[(1, 2), (-4, -3)], n=4)
+    with 4 nodes per axis: grid(n=4, [1, 3], [-7, -5])
 
             x---x---x---x
             |   |   |   |
@@ -45,17 +45,18 @@ def gridInit(ranges, n=5):
             |   |   |   |
             x---x---x---x
     Args:
-        ranges (2D array_like of float):
-            array of (min, max) pairs of float, first index is par index
-
-        n (int or 1D array_like of int, optional):
+        n (int or 1D array_like of int):
             number of nodes per axis for which initial values are generated
+
+        ranges (variable length argument list of pairs of float):
+            list of (min, max) pairs
 
     Returns:
         (2D array of float):
             Grid-like initial values, first index is point index, second
             index is input index
     """
+    ranges = list(ranges)
     N = list(np.atleast_1d(n))
     n = N + [N[-1]] * (len(ranges) - len(N))
     assert len(n) == len(ranges), 'n:' + str(n) + ' ranges:' + str(ranges)
@@ -100,10 +101,10 @@ def gridInit(ranges, n=5):
     return np.asfarray(x)
 
 
-def crossInit(ranges, n=5):
+def cross(n, *ranges):
     """
     Sets intial (uniformly spaced) cross input, for instance for 2 input
-    with 5 nodes per axis: crossInit(ranges=[(1, 2), (-4, -3)], n=5)
+    with 5 nodes per axis: cross(n=5, (1, 2), (-4, -3))
                   x
                   |
                   x
@@ -114,10 +115,10 @@ def crossInit(ranges, n=5):
                   |
                   x
     Args:
-        ranges (2D array_like of float):
-            array of (min, max) pairs of float, first index is par index
+        ranges (variable length argument list of pairs of float):
+            list of (min, max) pairs
 
-        n (int, optional):
+        n (int):
             number of nodes per axis for which initial values are generated
             n is corrected to an odd number if n is even
 
@@ -126,8 +127,10 @@ def crossInit(ranges, n=5):
             Cross-like initial values, first index is point index, second
             index is input index
     """
-    # ensures odd number of nodes per axis
+    ranges = list(ranges)
     N = list(np.atleast_1d(n))
+
+    # ensures odd number of nodes per axis
     N = [2 * (n // 2) + 1 for n in N]
     n = N + [N[-1]] * (len(ranges) - len(N))
     assert len(n) == len(ranges), 'n:' + str(n) + ' ranges:' + str(ranges)
@@ -148,10 +151,10 @@ def crossInit(ranges, n=5):
     return np.asfarray(x)
 
 
-def randInit(ranges, n=20):
+def rand(n, *ranges):
     """
-    Sets intial (uniformly distributed) random input, for instance for 3
-    input with 12 trials: randInit(ranges=[(1, 2), (-4, -3), (0, 1)], n=12)
+    Sets intial (uniformly distributed) random input, for instance for 2
+    input with 12 trials: rand(n=12, [1, 3], [-7, -5])
 
            -------------
           |  x  x  x    |
@@ -161,18 +164,19 @@ def randInit(ranges, n=20):
           |    x  x  x  |
            -------------
     Args:
-        ranges (2D array_like of float):
-            array of (x_Min[i], x_Max[i]) pairs, first index is input index
-
-        n (int, optional):
+        n (int):
             number of trials for which initial values are random generated
+
+        ranges (variable length argument list of pairs of float):
+            list of (min, max) pairs
+
 
     Returns:
         (2D array of float):
             Random initial values, first index is trial index, second index
             is input index
     """
-    assert ranges is not None
+    ranges = list(ranges)
     ranges = np.atleast_2d(ranges)
     assert ranges.shape[1] == 2, 'ranges: ' + str(ranges)
     assert n > 0, 'n: ' + str(n)
@@ -181,6 +185,58 @@ def randInit(ranges, n=20):
     x = np.array([[random.uniform(min(rng[0], rng[1]), max(rng[0], rng[1]))
                   for rng in ranges] for i in range(n)])
     return x
+
+
+def noise(x, relative=0.0, absolute=None, uniform=True):
+    """
+    Adds noise to multi-dimensional arrays
+
+        |
+        |                      **   *
+        |                *    *===*==
+        |      *   *  =**=*===*    *
+        |     *=*=*==*     **
+        |*==**   *
+        | **                    === x
+        |                       *** x + noise
+        +------------------------------------
+
+    Args:
+        x (array_like of float):
+            initial array
+
+        relative (float, optional):
+            maximum noise added, relative to difference between maximum and
+            minimum of array x. only effective if 'absolute' is None
+
+        absolute (float, optional):
+            maximum of absolute noise added to x
+
+        uniform (bool):
+            if True then uniformely distributed random numbers. Otherwise
+            noise in normally distributed
+
+    Returns:
+        (array of float):
+            array of same shape as x with noise or copy of x if no noise
+
+    Note:
+        'absolute' superseeds 'relative' argument
+        In case of negative 'relative' and 'absolute', x returns unchanged
+    """
+
+    x = np.asfarray(x)
+    if absolute is None:
+        dx = relative * (x.max() - x.min()) if relative is not None else 0.0
+    else:
+        dx = absolute
+    if dx <= 0.:
+        return x.copy()
+    else:
+        if not uniform:
+            return x + np.random.normal(loc=0.0, scale=dx, size=x.shape)
+        else:
+            return x + np.random.uniform(low=-dx, high=dx, size=x.shape)
 
 
 class Model(Base):
@@ -222,7 +278,7 @@ class Model(Base):
         """
         Args:
             f (method or function):
-                theoretical model y=f(x) for single data point if f is not None
+                theoretical submodel y=f(x) for single data point if f not None
 
             identifier (string, optional):
                 object identifier
@@ -614,6 +670,7 @@ class Model(Base):
         self.ready = True
 
         self._best = (np.inf, np.inf, -1)
+        return self._best
 
     def predict(self, x, **kwargs):
         """
@@ -635,7 +692,7 @@ class Model(Base):
             self.y (2D array of float):
                 prediction result, shape: (nPoint, nOut) if x is not None
             or (3-tuple of (float, float, int)):
-                (||y-Y||_2, max{|y-Y|}, index(max{|y-Y|}) if x is None
+                ||y-Y||_2, max{|y-Y|}, index(max{|y-Y|} if x is None
             or (None):
                 if model is not ready
         """
@@ -676,7 +733,7 @@ class Model(Base):
             (3-tuple of (float, float, int)):
                 (||y-Y||_2, max{|y-Y|}, index(max{|y-Y|})
             or (None):
-                if x is None or Y is None
+                if X is None or Y is None
 
         Note:
             maximum index is 1D index, e.g. yAbsMax = Y.ravel()[iAbsMax]
@@ -711,7 +768,7 @@ class Model(Base):
             kwargs (dict, optional):
                 keyword arguments:
 
-                XY (4-tuple of two 2D array_like of float and optionally and
+                XY (4-tuple of two 2D array_like of float, and optionally
                     two list of string):
                     training input and train. target, optional keys of X and Y
 
@@ -720,13 +777,13 @@ class Model(Base):
                     X.shape: (nPoint, nInp) and Y.shape: (nPoint, nOut)
         Returns:
             (3-tuple of (float, float, int) or None):
-                self._bestif 'XY' or ('X' and 'Y') in 'kwargs'
+                self._best if 'XY' or ('X' and 'Y') in 'kwargs'
             or (None):
                 if 'XY' or ('X' a nd 'Y') not in 'kwargs'
 
         Side effects:
             self.X and self.Y are overwritten with XY or (X and Y)
-            self._best contains result from train() or None if failure
+            self._best contains result of train() or None if failure
         """
         super().pre(**kwargs)
 
@@ -782,6 +839,9 @@ class Model(Base):
 if __name__ == '__main__':
     ALL = 1
 
+    from White import White
+    from plotArrays import plotIsoMap
+
     def fUser(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
         """
         Customized single point calculation method for Model
@@ -796,7 +856,23 @@ if __name__ == '__main__':
         return y
 
     if 0 or ALL:
-        y = Model(fUser)(x=[2, 3])
+        X = grid(5, [-1, 2], [3, 4])
+        print('X:', X)
+
+        Y_exa = White(fUser)(x=X)
+        plotIsoMap(X[:, 0], X[:, 1], Y_exa[:, 0], title='Y_exa[:,0]')
+        plotIsoMap(X[:, 0], X[:, 1], Y_exa[:, 1], title='Y_exa[:,1]')
+        print('Y_exa:', Y_exa)
+
+        Y = noise(Y_exa, absolute=0.1, uniform=True)
+        plotIsoMap(X[:, 0], X[:, 1], Y[:, 0], title='Y[:,0]')
+        plotIsoMap(X[:, 0], X[:, 1], Y[:, 1], title='Y[:,1]')
+        print('Y:', Y)
+
+        dY = Y - Y_exa
+        plotIsoMap(X[:, 0], X[:, 1], dY[:, 0], title='dY[:,0]')
+        plotIsoMap(X[:, 0], X[:, 1], dY[:, 1], title='dY[:,1]')
+        print('dY:', dY)
 
     if 0 or ALL:
         # creates instance of Model
@@ -828,26 +904,15 @@ if __name__ == '__main__':
         y12, x0 = foo.frame2arrays(df, ['y0', 'y1'], ['x0'])
         print('9 y12:', y12, 'x0', x0)
 
-    if 0 or ALL:
-        y = Model('demo')(x=[[1, 2], [3, 4], [5, 6]])
-        print('y:', y)
-
-    if 0 or ALL:
-        foo = Model(fUser)
-        y = foo(x=[[1, 2], [3, 4], [5, 6]],
-                X=[[1, 2], [3, 4], [5, 6]], Y=[[0], [0], [0]])
-        print('x:', foo.x, 'y:', y)
-
     if 1 or ALL:
         import matplotlib.pyplot as plt
 
         foo = Model(fUser)
         nPoint = 20
-        x = randInit([(0, 10), (0, 10)], nPoint)
-        X = randInit([(0, 10), (0, 10)], nPoint)
-        Y = np.asfarray([foo.f(x) for x in X])
-        noise = 0.1
-        Y += np.random.uniform(high=noise, size=Y.shape)
+        X = rand(nPoint, [0, 10], [0, 10])
+        Y = noise(White(fUser)(x=X), absolute=0.1)
+        x = rand(nPoint, [0, 10], [0, 10])
+        y_exa = White(fUser)(x=x)
 
         # trains light white box model. If an instance of Theoretical is not
         # trained, it provides via predict() the white box model f(x)

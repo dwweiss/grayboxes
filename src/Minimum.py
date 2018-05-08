@@ -17,52 +17,50 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-04-30 DWW
+      2018-05-07 DWW
 """
 
 import numpy as np
 from scipy.optimize import minimize, basinhopping
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  # needed for "projection='3d'"
+from mpl_toolkits.mplot3d import Axes3D          # needed for "projection='3d'"
 
 from Base import Base
-from Model import randInit
 from Forward import Forward
 
 
 class Minimum(Forward):
     """
-    Minimizes Model.f(x)
+    Minimizes Minimum.objective()
 
     Examples:
-        foo = Minimum()
+        foo = Minimum(f)
 
         X = [[... ]]  input of training
         Y = [[... ]]  target of training
         xIni = [(x00, x01), ... ]
         bounds = [(x0min, x0max), (x1min, x1max), ... ]
 
-        x, y = foo(X=X, Y=Y, x=xIni, f=f)    # train lightgray box and optimize
-        x, y = foo(x=xIni, bounds=bounds, f=f)                       # optimize
-        x, y = foo(ranges=[(0,1),(1,2)], rand=9) # generate random x & optimize
-        x, y = foo()                             # generate default x &optimize
-        res = foo(XY=(X, Y, xKeys, yKeys))                         # train only
+        x, y = foo(X=X, Y=Y, x=xIni)         # train lightgray box and optimize
+        x, y = foo(x=xIni, bounds=bounds)                            # optimize
+        x, y = foo(x=rand(9, [0, 1], [1, 2]))  # generate random x and optimize
+        norm = foo(XY=(X, Y, xKeys, yKeys))                        # train only
 
     Note:
-        is for single target (Inverse: norm(y-Y), Optimum: one of y)
-        is only tested for 'Nelder-Mead'
-        Penalty solution does not work yet
+        - for single target (Inverse: norm(y-Y), Optimum: one of y)
+        - only tested for 'Nelder-Mead'
+        - penalty solution does not work yet
     """
 
     def __init__(self, model, identifier='Minimize'):
         """
         Args:
             model (Model_like):
-                generic model object, supersedes all following options
+                box type model object
 
             identifier (string, optional):
-                class identifier
+                object identifier
         """
         super().__init__(identifier=identifier, model=model)
 
@@ -116,7 +114,7 @@ class Minimum(Forward):
         2) Gets input at best optimum after optimization
 
         Returns:
-            (1D array of float):
+            (2D array of float):
                 input initial or input at optimum, index is parameter index
         """
         return self._x
@@ -128,7 +126,7 @@ class Minimum(Forward):
         2) Sets input at best optimum after optimization
 
         Args:
-            value (float or 1D array_like of float):
+            value (float or 1D or 2D array_like of float):
                 input initial or input at optimum, index is parameter index
         """
         if value is None:
@@ -139,8 +137,8 @@ class Minimum(Forward):
     @property
     def y(self):
         """
-        1) Gets target before optimization, only if inverse problem
-        2) Gets output at best optimum after optimization
+        1) Target to class Inverse
+        2) Best output at optimum
 
         Returns:
             (1D array of float):
@@ -151,8 +149,8 @@ class Minimum(Forward):
     @y.setter
     def y(self, value):
         """
-        1) Sets target before optimization, only if inverse problem
-        2) Sets output at best optimum after optimization
+        1) Target to class Inverse
+        2) Best output at optimum
 
         Args:
             value (1D array_like of float):
@@ -512,9 +510,10 @@ class Minimum(Forward):
 if __name__ == '__main__':
     ALL = 1
 
+    from Model import rand
     from White import White
 
-    # user defined method of theoretical model
+    # user defined method with theoretical submodel
     def f(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
         return +(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)
 
@@ -533,8 +532,7 @@ if __name__ == '__main__':
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         op = Minimum(White(f))
-        xIni = randInit(n=10, ranges=((-5, 5), (-7, 7)))
-        x, y = op(x=xIni, optimizer='nelder-mead')
+        x, y = op(x=rand(10, [-5, 5], [-7, 7]), optimizer='nelder-mead')
         op.plot()
         print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)
 
@@ -542,14 +540,14 @@ if __name__ == '__main__':
         s = 'Optimum, generates series of initial x from ranges'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        x, y = Forward(White(f))(rand=10, ranges=((-5, 5), (-7, 7)))
+        x, y = Forward(White(f))(x=rand(10, [-5, 5], [-7, 7]))
 
         from plotArrays import plotSurface, plotIsoMap
         plotSurface(x[:, 0], x[:, 1], y[:, 0])
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
 
         op = Minimum(White(f))
-        x, y = op(rand=3, ranges=((-5, 5), (-7, 7)))
+        x, y = op(x=rand(3, [-5, 5], [-7, 7]))
         op.plot()
         print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)
 
@@ -558,6 +556,6 @@ if __name__ == '__main__':
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         op = Minimum(White(f))
-        x, y = op(ranges=[(0, 1), (2, 3)], rand=5)
+        x, y = op(x=rand(5, [0, 1], [2, 3]))
         op.plot()
         print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)

@@ -31,7 +31,7 @@ class LightGray(Model):
     Light gray box model y=f(x, c)
 
     Extends the functionality of class Model by a train() method which fits
-    the theoretical model f(x) with constant coefficients 'c'
+    the theoretical submodel f(x) with constant coefficients 'c'
 
     Notes:
         The curve fit is currently limited to nOut=1, see self._nMaxOut
@@ -44,7 +44,7 @@ class LightGray(Model):
         def method(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
             return function(x, c0, c1, c2, c3, c4, c5, c6, c7)
 
-        # assign theoretical model f(x) as method (with 'self') or function.
+        # assign theoretical submodel f(x) as method (with 'self') or function.
         # alternatively, method can be passed as argument for train or predict
         foo = LightGray(f=function)  or
         foo = LightGray(f=method)
@@ -56,7 +56,7 @@ class LightGray(Model):
         # x: test data
         x = [(1, 4), (6, 6)]
 
-        # without training, result of theoretical model f(x) is returned
+        # without training, result of theoretical submodel f(x) is returned
         y = foo(x)
 
         # train light gray box model with training data (X, Y)
@@ -76,7 +76,7 @@ class LightGray(Model):
         """
         Args:
             f (method or function):
-                theoretical model y = f(x) for single data point
+                theoretical submodel y = f(x) for single data point
 
             identifier (string, optional):
                 object identifier
@@ -109,8 +109,10 @@ class LightGray(Model):
                     pairs (xMin, xMax) limiting x
 
         Returns:
-            (3-tuple of float):
-                (L2-norm, max{|y-Y|}, index(max{|y-Y|})
+            (3-tuple of float, float, int):
+                (||y-Y||_2, max{|y-Y|}, index(max{|y-Y|}) if X and Y not None
+            or (None):
+                if X is None or Y is None or training fails
 
         Note:
             L2-norm = np.sqrt(np.mean(np.square(y - Y)))
@@ -197,7 +199,7 @@ if __name__ == '__main__':
     ALL = 1
 
     from plotArrays import plot_X_Y_Yref
-    from Model import gridInit
+    import Model as md
     from White import White
 
     def fUser(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
@@ -210,9 +212,9 @@ if __name__ == '__main__':
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         noise = 0.25
-        X = gridInit(ranges=((-1, 8), (0, 3)), n=(8, 8))
+        X = md.grid((-1, 8), (0, 3), n=(8, 8))
         Y_exa = White(fUser)(x=X)
-        Y_nse = Y_exa + np.random.normal(-noise, noise, size=Y_exa.shape)
+        Y_nse = md.noise(Y_exa, absolute=noise)
         plot_X_Y_Yref(X, Y_nse, Y_exa, ['X', 'Y_{nse}', 'Y_{exa}'])
 
         # train with (X, Y_noise) and predict for x=X, variant with xKeys/yKeys
@@ -228,9 +230,9 @@ if __name__ == '__main__':
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         noise = 0.25
-        X = gridInit(ranges=((-1, 8), (0, 3)), n=(8, 8))
+        X = md.grid((-1, 8), (0, 3), n=(8, 8))
         Y_exa = White(fUser)(x=X)
-        Y_nse = Y_exa + np.random.normal(-noise, noise, size=Y_exa.shape)
+        Y_nse = md.noise(Y_exa, absolute=noise)
         plot_X_Y_Yref(X, Y_nse, Y_exa, ['X', 'Y_{nse}', 'Y_{exa}'])
 
         # train with (X, Y_noise) and predict for x=X, variant with xKeys/yKeys

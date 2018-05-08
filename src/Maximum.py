@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-04-30 DWW
+      2018-05-07 DWW
 """
 
 from Minimum import Minimum
@@ -41,7 +41,7 @@ class Maximum(Minimum):
 
         Returns:
             (float):
-                optimization criterion to be maximized
+                optimization objective to be maximized
         """
         return (-1) * Minimum.objective(self, x, **kwargs)
 
@@ -52,10 +52,10 @@ if __name__ == '__main__':
     ALL = 1
 
     import numpy as np
-    from Model import randInit
+    from Model import rand
     from White import White
 
-    # user defined method of theoretical model
+    # user defined method with theoretical submodel
     def f(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
         return -(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)
 
@@ -64,7 +64,6 @@ if __name__ == '__main__':
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         op = Maximum(White(f))
-        xIni = randInit(n=10, ranges=((-5, 5), (-7, 7)))
-        x, y = op(x=xIni, optimizer='nelder-mead')
+        x, y = op(x=rand(10, [-5, 5], [-7, 7]), optimizer='nelder-mead')
         op.plot()
         print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)

@@ -173,6 +173,7 @@ class Black(Model):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from White import White
+    import Model as md
 
     print('*** main')
 

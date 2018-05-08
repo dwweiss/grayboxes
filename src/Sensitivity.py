@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-04-30 DWW
+      2018-05-07 DWW
 """
 
 import numpy as np
@@ -36,19 +36,19 @@ class Sensitivity(Forward):
 
         X = [[... ]]  input of training
         Y = [[... ]]  target of training
-        xCross = [(x00, x01), (x10, x11), ..., (x90, x91)]
-        ranges = [(x0min, x0max), (x1min, x1max)]
+        ranges = ([x0min, x0max], [x1min, x1max], ... )
+        xCross = cross(3, *ranges)
 
         dy_dx = foo(X=X, Y=Y, x=xCross)              # training and sensitivity
         dy_dx = foo(x=xCross)       # sensitivity only, x contains cross points
-        dy_dx = foo(ranges=ranges, cross=5)  # generate x from ranges and cross
+        dy_dx = foo(x=cross(5, *ranges)      # generate x from ranges and cross
     """
 
     def __init__(self, model, identifier='Sensitivity'):
         """
         Args:
             model (Model_like):
-                generic model object
+                box type model
 
             identifier (string, optional):
                 object identifier
@@ -171,27 +171,27 @@ if __name__ == '__main__':
     ALL = 1
 
     from White import White
+    import Model as md
 
     def f(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
         return np.sin(x[0]) + (x[1] - 1)**2
 
     if 0 or ALL:
-        s = 'Sensitivity 1'
+        s = 'Sensitivity with method f(self, x)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Sensitivity(White(f))
-        xRef, dy_dx = op(ranges=[(2, 3), (3, 4), (4, 5)], cross=3)
+        xRef, dy_dx = Sensitivity(White(f))(x=md.cross(3, [2, 3], [3, 4]))
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()
         print('dy_dx:', dy_dx)
         print('x_ref:', xRef)
 
     if 1 or ALL:
-        s = 'Sensitivity 2'
+        s = 'Sensitivity with demo function'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         op = Sensitivity(White('demo1'))
-        xRef, dy_dx = op(ranges=[(2, 3), (3, 4), (4, 5)], cross=3)
+        xRef, dy_dx = op(x=md.cross(3, [2, 3], [3, 4], [4, 5]))
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()
         print('dy_dx:', dy_dx)

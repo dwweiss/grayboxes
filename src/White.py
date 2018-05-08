@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-01 DWW
+      2018-05-07 DWW
 """
 
 from Model import Model
@@ -32,7 +32,7 @@ class White(Model):
         """
         Args:
             f (method or function):
-                theoretical model y = f(x) for single data point
+                theoretical submodel y = f(x) for single data point
 
             identifier (string, optional):
                 object identifier
@@ -60,12 +60,14 @@ class White(Model):
         return None
 
 
+# Example #####################################################################
+
 if __name__ == '__main__':
     ALL = 1
 
     import numpy as np
     from plotArrays import plotIsoMap
-    import Model
+    import Model as md
     from Forward import Forward
 
     def fUser(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
@@ -73,19 +75,19 @@ if __name__ == '__main__':
         y0 = c0 + c1 * np.sin(c2 * x0) + c3 * (x1 - 1.5)**2
         return [y0]
 
-    x = Model.gridInit(ranges=[(-1, 8), (0, 3)], n=[8, 8])
+    x = md.grid((8, 8), [-1, 8], [0, 3])
 
     if 0 or ALL:
         s = 'White box (expanded)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        wht = White(fUser)
-        y = wht(x=x)
+        model = White(fUser)
+        y = model(x=x)
 
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
 
     if 0 or ALL:
-        s = 'White box (compact 1)'
+        s = 'White box (compact)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         y = White(fUser)(x=x)
@@ -97,7 +99,7 @@ if __name__ == '__main__':
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         model = White(fUser)
-        x, y = Forward(model)(ranges=[(-1, 8), (0, 3)], grid=[8, 8])
+        x, y = Forward(model)(x=md.grid(8, [-1, 8], [0, 3]))
 
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
 
@@ -105,6 +107,6 @@ if __name__ == '__main__':
         s = 'Forward operator on demo White box'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        x, y = Forward(White('demo'))(ranges=[(-1, 8), (0, 3)], cross=9)
+        x, y = Forward(White('demo'))(x=md.cross(9, [-1, 8], [0, 3]))
 
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])

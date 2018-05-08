@@ -17,27 +17,25 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-01 DWW
+      2018-05-08 DWW
 """
 
 import numpy as np
-
-from Model import Model
+import Model as md
 from Neural import Neural
 
 
-class MediumGray(Model):
+class MediumGray(md.Model):
     """
-    Medium gray box model comprising a white box and a black box submodel
+    Medium gray box model comprising white box and black box submodels
 
     It is assumed that self.xTun, ..., self.yMod are imported from a DataFrame
 
-    The variant of the model is a string starting with 'med' and ending with a
-    dash followed by a postfix, e.g '-loc1'. The postfix diferentiates between:
-        - local  calibration (contains substring '-loc') and
-        - global calibration (otherwise).
-    If the last character is a number, it identifies the index of the
-    particular calibration algorihm within the 'local' or global' trainers
+    The model variant is a string starting ending with a dash followed by a
+    postfix, e.g '-local1':
+        - local  calibration if self.algorithm contains substring '-l')
+        - global calibration otherwise
+    If the last character is a number identifying the algorithm
 
     Note:
         Degree of model blackness: $0 \le \beta_{blk} \le 1$
@@ -47,18 +45,17 @@ class MediumGray(Model):
         """
         Args:
             f (method or function):
-                theoretical model y = f(x) for single data point
+                theoretical submodel y = f(x) for single data point
 
             identifier (string, optional):
                 object identifier
         """
         super().__init__(identifier=identifier, f=f)
 
-        self.variant = '-loc1'
+        self.algorithm = '-l1'
 
-        # submodels
-        self._white = self
-        self._black = Neural(f=f if self.isGlobal() else None)
+        # submodel
+        self._black = Neural()
 
         # list of keys for selecting columns of data frame
         self.xTunKeys, self.xComKeys, self.xUnqKeys = None, None, None
@@ -77,14 +74,7 @@ class MediumGray(Model):
     @silent.setter
     def silent(self, value):
         self._silent = value
-        self._white._silent = value
         self._black._silent = value
-
-    def isLocal(self):
-        return 'loc' in self.variant
-
-    def isGlobal(self):
-        return not self.isLocal()
 
     def setArrays(self, df, xModKeys, xPrcKeys, yModKeys, yPrcKeys):
         """
@@ -142,44 +132,28 @@ class MediumGray(Model):
             print('xy prc:', self.xPrcKeys, self.yPrcKeys)
             print('x tun com unq', self.xTunKeys, self.xComKeys, self.xUnqKeys)
 
-    def trainLocal(self, X, Y, **kwargs):
+    def trainLocal(self, **kwargs):
         """
-        Trains medium gray box with local calibration
+        Trains medium gray box with local estimate of xTun = net(xProc, w_loc)
+        with w_loc = train(X_proc, X_tun)
 
         Args:
-            X (2D array_like of float):
-                traing input
-
-            Y (2D array_like of float):
-                training target
-
             kwargs (dict, optional):
                 keyword arguments:
 
                 ... network options
 
         Returns:
-            (3-tuple of float):
-                (L2-norm, max{|Delta_Y|}, index(max{|Delta_Y|})
+            (3-tuple of float, float, int):
+                (||y-Y||_2, max{|y-Y|}, index(max{|y-Y|}) if X and Y not None
+            or (None):
+                if X is None or Y is None or training failed
         """
-        assert self.isLocal()
-
-        XPrc, XTun = [], []
-        for x in X:
-            xPrc = x
-            xTun = [1 + np.random.normal(0, 0.1)]
-
-            XPrc.append(xPrc)
-            XTun.append(xTun)
-        XPrc, XTun = np.asfarray(XPrc), np.asfarray(XTun)
-        norm = self._black(X=XPrc, Y=XTun, **kwargs)
-
-        norm = (0, 0, 0)
-        return norm
+        return None
 
     def train(self, X=None, Y=None, **kwargs):
         """
-        Trains medium gray model
+        Trains medium gray box model
 
         Args:
             X (2D array_like of float, optional):
@@ -191,11 +165,16 @@ class MediumGray(Model):
             kwargs (dict, optional):
                 keyword arguments:
 
+                algo (string):
+                    identifier of algorithm ('-loc'/'-glob' and '1'/'2')
+
                 ... network options
 
         Returns:
-            (3-tuple of float):
-                (L2-norm, max{|Delta_Y|}, index(max{|Delta_Y|})
+            (3-tuple of float, float, int):
+                (||y-Y||_2, max{|y-Y|}, index(max{|y-Y|}) if X and Y not None
+            or (None):
+                if X is None or Y is None or training failed
 
         Example:
             Method f(self, x) or function f(x) is assigned to self.f, example:
@@ -210,42 +189,50 @@ class MediumGray(Model):
 
                 # expanded form:
                 mod = MediumGray(f=f)
-                mod.train(X, Y, color='-loc1')
+                mod.train(X, Y, algo='-loc1', neural=[])
                 y = mod.predict(x)
 
-                # same in compact form:
-                y = MediumGray(f=f)(X=X, Y=Y, x=x, color='-loc1')
+                # compact form:
+                y = MediumGray(f=f)(X=X, Y=Y, x=x, algo='-loc1', neural=[])
         """
         self.X = X if X is not None else self.xPrc
         self.Y = Y if Y is not None else self.yPrc
 
         opt = self.kwargsDel(kwargs, ['X', 'Y'])
-        if self.isLocal():
-            self.write('+++ Trains medium gray box type loc-1')
-            norm = self.trainLocal(self.X, self.Y, f=self.f, **opt)
-        else:
-            if self.variant.endswith('1'):
-                self.write('+++ Trains medium gray box type glob-1')
-                norm = self._black.train(self.X, self.Y, f=self.f,
-                                         trainers='genetic', **opt)
-            elif self.variant.endswith('2'):
-                self.write('+++ Trains medium gray box type glob-2')
-                norm = self._black.train(self.X, self.Y, f=self.f,
-                                         trainers='derivative', **opt)
+        self.algorithm = kwargs.get('algo', '-loc1')
+
+        if '-l' in self.algorithm:
+            if self.algorithm.endswith('1'):
+                self.write("+++ Trains medium gray with '-loc1'")
+
+                self.trainLocal(self.X, self.Y, f=self.f, **opt)
+                self.ready = True
             else:
-                assert 0, str(self.variant)
+                assert 0, str(self.algorithm)
+        else:
+            self._black.f = self.f
 
-        self.ready = True
+            if self.algorithm.endswith('1'):
+                self.write("+++ Trains medium gray with '-glob1'")
 
-        norm = (0, 0, 0)
-        return norm
+                self._black.train(self.X, self.Y, trainers='genetic', **opt)
+                self.ready = True
+            elif self.algorithm.endswith('2'):
+                self.write("+++ Trains medium gray with '-glob2'")
 
-    def predict(self, x=None, **kwargs):
+                self._black.train(self.X, self.Y, trainers='derivative', **opt)
+                self.ready = True
+            else:
+                assert 0, str(self.algorithm)
+
+        return self.error(self.X, self.Y, **opt)
+
+    def predict(self, xPrc=None, **kwargs):
         """
         Executes medium gray box model
 
         Args:
-            x (2D array_like of float, optional):
+            xPrc (2D array_like of float, optional):
                 process input x_prc
 
             kwargs (dict, optional):
@@ -256,20 +243,16 @@ class MediumGray(Model):
                 common output y_com
         """
         assert self._black is not None and self._black.ready
-
-        self.x = x if x is not None else self.x
         opt = self.kwargsDel(kwargs, 'x')
 
-        if self.isLocal():
-            xTun = self._black.predict(x=x, **opt)
+        self.x = xPrc if xPrc is not None else self.x
+
+        if '-l' in self.algorithm:
+            xTun = self._black.predict(x=self.x, **opt)
             xMod = np.c_[self.xCom, xTun]
-            self.y = self._white.predict(x=xMod, **opt)
-
-        elif self.isGlobal():
-            self.y = self._black.predict(x=x, **opt)
-
+            self.y = md.predict(self, x=xMod, **opt)
         else:
-            assert 0
+            self.y = self._black.predict(x=xPrc, **opt)
 
         return self.y
 
@@ -277,7 +260,7 @@ class MediumGray(Model):
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    ALL = 0
+    ALL = 1
 
     from io import StringIO
     import pandas as pd
@@ -334,10 +317,8 @@ if __name__ == '__main__':
 
         model.setArrays(df, xModKeys=['x0', 'x2', 'x3'], xPrcKeys=['x0', 'x4'],
                         yModKeys=['y0'], yPrcKeys=['y0'])
-        print('*'*20)
-        #print(foo.xPrc, foo.yPrc)
-        model(X=model.xPrc, Y=model.yPrc, silent=True, neural=[])
-        y = model(x=model.xPrc)
+        model(X=None, Y=None, silent=True, neural=[], algo='-l1')
+        y = model(x=model.X)
         print('*'*20)
         print('*** x:', model.x, 'y:', y)
 
@@ -351,9 +332,9 @@ if __name__ == '__main__':
         X = np.asfarray(df.loc[:, ['mDot', 'p']])
         Y = np.asfarray(df.loc[:, ['A']])
 
-        foo = Black()
-        y = foo(X=X, Y=Y, hidden=[], x=X)
-        print('*** x:', foo.x, 'y:', foo.y, y)
+        model = Black()
+        y = model(X=X, Y=Y, neural=[], x=X)
+        print('*** x:', model.x, 'y:', model.y, y)
 
         from plotArrays import plotIsoMap, plotWireframe
         plotIsoMap(X.T[0], X.T[1], Y.T[0] * 1e3, title=r'$A_{prc}\cdot 10^3$')
