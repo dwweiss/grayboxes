@@ -82,20 +82,22 @@ if __name__ == '__main__':
         YDiff = round(Y[:, 0].max() - Y[:, 0].min(), 5)
 
         plotIsoMap(X[:, 0], X[:, 1], Y[:, 0]*1e3, title=r'$A_{prc}\cdot 10^3' +
-                   r'\ \ (\Delta A$: ' + str(YDiff*1e3) + 'e-3)')
+                   r'\ \ (\Delta A$: ' + str(YDiff*1e3) + 'e-3)',
+                   labels=[r'$\dot m$', '$p$'])
         plotWireframe(X[:, 0], X[:, 1], Y[:, 0]*1e3,
-                      title=r'$A_{prc}\cdot 10^3$')
+                      title=r'$A_{prc}\cdot 10^3$',
+                      labels=[r'$\dot m$', '$p$'])
 
         model = Black()
         dyDiffAll = []
         hidden = range(1, 20+1)
 
-        for hidd in hidden:
-            print('+++ hidden:', hidd, end='')
-            print(' ==> autodefinition') if hidd == 0 else print()
+        for hid in hidden:
+            print('+++ hidden:', hid, end='')
+            print(' ==> autodefinition') if hid == 0 else print()
 
             y = model(X=X, Y=Y, x=X, goal=1e-5, trials=5, epochs=1000,
-                      neural=hidd, trainers='rprop', silent=True)
+                      neural=hid, trainers='rprop', silent=True)
             # print('*** x:', model.x, 'y:', model.y, y)
 
             yDiff = round(y[:, 0].max() - y[:, 0].min(), 5)
@@ -106,10 +108,12 @@ if __name__ == '__main__':
             if plotIsoMaps:
                 plotIsoMap(X[:, 0], X[:, 1], y[:, 0] * 1e3, title='$A_{mod}' +
                            r'\cdot 10^3\ \ (\Delta A$: ' + str(yDiff*1e3) +
-                           'e-3) [' + str(hidd) + ']')
+                           'e-3) [' + str(hid) + ']',
+                           labels=[r'$\dot m$', '$p$'])
                 plotIsoMap(X[:, 0], X[:, 1], dy*1e3, title='$(A_{prc}-' +
-                           r'A_{mod}\cdot 10^3\ \ (\Delta A$: ' +
-                           str(dyDiff*1e3) + 'e-3)')
+                           r'A_{mod})\cdot 10^3\ \ (\Delta A$: ' +
+                           str(dyDiff*1e3) + 'e-3)',
+                           labels=[r'$\dot m$', '$p$'])
             if plotWireframes:
                 plotWireframe(X[:, 0], X[:, 1], y[:, 0]*1e3,
                               title=r'$A_{mod}\cdot 10^3$')
