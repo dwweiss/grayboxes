@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-03-26 DWW
+      2018-05-08 DWW
 """
 
 import numpy as np
@@ -27,7 +27,7 @@ from matplotlib import pyplot as plt
 
 def plotFigCostsVsDegreeOfBlackness():
     """
-    Plots figure costs = f(DOB) for Wiki
+    Plots figure costs = f(degree of blackness) for Wiki
     """
 
     plt.xkcd()
@@ -49,19 +49,19 @@ def plotFigCostsVsDegreeOfBlackness():
     ax.set_ylim([0, 110])
 
     x = np.arange(100)
-    ySim = interp1d([0, 40, 100], [100, 40, 15], kind=2)(x)
-    yObs = interp1d([0, 40, 100], [3, 15, 100], kind=2)(x)
+    ySim = interp1d([0, 40, 100], [100, 36, 1], kind=2)(x)
+    yObs = interp1d([0, 37, 100], [10, 15, 100], kind=2)(x)
     yTot = ySim + yObs
 
     plt.plot(x, ySim)
     plt.plot(x, yObs)
     plt.plot(x, yTot)
 
-    plt.annotate('Optimum', xy=(53, 55), arrowprops=dict(arrowstyle='->'),
-                 xytext=(55, 95))
+    plt.annotate('Optimum', xy=(50, 50), arrowprops=dict(arrowstyle='->'),
+                 xytext=(55, 85))
     plt.annotate('Total', xy=(30, 62), color='green')
-    plt.annotate('Observation', xy=(-2, 14))
-    plt.annotate('Simulation', xy=(75, 21))
+    plt.annotate('Observation', xy=(-2, 17))
+    plt.annotate('Simulation', xy=(70, 17))
     plt.show()
 
 
