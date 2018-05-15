@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-08 DWW
+      2018-05-14 DWW
 """
 
 import inspect
@@ -35,7 +35,7 @@ except ImportError:
 def grid(n, *ranges):
     """
     Sets intial (uniformly spaced) grid input, for instance for 2 input
-    with 4 nodes per axis: grid(n=4, [1, 3], [-7, -5])
+    with 4 nodes per axis: grid(4, [1, 3], [-7, -5])
 
             x---x---x---x
             |   |   |   |
@@ -46,7 +46,9 @@ def grid(n, *ranges):
             x---x---x---x
     Args:
         n (int or 1D array_like of int):
-            number of nodes per axis for which initial values are generated
+            number of nodes per axis for which initial values are generated.
+            If n is single and negative, the array will be transformed to 2D
+            and transposed: grid(-5, [0, 1]) ==> [[0], [.25], [.5], [.75], [1]]
 
         ranges (variable length argument list of pairs of float):
             list of (min, max) pairs
@@ -58,7 +60,7 @@ def grid(n, *ranges):
     """
     ranges = list(ranges)
     N = list(np.atleast_1d(n))
-    n = N + [N[-1]] * (len(ranges) - len(N))
+    n = N + [N[-1]] * (len(ranges) - len(N))  # fill n-array up to: len(ranges)
     assert len(n) == len(ranges), 'n:' + str(n) + ' ranges:' + str(ranges)
 
     ranges = np.asfarray(ranges)
@@ -66,10 +68,12 @@ def grid(n, *ranges):
     for rng, _n in zip(ranges, n):
         rngMin = min(rng[0], rng[1])
         rngMax = max(rng[0], rng[1])
-        xVar.append(np.linspace(rngMin, rngMax, _n))
+        xVar.append(np.linspace(rngMin, rngMax, abs(_n)))
 
     if ranges.shape[0] == 1:
         x = xVar[0]
+        if _n < 0:
+            x = np.atleast_2d(x).T
     elif ranges.shape[0] == 2:
         x0, x1 = np.meshgrid(xVar[0], xVar[1])
         x = [(a0, a1) for a0, a1 in zip(x0.ravel(), x1.ravel())]
@@ -104,28 +108,28 @@ def grid(n, *ranges):
 def cross(n, *ranges):
     """
     Sets intial (uniformly spaced) cross input, for instance for 2 input
-    with 5 nodes per axis: cross(n=5, (1, 2), (-4, -3))
-                  x
-                  |
-                  x
-                  |
-            x--x--x--x--x
-                  |
-                  x
-                  |
-                  x
+    with 5 nodes per axis: cross(5, [1, 2], [-4, -3])
+                   x
+                   |
+                   x
+                   |
+            x--x--ref--x--x
+                   |
+                   x
+                   |
+                   x
     Args:
-        ranges (variable length argument list of pairs of float):
-            list of (min, max) pairs
-
         n (int):
             number of nodes per axis for which initial values are generated
             n is corrected to an odd number if n is even
 
+        ranges (variable length argument list of pairs of float):
+            list of (min, max) pairs
+
     Returns:
         (2D array of float):
-            Cross-like initial values, first index is point index, second
-            index is input index
+            Cross-like initial values, shape: (nPoint, nInp). First point is
+            reference point in cross center, see figure
     """
     ranges = list(ranges)
     N = list(np.atleast_1d(n))
@@ -154,7 +158,7 @@ def cross(n, *ranges):
 def rand(n, *ranges):
     """
     Sets intial (uniformly distributed) random input, for instance for 2
-    input with 12 trials: rand(n=12, [1, 3], [-7, -5])
+    input with 12 trials: rand(12, [1, 3], [-7, -5])
 
            -------------
           |  x  x  x    |
@@ -169,7 +173,6 @@ def rand(n, *ranges):
 
         ranges (variable length argument list of pairs of float):
             list of (min, max) pairs
-
 
     Returns:
         (2D array of float):
@@ -187,69 +190,92 @@ def rand(n, *ranges):
     return x
 
 
-def noise(x, relative=0.0, absolute=None, uniform=True):
+def noise(y, absolute=0.0, relative=0.0, uniform=True):
     """
-    Adds noise to multi-dimensional arrays
+    Adds noise to an array_like argument 'y'. The noise can be:
+        - normally distributed or
+        - uniformly distributed
 
-        |
+    The addition to 'y' can be:
+        - noise from the interval [-absolute, +absolute] independently of the
+          actual value of 'y' or
+        - noise from the interval [-relative, +relative] proportional to the
+          actual value of 'y'
+
+
+        y
         |                      **   *
         |                *    *===*==
         |      *   *  =**=*===*    *
         |     *=*=*==*     **
         |*==**   *
-        | **                    === x
-        |                       *** x + noise
-        +------------------------------------
+        | **                    === y
+        |                       *** y + noise
+        +---------------------------------------index
 
     Args:
-        x (array_like of float):
-            initial array
-
-        relative (float, optional):
-            maximum noise added, relative to difference between maximum and
-            minimum of array x. only effective if 'absolute' is None
+        y (array_like of float):
+            initial array of any shape
 
         absolute (float, optional):
-            maximum of absolute noise added to x
+            upper boundary of interval of absolute values of noise to be added.
+            The lower boundary is the opposite of 'abolute'
+            default: 0.0
 
-        uniform (bool):
-            if True then uniformely distributed random numbers. Otherwise
-            noise in normally distributed
+        relative (float, optional):
+            upper boundary of interval of the relative noise to be added.
+            The lower boundary is the opposite of 'relative'.
+            The addition is relative to the actual value of y.
+            default: 0.0
+
+        uniform (bool, optional):
+            if True then noise is uniformely distributed between the upper and
+            lower boundaries given by 'absolute' and/or 'relative'.
+            Otherwise these upper boundaries represent the standard deviation
+            of a Gaussian distribution (at given boundarynoise value is 60.7%
+            of max noise )
+            default: True
 
     Returns:
         (array of float):
-            array of same shape as x with noise or copy of x if no noise
+            copy of 'y' plus noise if y is not None
+        or
+        (None):
+            if y is None
 
     Note:
-        'absolute' superseeds 'relative' argument
-        In case of negative 'relative' and 'absolute', x returns unchanged
+        Result can be clipped with: y = np.clip(y, [lo0, up0], [lo1, up1], ...)
     """
+    if y is None:
+        return None
+    y = np.asfarray(y).copy()
 
-    x = np.asfarray(x)
-    if absolute is None:
-        dx = relative * (x.max() - x.min()) if relative is not None else 0.0
-    else:
-        dx = absolute
-    if dx <= 0.:
-        return x.copy()
-    else:
-        if not uniform:
-            return x + np.random.normal(loc=0.0, scale=dx, size=x.shape)
+    if absolute is not None and absolute > 0.:
+        if uniform:
+            y += np.random.uniform(low=-absolute, high=absolute, size=y.shape)
         else:
-            return x + np.random.uniform(low=-dx, high=dx, size=x.shape)
+            y += np.random.normal(loc=0., scale=absolute, size=y.shape)
+
+    if relative is not None and relative > 0.:
+        if uniform:
+            y *= 1. + np.random.uniform(low=-relative, high=relative,
+                                        size=y.shape)
+        else:
+            y *= 1. + np.random.normal(loc=0., scale=relative, size=y.shape)
+    return y
 
 
 class Model(Base):
     """
     Parent class of White, LightGray, MediumGray, DarkGray and Black
 
-    - Array definition: input and output arrays are 2D, first index is data
-      point index. Extract 1D arrays with 'X[:, 0]', or 'X.T[0]'
-    - If X or Y passed as 1D array_like, they are transformed to:
-      X = np.atleast_2d(X).T    Y = np.atleast_2d(Y).T
+    - Array definition: input and output arrays are 2D. First index is data
+      point index
+    - If X or Y passed as 1D array_like then they are transformed to:
+      self.X = np.atleast_2d(X).T and self.Y = np.atleast_2d(Y).T
 
     - Upper case 'X' is 2D training   input and 'Y' is 2D training   target
-    - Lower case 'x' is 2D prediction input and 'y' is 2D prediction result
+    - Lower case 'x' is 2D prediction input and 'y' is 2D prediction output
     - XY = (X, Y, xKeys, yKeys) is combination of X and Y with array keys
 
     Decision tree
@@ -261,10 +287,10 @@ class Model(Base):
             if XY is None:
                 White()
             else:
-                if method.startswith('light'):
+                if color.startswith('light'):
                     LightGray()
-                elif method.startswith('medium'):
-                    if '-l' in method.lower():
+                elif color.startswith('medium'):
+                    if '-loc' in color.lower():
                         MediumGray() - local
                     else:
                         MediumGray() - glocal
@@ -278,29 +304,38 @@ class Model(Base):
         """
         Args:
             f (method or function):
-                theoretical submodel y=f(x) for single data point if f not None
+                theoretical submodel f(self, x) or f(x) for single data point
 
             identifier (string, optional):
                 object identifier
         """
         super().__init__(identifier=identifier)
-        self.f = f                   # user-defined function (if not black box)
+        self.f = f                    # user-defined function if not black box
 
-        self._X = None               # input to training (2D array)
-        self._Y = None               # target for training (2D array)
-        self._x = None               # input to prediction (1D or 2D array)
-        self._y = None               # output from prediction  (1D or 2D array)
-        self._xKeys = None           # x-keys for data sel. (1D list of string)
-        self._yKeys = None           # y-keys for data sel. (1D list of string)
+        self._X = None                # input to training (2D array)
+        self._Y = None                # target for training (2D array)
+        self._x = None                # input to prediction (1D or 2D array)
+        self._y = None                # output of prediction  (1D or 2D array)
+        self._xKeys = None            # x-keys for data sel.(1D list of string)
+        self._yKeys = None            # y-keys for data sel.(1D list of string)
+        self._best = self.initBest()  # initialize best training trial result
+        self._weights = None          # weights of empirical submodels
 
-        self._best = None            # (3-tuple) best training: (L2, abs, iAbs)
+    def initBest(self):
+        """
+        Returns:
+            default for results of best training trial,
+            see Model.train()
+        """
+        return {'trainer': None, 'L2': np.inf, 'abs': np.inf, 'iAbs': -1,
+                'epochs': -1}
 
     @property
     def f(self):
         """
         Returns:
-            (method):
-                Theoretical model y=f(x) for calculation of single data point
+            (method or function):
+                theoretical submodel f(self, x) or f(x) for single data point
         """
         return self._f
 
@@ -308,54 +343,26 @@ class Model(Base):
     def f(self, value):
         """
         Args:
-            value (method):
-                Theoretical model y=f(x) for calculation of single data point
+            value (method or function):
+                theoretical submodel f(self, x) or f(x) for single data point
         """
         if not isinstance(value, str):
             f = value
         else:
-            if value.lower().endswith(('demo', 'demo0')):
-                f = self.f_demo
-            elif value.lower().endswith('demo1'):
-                f = self.f_demo1
-            else:
-                f = None
+            f = self.f_demo if value.lower() == 'demo' else None
         if f is not None:
             firstArg = list(inspect.signature(f).parameters.keys())[0]
             if firstArg == 'self':
                 f = f.__get__(self, self.__class__)
         self._f = f
 
-    def f_demo(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+    def f_demo(self, x, **kwargs):
         """
-        Function y = f(x): demo calculation of single data point
+        Demo function f(self, x) for single data point
 
         Args:
             x (1D array_like of float):
-                input x with x.shape: (nInp, )
-
-            c0, c1, ..., c7 (float, optional):
-                coefficients
-
-        Returns:
-            (1D array_like of float):
-                output with shape: (nOut, )
-        """
-        assert x is not None and len(x) > 1
-
-        # input is 1D array_like with x.shape = (nInp, )
-        y0 = c0 * np.sin(c1 * x[0]) + c2 * (x[1] - 1)**2 + c3
-
-        # output is 1D array_like with y.shape = (nOut, )
-        return [y0]
-
-    def f_demo1(self, x, **kwargs):
-        """
-        Function y = f(x): demo calculation of single data point with 'kwargs'
-
-        Args:
-            x (1D array_like of float):
-                input x with x.shape: (nInp)
+                input, shape: (nInp)
 
             kwargs (dict, optional):
                 keyword arguments:
@@ -365,7 +372,10 @@ class Model(Base):
 
         Returns:
             (1D array_like of float):
-                output with shape: (nOut)
+                output, shape: (nOut)
+        Note:
+            alternative argument list of method:
+            def f_demo(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1)
         """
         assert x is not None and len(x) > 1
 
@@ -385,7 +395,7 @@ class Model(Base):
         """
         Returns:
             (2D array of float):
-                X array of training input
+                X array of training input, shape: (nPoint, nInp)
         """
         return self._X
 
@@ -393,8 +403,8 @@ class Model(Base):
     def X(self, value):
         """
         Args:
-            value (2D array_like of float):
-                X array of training input
+            value (2D or 1D array_like of float):
+                X array of training input, shape: (nPoint, nInp) or (nPoint)
         """
         if value is None:
             self._X = None
@@ -409,7 +419,7 @@ class Model(Base):
         """
         Returns:
             (2D array of float):
-                Y array of training target
+                Y array of training target, shape: (nPoint, nOut)
         """
         return self._Y
 
@@ -417,8 +427,8 @@ class Model(Base):
     def Y(self, value):
         """
         Args:
-            value (2D array_like of float):
-                Y array of training target
+            value (2D or 1D array_like of float):
+                Y array of training target, shape: (nPoint, nOut) or (nPoint)
         """
         if value is None:
             self._Y = None
@@ -433,7 +443,7 @@ class Model(Base):
         """
         Returns:
             (2D array of float):
-                x array of prediction input
+                x array of prediction input, shape: (nPoint, nInp)
         """
         return self._x
 
@@ -442,7 +452,7 @@ class Model(Base):
         """
         Args:
             value(2D or 1D array_like of float):
-                x array of prediction input
+                x array of prediction input, shape: (nPoint, nInp) or (nInp)
         """
         if value is None:
             self._x = None
@@ -454,7 +464,7 @@ class Model(Base):
         """
         Returns:
             (2D array of float):
-                y array of prediction output
+                y array of prediction output, shape: (nPoint, nOut)
         """
         return self._y
 
@@ -463,7 +473,7 @@ class Model(Base):
         """
         Args:
             value(2D or 1D array_like of float):
-                y array of prediction result
+                y array of prediction output, shape: (nPoint, nOut) or (nOut)
         """
         if value is None:
             self._y = None
@@ -474,11 +484,11 @@ class Model(Base):
     def XY(self):
         """
         Returns:
-            X (2D array of float):
-                X array of training input
+            X (2D or 1D array_like of float):
+                training input, shape: (nPoint, nInp) or shape: (nPoint)
 
-            Y (2D array of float):
-                Y array of training target
+            Y (2D or 1D array_like of float):
+                training target, shape: (nPoint, nOut) or shape: (nPoint)
 
             xKeys (1D list of string):
                 list of column keys for data selection
@@ -498,12 +508,10 @@ class Model(Base):
         Args:
             value (4-tuple of two arrays of float and two arrays of string):
                 X (2D or 1D array_like of float):
-                    Input X will be converted to 2D-array
-                    (first index is data point index)
+                    training input, shape: (nPoint, nInp) or shape: (nPoint)
 
                 Y (2D or 1D array_like of float):
-                    Target Y will be converted to 2D-array
-                    (first index is data point index)
+                    training target, shape: (nPoint, nOut) or shape: (nPoint)
 
                 xKeys (1D array_like of string, optional):
                     list of column keys for data selection
@@ -545,15 +553,16 @@ class Model(Base):
         """
         Args:
             X (2D or 1D array_like of float, optional):
-                X training input. If None, self._X is exported to DataFrame
+                training input, shape: (nPoint, nInp) or shape: (nPoint)
+                default: self.X
 
             Y (2D or 1D array_like of float, optional):
-                Y tarining target. If None, assign self._Y to Y
+                training target, shape: (nPoint, nOut) or shape: (nPoint)
+                default: self.Y
 
         Returns:
             (pandas.DataFrame):
-                Data frame created from X and Y arrays. If X or Y is None,
-                self._X and self._Y are used
+                Data frame created from X and Y arrays
         """
         if X is None:
             X = self._X
@@ -608,8 +617,12 @@ class Model(Base):
                 keys for data selection
 
         Returns:
-            (multiple 1D arrays of float):
-                column arrays or None if none of the keys found in df
+            (tuple of 1D arrays of float):
+                column arrays. Size of tuple equals number of keys0..7 which
+                is not None
+            or
+            (None):
+                if all(keys0..7 not in df)
         """
         keysList = [keys0, keys1, keys2, keys3, keys4, keys5, keys6, keys7]
         keysList = [x for x in keysList if x is not None]
@@ -643,38 +656,66 @@ class Model(Base):
 
     def train(self, X, Y, **kwargs):
         """
-        Trains model, this method has to be overwritten in derived classes
+        Trains model. This method has to be overwritten in derived classes.
+        X and Y are stored as self.X and self.Y if both are not None
 
         Args:
-            X (2D array of float):
-                training input, X.shape: (nPoint, nInp)
+            X (2D or 1D array_like of float):
+                training input, shape: (nPoint, nInp) or shape: (nPoint)
 
-            Y (2D array of float):
-                training target, Y.shape: (nPoint, nOut)
+            Y (2D or 1D array_like of float):
+                training target, shape: (nPoint, nOut) or shape: (nPoint)
 
             kwargs (dict, optional):
                 keyword arguments
 
+                trainers (string or list of string):
+                    type of trainers
+
+                epochs (int):
+                    maximum number of epochs
+
+                goal (float):
+                    residuum to be met
+
+                trials (int):
+                    number of repetitions of training with same trainer
+                ...
+
         Returns:
-            (3-tuple of float):
-                (||y-Y||_2, max{|y-Y|}, index(max{|y-Y|}) if X and Y not None
-            or (None):
-                if X is None or Y is None or training fails
+            (dict {str: float or str or int}):
+                result of best training trial:
+                    'trainer' (str): best trainer
+                    'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
+                    'abs'   (float): max{|net(x) - Y|} of best training
+                    'iAbs'    (int): index of Y where absolute error is maximum
+                    'epochs'  (int): number of epochs of best training
+
+        Note:
+            If X or Y is None, or training fails then self.best['trainer']=None
         """
-        if X is None or Y is None:
-            self._best = None
-            return self._best
-
-        self.ready = False
-        print('!!! train() is not implemented in: ' + self.__class__.__name__)
         self.ready = True
+        self._weights = None
+        self.best = self.initBest()
 
-        self._best = (np.inf, np.inf, -1)
-        return self._best
+        if X is not None and Y is not None:
+            self.X, self.Y = X, Y
+            #
+            # ... INSERT TRAINING ...
+            #
+            # SUCCESS = ...
+            # self.ready = SUCCESS
+            # if self.ready:
+            #    self._weights = ...
+            #    self.best = {'trainer': ..., 'L2': ..., 'abs': ...,
+            #                 'iAbs': ..., 'epochs': ...}
+
+        return self.best
 
     def predict(self, x, **kwargs):
         """
-        Executes model. If MPI is available, execution is distributed.
+        Executes model. If MPI is available, execution is distributed. x and
+        y=f(x) is stored as self.x and self.y
 
         Args:
             x (2D or 1D array_like of float):
@@ -683,26 +724,25 @@ class Model(Base):
             kwargs (dict, optional):
                 keyword arguments
 
-                c0, c1, ... (float):
+                c0, c1, ... (multiple float):
                     coefficients for LightGray
+                    default: 1.0
 
-                ... options for neural network etc
+                ... further options for prediction
 
         Returns:
-            self.y (2D array of float):
-                prediction result, shape: (nPoint, nOut) if x is not None
-            or (3-tuple of (float, float, int)):
-                ||y-Y||_2, max{|y-Y|}, index(max{|y-Y|} if x is None
-            or (None):
-                if model is not ready
+            (2D array of float):
+                if x is not None and self.ready: prediction output
+            or
+            (None):
+                otherwise
         """
-        assert self.ready
-
-        if x is None:
-            return self._best
-
         self.x = x                 # self.x is a setter ensuring 2D numpy array
-        if not parallel.communicator() or x.shape[0] <= 1:
+
+        if not self.ready:
+            self.y = None
+        elif not parallel.communicator() or x.shape[0] <= 1:
+            # coefficients of LightGray box model
             opt = {k: v for k, v in kwargs.items()
                    if k.startswith(('c', 'C', 'x')) and k not in ('cross')}
 
@@ -715,7 +755,7 @@ class Model(Base):
 
     def error(self, X, Y, **kwargs):
         """
-        Evaluates difference between prediction y(X) and given ref. array Y(X)
+        Evaluates difference between prediction y(X) and reference array Y(X)
 
         Args:
             X (2D array_like of float):
@@ -729,38 +769,40 @@ class Model(Base):
 
                 silent (bool):
                     if True then print of norm is suppressed
+                    default: False
         Returns:
-            (3-tuple of (float, float, int)):
-                (||y-Y||_2, max{|y-Y|}, index(max{|y-Y|})
-            or (None):
-                if X is None or Y is None
-
+            (dict: {str: float or str or int})
+                result of evaluation
+                    'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
+                    'abs'   (float): max{|net(x) - Y|} of best training
+                    'iAbs'    (int): index of Y where absolute error is maximum
         Note:
-            maximum index is 1D index, e.g. yAbsMax = Y.ravel()[iAbsMax]
+            - maximum abs index is 1D index, e.g. yAbsMax = Y.ravel()[iAbsMax]
         """
         if X is None or Y is None:
-            return None
+            best = self.initBest()
+            best = {key: best[key] for key in ('L2', 'abs', 'iAbs')}
+        else:
+            assert X.shape[0] == Y.shape[0], str(X.shape) + str(Y.shape)
 
-        assert X.shape[0] == Y.shape[0], str(X.shape) + str(Y.shape)
+            y = self.predict(x=X, **self.kwargsDel(kwargs, 'x'))
 
-        y = self.predict(x=X, **self.kwargsDel(kwargs, 'x'))
+            try:
+                dy = y.ravel() - Y.ravel()
+            except ValueError:
+                print('X Y y:', X.shape, Y.shape, y.shape)
+                assert 0
+            best = {'L2': np.sqrt(np.mean(np.square(dy)))}
+            best['iAbs'] = np.abs(dy).argmax()
+            best['abs'] = dy.ravel()[best['iAbs']]
 
-        try:
-            dy = y.ravel() - Y.ravel()
-        except ValueError:
-            print('X Y y:', X.shape, Y.shape, y.shape)
-            assert 0
-        L2_norm = np.sqrt(np.mean(np.square(dy)))
-        iAbsMax = np.abs(dy).argmax()
-
-        if not kwargs.get('silent', True):
-            self.write('    L2-norm: ', np.round(L2_norm, 4))
-            self.write('    max(abs(err)): ',
-                       np.round(dy[iAbsMax], 5), ' @ (X,Y)+[',
-                       str(iAbsMax), ']: (', np.round(X.ravel()[iAbsMax], 3),
-                       ', ', np.round(Y.ravel()[iAbsMax], 3), ')')
-
-        return L2_norm, Y.ravel()[iAbsMax], iAbsMax
+            if not kwargs.get('silent', True):
+                self.write('    L2: ', np.round(best['L2'], 4),
+                           ' max(abs(y-Y)): ', np.round(best['abs'], 5),
+                           ' [', best['iAbs'], ']',
+                           ' x,y:(', np.round(X.ravel()[best['iAbs']], 3),
+                           ', ', np.round(Y.ravel()[best['iAbs']], 3), ')')
+        return best
 
     def pre(self, **kwargs):
         """
@@ -768,22 +810,33 @@ class Model(Base):
             kwargs (dict, optional):
                 keyword arguments:
 
-                XY (4-tuple of two 2D array_like of float, and optionally
-                    two list of string):
-                    training input and train. target, optional keys of X and Y
+                XY (4-tuple of two 2D array_like of float, and
+                    optionally two list of string):
+                    training input & training target, optional keys of X and Y
+                    'XY' supersede 'X' and 'Y'
 
-                X, Y (two 2D array_like of float):
-                    training input and training target,
-                    X.shape: (nPoint, nInp) and Y.shape: (nPoint, nOut)
-        Returns:
-            (3-tuple of (float, float, int) or None):
-                self._best if 'XY' or ('X' and 'Y') in 'kwargs'
-            or (None):
-                if 'XY' or ('X' a nd 'Y') not in 'kwargs'
+                X (2D or 1D array_like of float, optional):
+                    training input, shape: (nPoint, nInp) or shape: (nPoint)
+                    'XY' supersede 'X' and 'Y'
+                    default: self.X
+
+                Y (2D or 1D array_like of float, optional):
+                    training target, shape: (nPoint, nOut) or shape: (nPoint)
+                    'XY' supersede 'X' and 'Y'
+                    default: self.Y
+
+         Returns:
+            (dict: {str: float or str or int})
+                result of best training trial:
+                    'trainer' (str): best trainer
+                    'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
+                    'abs'   (float): max{|net(x) - Y|} of best training
+                    'iAbs'    (int): index of Y where absolute error is maximum
+                    'epochs'  (int): number of epochs of best training
+                if 'XY' or ('X' and 'Y') in 'kwargs'
 
         Side effects:
-            self.X and self.Y are overwritten with XY or (X and Y)
-            self._best contains result of train() or None if failure
+            self.X and self.Y are overwritten with setter: XY or (X, Y)
         """
         super().pre(**kwargs)
 
@@ -796,11 +849,11 @@ class Model(Base):
         # trains model if self.X is not None and self.Y is not None
         if self.X is not None and self.Y is not None:
             opt = self.kwargsDel(kwargs, ['X', 'Y'])
-            self._best = self.train(X=self.X, Y=self.Y, **opt)
+            self.best = self.train(X=self.X, Y=self.Y, **opt)
         else:
-            self._best = None
+            self.best = self.initBest()
 
-        return self._best
+        return self.best
 
     def task(self, **kwargs):
         """
@@ -809,28 +862,32 @@ class Model(Base):
                 keyword arguments:
 
                 x (2D or 1D array_like of float):
-                    prediction input
+                    prediction input, shape: (nPoint, nInp) or shape: (nInp)
 
         Returns:
-            self.y (2D array of float):
-                prediction result if 'x' in 'kwargs'
-            or (3-tuple of (float, float, int) or None):
-                self._best if 'x' not in 'kwargs'
+            (2D array of float):
+                if x is not None and self.read: predict y=model(x)
+            or
+            (dict: {str: float or str or int})
+                otherwise: result of train() with best training trial:
+                    'trainer' (str): best trainer
+                    'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
+                    'abs'   (float): max{|net(x) - Y|} of best training
+                    'iAbs'    (int): index of Y where absolute error is maximum
+                    'epochs'  (int): number of epochs of best training
 
         Side effects:
-            self.x is overwritten with x
-            self.y is overwritten with result of predict()
+            x is stored as self.x and prediction output as self.y
         """
         super().task(**kwargs)
 
         x = kwargs.get('x', None)
         if x is None:
-            return self._best
+            return self.best
 
-        self.x = x                    # self.x is setter ensuring correct shape
+        self.x = x                  # self.x is a setter ensuring correct shape
         opt = self.kwargsDel(kwargs, 'x')
         self.y = self.predict(x=self.x, **opt)
-
         return self.y
 
 
@@ -839,21 +896,34 @@ class Model(Base):
 if __name__ == '__main__':
     ALL = 1
 
+    import matplotlib.pyplot as plt
     from White import White
     from plotArrays import plotIsoMap
 
-    def fUser(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+    def fUser(self, x, **kwargs):
         """
         Customized single point calculation method for Model
         """
+        c0, c1 = kwargs.get('c0', 1), kwargs.get('c1', 1)
+        c2 = kwargs.get('c2', 1)
+
         x = np.asfarray(x)
         assert x.ndim == 1, 'x.ndim: ' + str(x.ndim)
         assert x.shape[0] >= 2, 'x.shape: ' + str(x.shape)
 
-        y0 = c0 * x[0]*x[0] + c1 * x[1] + c2
+        y0 = c2 * x[0]**2 + c1 * x[1] + c0
         y1 = x[1] * 2.1
         y = np.asfarray([y0, y1])
         return y
+
+    if 1 or ALL:
+        x = grid(4, [0, 12], [0, 10])
+        y_exa = White(fUser)(x=x)
+        y = noise(y_exa, relative=20e-2)
+
+        plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
+        plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0])
+        plotIsoMap(x[:, 0], x[:, 1], (y - y_exa)[:, 0])
 
     if 0 or ALL:
         X = grid(5, [-1, 2], [3, 4])
@@ -904,9 +974,7 @@ if __name__ == '__main__':
         y12, x0 = foo.frame2arrays(df, ['y0', 'y1'], ['x0'])
         print('9 y12:', y12, 'x0', x0)
 
-    if 1 or ALL:
-        import matplotlib.pyplot as plt
-
+    if 0 or ALL:
         foo = Model(fUser)
         nPoint = 20
         X = rand(nPoint, [0, 10], [0, 10])

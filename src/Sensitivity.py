@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-07 DWW
+      2018-05-11 DWW
 """
 
 import numpy as np
@@ -29,19 +29,18 @@ from plotArrays import plotBarArrays
 
 class Sensitivity(Forward):
     """
-    Analyses sensitivity of generic model $\phi(x)$ for a given input range
+    Sensitivity operation on box type model for a given input range
 
     Examples:
-        foo = Sensitivity(LightGray('demo'))
+        op = Sensitivity(LightGray('demo')                        x
+        X = [[... ]]  input of training                           |
+        Y = [[... ]]  target of training                      x--ref--x
+        ranges = ([x0min, x0max], [x1min, x1max], ... )           |
+        xCross = cross(3, *ranges)                                x
 
-        X = [[... ]]  input of training
-        Y = [[... ]]  target of training
-        ranges = ([x0min, x0max], [x1min, x1max], ... )
-        xCross = cross(3, *ranges)
-
-        dy_dx = foo(X=X, Y=Y, x=xCross)              # training and sensitivity
-        dy_dx = foo(x=xCross)       # sensitivity only, x contains cross points
-        dy_dx = foo(x=cross(5, *ranges)      # generate x from ranges and cross
+        dy_dx = op(X=X, Y=Y, x=xCross)               # training and sensitivity
+        dy_dx = op(x=xCross)        # sensitivity only, x contains cross points
+        dy_dx = op(x=cross(5, *ranges)       # generate x from ranges and cross
     """
 
     def __init__(self, model, identifier='Sensitivity'):
@@ -59,12 +58,39 @@ class Sensitivity(Forward):
         self.dy_dx = None
 
     def task(self, **kwargs):
+        """
+        Analyzes sensistivity
+
+        Args:
+            kwargs (dict, optional):
+                keyword arguments
+
+                X (2D or 1D array_like of float, optional):
+                    training input, shape: (nPoint, nInp) or shape: (nPoint)
+                    default: self._X
+
+                Y (2D or 1D array_like of float, optional):
+                    training target, shape: (nPoint, nOut) or shape: (nPoint)
+                    default: self._Y
+
+                x (2D array_like of float):
+                    cross-type input points, see Model.cross()
+                    default: self._x
+
+        Returns:
+            x (1D array of float):
+                reference point in the center of the cross
+
+            dy/dx (1D array of float):
+                gradient of y with respect to x in reference point
+        """
+        # trains (if X and Y not None) and predicts self.y = f(self.x)
         super().task(**self.kwargsDel(kwargs, 'x'))
 
         if self.model.x is None:
             return None, None
 
-        # (x, y)_ref is stored as: (self.model.x[0], self.model.y[0])
+        # ref point (x, y)_ref is stored as: (self.model.x[0], self.model.y[0])
         x, y = self.model.x, self.model.y
         xRef = x[0]
         nPoint, nInp, nOut = x.shape[0], x.shape[1], y.shape[1]
@@ -190,7 +216,7 @@ if __name__ == '__main__':
         s = 'Sensitivity with demo function'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Sensitivity(White('demo1'))
+        op = Sensitivity(White('demo'))
         xRef, dy_dx = op(x=md.cross(3, [2, 3], [3, 4], [4, 5]))
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()

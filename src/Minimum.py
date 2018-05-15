@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-07 DWW
+      2018-05-12 DWW
 """
 
 import numpy as np
@@ -32,7 +32,7 @@ from Forward import Forward
 
 class Minimum(Forward):
     """
-    Minimizes Minimum.objective()
+    Minimizes objective()
 
     Examples:
         foo = Minimum(f)
@@ -203,7 +203,7 @@ class Minimum(Forward):
 
         Args:
             x (1D array_like of float):
-                input array of single data points
+                input of single data point, shape: (nInp)
 
         Returns:
             (float):
@@ -230,7 +230,8 @@ class Minimum(Forward):
 
         Args:
             x (2D or 1D array_like of float):
-                input array of single or multiple data points
+                input of multiple or single data points,
+                shape: (nPoint, nInp) or shape: (nInp)
 
             kwargs (dict, optional):
                 keyword arguments
@@ -262,14 +263,16 @@ class Minimum(Forward):
                     type of optimizer
 
                 y (1D array_like of float):
-                    target y of inverse probl.(only if self is of type Inverse)
+                    target of inverse problem (only if 'self' is of type
+                    Inverse) shape: (nOut)
 
         Returns:
-            self.x, self.y (two 1D array_like of float):
-                model input at optimum and corresponding model output
+            (2-tuple of 1D array of float):
+                model input at optimum and corresponding model output,
+                shape: (nInp) and shape: (nOut)
         Note:
-            requires initial point(s) self.x for getting number of x-pars
-            requires defined self.y as target if inverse problem solution
+            - requires initial point(s) self.x for getting input number: nInp
+            - if inverse problem solution then self.y is required as target
         """
         Base.task(self, **kwargs)
 

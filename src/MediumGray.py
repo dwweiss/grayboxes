@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-08 DWW
+      2018-05-11 DWW
 """
 
 import numpy as np
@@ -45,7 +45,7 @@ class MediumGray(md.Model):
         """
         Args:
             f (method or function):
-                theoretical submodel y = f(x) for single data point
+                theoretical submodel f(self, x) or f(x) for single data point
 
             identifier (string, optional):
                 object identifier
@@ -79,11 +79,11 @@ class MediumGray(md.Model):
     def setArrays(self, df, xModKeys, xPrcKeys, yModKeys, yPrcKeys):
         """
         - Extracts common input and common output keys
-        - Extracts 2D arrays self.xTun ... self.yPrc from DataFrame
+        - Extracts 2D arrays self.xTun ... self.yPrc from 'df'
 
         Args:
             df (DataFrame):
-                data frame with model and process input and output
+                data frame with model input/output and process input/output
 
             xModKeys (1D array_like of string):
                 list of model input keys
@@ -144,23 +144,21 @@ class MediumGray(md.Model):
                 ... network options
 
         Returns:
-            (3-tuple of float, float, int):
-                (||y-Y||_2, max{|y-Y|}, index(max{|y-Y|}) if X and Y not None
-            or (None):
-                if X is None or Y is None or training failed
+            see Model.train()
         """
         return None
 
-    def train(self, X=None, Y=None, **kwargs):
+    def train(self, X, Y, **kwargs):
         """
-        Trains medium gray box model
+        Trains model, stores X and X as self.X and self.Y, and stores result of
+        best training trial as self.best
 
         Args:
-            X (2D array_like of float, optional):
-                training input X_prc
+            X (2D or 1D array_like of float, optional):
+                training input X_prc, shape: (nPoint, nInp) or shape: (nPoint)
 
-            Y (2D array_like of float, optional):
-                training target Y_com
+            Y (2D or 1D array_like of float, optional):
+                training target Y_com, shape: (nPoint, nOut) or shape: (nPoint)
 
             kwargs (dict, optional):
                 keyword arguments:
@@ -171,10 +169,7 @@ class MediumGray(md.Model):
                 ... network options
 
         Returns:
-            (3-tuple of float, float, int):
-                (||y-Y||_2, max{|y-Y|}, index(max{|y-Y|}) if X and Y not None
-            or (None):
-                if X is None or Y is None or training failed
+            see Model.train()
 
         Example:
             Method f(self, x) or function f(x) is assigned to self.f, example:
@@ -189,11 +184,11 @@ class MediumGray(md.Model):
 
                 # expanded form:
                 mod = MediumGray(f=f)
-                mod.train(X, Y, algo='-loc1', neural=[])
+                mod.train(X, Y, algo='-loc1', neurons=[])
                 y = mod.predict(x)
 
                 # compact form:
-                y = MediumGray(f=f)(X=X, Y=Y, x=x, algo='-loc1', neural=[])
+                y = MediumGray(f=f)(X=X, Y=Y, x=x, algo='-loc1', neurons=[])
         """
         self.X = X if X is not None else self.xPrc
         self.Y = Y if Y is not None else self.yPrc
@@ -225,34 +220,35 @@ class MediumGray(md.Model):
             else:
                 assert 0, str(self.algorithm)
 
-        return self.error(self.X, self.Y, **opt)
+        self.best = self.error(self.X, self.Y, **opt)
+        return self.best
 
-    def predict(self, xPrc=None, **kwargs):
+    def predict(self, x, **kwargs):
         """
-        Executes medium gray box model
+        Executes Model, stores input x as self.x and output as self.y
 
         Args:
-            xPrc (2D array_like of float, optional):
-                process input x_prc
+            x (2D or 1D array_like of float):
+                prediction input, shape: (nPoint, nInp) or shape: (nInp)
 
             kwargs (dict, optional):
                 keyword arguments
 
         Returns:
-            self.y (2D array of float):
-                common output y_com
+            (2D array of float):
+                prediction output, shape: (nPoint, nOut)
         """
         assert self._black is not None and self._black.ready
         opt = self.kwargsDel(kwargs, 'x')
 
-        self.x = xPrc if xPrc is not None else self.x
+        self.x = x
 
         if '-l' in self.algorithm:
             xTun = self._black.predict(x=self.x, **opt)
             xMod = np.c_[self.xCom, xTun]
             self.y = md.predict(self, x=xMod, **opt)
         else:
-            self.y = self._black.predict(x=xPrc, **opt)
+            self.y = self._black.predict(x=x, **opt)
 
         return self.y
 
@@ -317,7 +313,7 @@ if __name__ == '__main__':
 
         model.setArrays(df, xModKeys=['x0', 'x2', 'x3'], xPrcKeys=['x0', 'x4'],
                         yModKeys=['y0'], yPrcKeys=['y0'])
-        model(X=None, Y=None, silent=True, neural=[], algo='-l1')
+        model(X=None, Y=None, silent=True, neurons=[], algo='-l1')
         y = model(x=model.X)
         print('*'*20)
         print('*** x:', model.x, 'y:', y)
@@ -333,7 +329,7 @@ if __name__ == '__main__':
         Y = np.asfarray(df.loc[:, ['A']])
 
         model = Black()
-        y = model(X=X, Y=Y, neural=[], x=X)
+        y = model(X=X, Y=Y, neurons=[], x=X)
         print('*** x:', model.x, 'y:', model.y, y)
 
         from plotArrays import plotIsoMap, plotWireframe

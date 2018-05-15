@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-07 DWW
+      2018-05-12 DWW
 """
 
 import numpy as np
@@ -71,7 +71,7 @@ class Inverse(Minimum):
 
         Returns:
             (float):
-                norm measuring difference between actual prediction and target
+                L2-norm measuring diff between actual prediction and target
         """
         # x is input of prediction, x.shape: (nInp,)
         yInv = self.model.predict(np.asfarray(x),
@@ -88,7 +88,7 @@ class Inverse(Minimum):
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    ALL = 0
+    ALL = 1
 
     from plotArrays import plot_X_Y_Yref
     import Model as md
@@ -112,7 +112,7 @@ if __name__ == '__main__':
         s = 'Inverse, replaced model'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Inverse(White('demo1'))
+        op = Inverse(White('demo'))
         xInv, yInv = op(x=md.grid((5, 4), [-10, 10], [-15, 15]), y=[0.5])
         op.plot()
 
@@ -144,7 +144,7 @@ if __name__ == '__main__':
         s = 'Inverse operation on empirical model'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        noise = 0.2random.
+        noise = 0.2
         n = 10
         X = md.grid(n, [-1, 5], [0, 3])
 
@@ -153,7 +153,7 @@ if __name__ == '__main__':
 
         plot_X_Y_Yref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
         model = Black()
-        Y_blk = model(X=X, Y=Y_noise, neural=[8], n=3, epochs=500, x=X)
+        Y_blk = model(X=X, Y=Y_noise, neurons=[8], n=3, epochs=500, x=X)
         plot_X_Y_Yref(X, Y_blk, Y_exact, ['X', 'Y_{blk}', 'Y_{exa}'])
         op = Inverse(model)
         xInv, yInv = op(y=[0.5], x=[(-10, 0), (1, 19)])
@@ -178,7 +178,7 @@ if __name__ == '__main__':
 
         # meta-model of theoretical model Y_emp=g(X,w)
         meta = Black()
-        Y_meta = meta(X=X, Y=Y_fit, neural=[10], x=X)
+        Y_meta = meta(X=X, Y=Y_fit, neurons=[10], x=X)
         plot_X_Y_Yref(X, Y_fit, Y_meta, ['X', 'Y_{met}', 'Y_{exa}'])
 
         # inverse solution with meta-model (emp.model of tuned theo.model)

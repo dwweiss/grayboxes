@@ -25,7 +25,7 @@ from Minimum import Minimum
 
 class Maximum(Minimum):
     """
-     Maximizes y=f(x)
+    Maximizes objective()
     """
 
     def objective(self, x, **kwargs):

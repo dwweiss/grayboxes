@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-02 DWW
+      2018-05-14 DWW
 """
 
 import numpy as np
@@ -38,141 +38,168 @@ class LightGray(Model):
 
     Examples:
         def function(x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
-            return c0 + c1 * np.array(c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)
+            return [c0 + c1 * (c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)]
 
-        # method with access to 'self' attributes
+        def function2(x, **kwargs):
+            c0, c1 = kwargs.get('c0', 1), kwargs.get('c1', 1)
+            c2, c3 = kwargs.get('c2', 1), kwargs.get('c3', 1)
+            return [c0 + c1 * (c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)]
+
         def method(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
-            return function(x, c0, c1, c2, c3, c4, c5, c6, c7)
+            return [c0 + c1 * (c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)]
 
-        # assign theoretical submodel f(x) as method (with 'self') or function.
-        # alternatively, method can be passed as argument for train or predict
-        foo = LightGray(f=function)  or
-        foo = LightGray(f=method)
+        ### compact form:
+        y = LightGray(function)(X=X, Y=Y, x=x, trainers='lm')
+
+        ### expanded form:
+        # assign theoretical submodel f(x) as function or method (with 'self')
+        model = LightGray(function)  or
+        model = LightGray(method)
 
         # (X, Y): training data
         X = [(1,2), (2,3), (4,5), (6,7), (7,8)]
-        Y = [(1), (2), (3), (4), (5)]                 # or: Y = [1, 2, 3, 4, 5]
+        Y = [(1), (2), (3), (4), (5)]          # alternatively: [1, 2, 3, 4, 5]
 
         # x: test data
         x = [(1, 4), (6, 6)]
 
-        # without training, result of theoretical submodel f(x) is returned
-        y = foo(x)
+        # before training, result of theoretical submodel f(x) is returned
+        y = model(x=x)                           # predict with white box model
 
-        # train light gray box model with training data (X, Y)
-        y = foo(X=X, Y=Y)                     # only train light gray box model
+        # train light gray box model with data (X, Y)
+        model(X=X, Y=Y)                                                 # train
 
         # after model is trained, it keeps its weights for further preddictions
-        y = foo(x=x)                        # predict with light gray box model
+        y = model(x=x)                      # predict with light gray box model
 
         # combined traing and prediction
-        y = foo(X=X, Y=Y, x=x)    # train and predict with light gray box model
-
-        # compact form
-        y = LightGray(f=f)(X=X, Y=Y, x=x, fitMethod='lm')
+        y = model(X=X, Y=Y, x=x)                            # train and predict
     """
 
     def __init__(self, f, identifier='LightGray'):
         """
         Args:
             f (method or function):
-                theoretical submodel y = f(x) for single data point
+                theoretical submodel f(self, x) or f(x) for single data point
 
             identifier (string, optional):
                 object identifier
         """
         super().__init__(identifier=identifier, f=f)
 
-        self._weights = None
         self._nMaxOut = 1        # max nOut is '1' due to implementation limits
         self._nMaxWeights = 8           # number of arguments of f() except 'x'
 
-    def train(self, X=None, Y=None, **kwargs):
+    def train(self, X, Y, **kwargs):
         """
-        Fits coefficients of light gray box model and save weights as
-        self._weights
+        Trains model, stores X and Y as self.X and self.Y, and stores result
+        of best training trial as self.best.
+        Fitted coefficients are stored as self._weights
 
         Args:
-            X (2D array_like of float, optional):
-                input X[i=0..nPoint-1, j=0..nInp-1]
+            X (2D or 1D array_like of float, optional):
+                training input, shape: (nPoint, nInp) or shape: (nPoint)
 
-            Y (2D array_like of float, optional):
-                target Y[i=0..nPoint-1, k=0..nOut-1]
+            Y (2D or 1D array_like of float, optional):
+                training target, shape: (nPoint, nOut) or shape: (nPoint)
 
             kwargs (dict, optional):
                 keyword arguments:
 
-                fitMethod (string of of:('lm', 'trf', or 'dogbox')):
-                    optimizer method of scipy.optimizer.curve_fit()
-
                 bounds (2-tuple of float or 2-tuple of 1D array_like of float):
-                    pairs (xMin, xMax) limiting x
+                    list of pairs (xMin, xMax) limiting x
 
+                trainers (string or 1D array_like of string):
+                    optimizer method of scipy.optimizer.curve_fit()
+                    valid trainers: ('lm', 'trf', 'dogbox')), default: 'lm'
+
+                trials (int):
+                    maximum nunber of trials
         Returns:
-            (3-tuple of float, float, int):
-                (||y-Y||_2, max{|y-Y|}, index(max{|y-Y|}) if X and Y not None
-            or (None):
-                if X is None or Y is None or training fails
-
-        Note:
-            L2-norm = np.sqrt(np.mean(np.square(y - Y)))
+            see Model.train()
         """
+
+        def fWrapper(xT, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+            # fWrapper(x) is wrapper around Model.predict(), xT equals x.T
+            kw = {k: v for k, v in locals().items() if k not in ('self', 'xT')}
+
+            # xT.shape: (nInp, nPoint), xT.T.shape: (nPoint, nInp)
+            return Model.predict(self, x=xT.T, **kw).ravel()
+
         self.X = X if X is not None and Y is not None else self.X
         self.Y = Y if X is not None and Y is not None else self.Y
 
-        f = kwargs.get('f', None)
-        if f is not None:
-            self.f = f
-        assert self.f is not None
+        validTrainers = ('lm', 'trf', 'dogbox')
+        trainers = kwargs.get('trainers', None)
+        if trainers is None:
+            trainers = kwargs.get('trainer', None)
+        if trainers is None:
+            trainers = validTrainers
+        trainers = np.atleast_1d(trainers)
+        if trainers[0].lower() == 'all':
+            trainers = validTrainers
+        trials = kwargs.get('trials', 1)
 
-        fitMethod = kwargs.get('trainer', 'lm')
-        # bounds = kwargs.get('bounds', (-np.inf, np.inf))
+        if any([tr not in validTrainers for tr in trainers]):
+            trainers = validTrainers[0]
+            self.write('??? unknown trainer found, correct to:', trainers)
+        # TODO activate bounds = kwargs.get('bounds', (-np.inf, np.inf))
 
-        # fWrapper(x) is a wrapper around self.predict(), xT=x.T
-        def fWrapper(xT, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
-            kw = {k: v for k, v in locals().items() if k not in ('self', 'xT')}
-            assert len(kw) == self._nMaxWeights, \
-                str(len(kw)) + ' ' + str(self._nMaxWeights)
-
-            # xT.shape: (nInp, nPoint), xT.T.shape: (nPoint, nInp)
-            return self.predict(x=xT.T, **kw).ravel()
-
-        self.write('+++ curve_fit: ', None)
+        self.best = self.initBest()
         self._weights = None
+        self.write('    fit (', None)
+        for trainer in trainers:
+            self.write(trainer, ', ' if trainer != trainers[-1] else '', None)
 
-        # Option 'method' can be a string out of ('lm', 'trf', 'dogbox')
-        #     default is 'lm': Levenberg-Marquardt through leastsq() for
-        #     unconstrained problems, use 'trf' for constrained ones
-        #
-        #     'lm' requires nPoint >= nInp
+            trial = 0
+            while self._weights is None and trial < trials:
+                if trial == 0:
+                    p0 = None
+                else:
+                    print('+++ new p0:', p0)
+                    p0 = np.random.uniform(0, 1, size=(self._nMaxWeights))
+                try:
+                    self.ready = True             # required by Model.predict()
+                    c, cov = curve_fit(f=fWrapper,
+                                       xdata=self.X.T,  # shape: (nInp, nPoint)
+                                       ydata=self.Y.ravel(),  # shape: (nPoint)
+                                       p0=p0, sigma=None,
+                                       absolute_sigma=False,
+                                       # TODO activate bounds=(-np.inf,np.inf),
+                                       method=trainer)
 
-        # X.T.shape: (nInp, nPoint)  Y.ravel().shape: (nPoint,)
-        c, cov = curve_fit(f=fWrapper, xdata=self.X.T, ydata=self.Y.ravel(),
-                           p0=None, sigma=None, absolute_sigma=False,
-                           # TODO activate bounds: bounds=(-np.inf, np.inf),
-                           method=fitMethod)
+                    # TODO check for failure of curve_fit()
+                    self.ready = True
+                    if self.ready:
+                        self._weights = np.array(c)
+                        actual = self.error(X=X, Y=Y, silent=True)
+                        if self.best['L2'] > actual['L2']:
+                            self.best = actual
+                            self.best['trainer'] = trainer
+                            self.best['epochs'] = -1
+                except RuntimeError:
+                    self.ready = False
+                    print('\n??? max epochs exceeded, cont. with next trial')
+                    continue
+                trial += 1
 
-        # TODO check if curve_fit() failed
-        self.ready = True
+        assert self._weights is not None
+        assert self._nMaxWeights == self._weights.size, str(self._weights.size)
+        self.write('), w: ', None)
+        self.write([float(str(round(w, 3))) for w in self._weights if w != 1.])
+        self.write('    best trainer: ', "'", self.best['trainer'], "'",
+                   ', L2: ', float(str(round(self.best['L2'], 4))),
+                   ', abs: ', float(str(round(self.best['abs'], 4))))
 
-        if self.ready:
-            self._weights = np.array(c)
+        return self.best
 
-            assert self._nMaxWeights == self._weights.size, \
-                str(self._nMaxWeights) + ' ' + str(self._nWeights)
-            self.write([float(str(round(_c, 3))) for _c in c])
-
-        error = self.error(X=X, Y=Y, silent=self.silent)
-        self._L2norm = error[0]
-        return error
-
-    def predict(self, x=None, **kwargs):
+    def predict(self, x, **kwargs):
         """
-        Executes light gray box model
+        Executes Model, stores input x as self.x and output as self.y
 
         Args:
-            x (1D or 2D array_like of float, optional):
-                arguments, x.shape: (nPoint, nInp) or (nInp,)
+            x (2D or 1D array_like of float):
+                prediction input, shape: (nPoint, nInp) or shape: (nInp)
 
             kwargs (dict, optional):
                 keyword arguments
@@ -181,8 +208,8 @@ class LightGray(Model):
                     weights
 
         Returns:
-            self.y (2D array of float):
-                model output, y.shape: (nPoint, nOut)
+            (2D array of float):
+                prediction output, shape: (nPoint, nOut)
         """
         if self._weights is None:
             validKeys = ['c'+str(i) for i in range(self._nMaxWeights)]
@@ -190,73 +217,62 @@ class LightGray(Model):
         else:
             kw = {'c'+str(i): w for i, w in enumerate(self._weights)}
 
-        return super().predict(x, **kw)
+        return Model.predict(self, x, **kw)
 
 
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    ALL = 1
+    ALL = 0
 
     from plotArrays import plot_X_Y_Yref
     import Model as md
     from White import White
 
-    def fUser(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+    def fUser(self, x, **kwargs):
+        c0 = kwargs.get('c0', 1)
+        c1 = kwargs.get('c1', 1)
+        c2 = kwargs.get('c2', 1)
+        c3 = kwargs.get('c3', 1)
+
         x0, x1 = x[0], x[1]
         y0 = c0 + c1 * np.sin(c2 * x0) + c3 * (x1 - 1.5)**2
         return [y0]
 
     if 0 or ALL:
-        s = 'Light gray: add noise to Y_exa, fit, compare: y_fit with Y_exa'
+        s = 'Light gray: add noise to Y_exa, fit, compare: y with Y_exa'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        noise = 0.25
-        X = md.grid((-1, 8), (0, 3), n=(8, 8))
-        Y_exa = White(fUser)(x=X)
-        Y_nse = md.noise(Y_exa, absolute=noise)
-        plot_X_Y_Yref(X, Y_nse, Y_exa, ['X', 'Y_{nse}', 'Y_{exa}'])
+        noise = 10e-2
+        X = md.grid(8, [-1, 2], [0, 2])
+        y_exa = White(fUser)(x=X, silent=True)
+        Y = md.noise(y_exa, relative=noise)
+        plot_X_Y_Yref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
 
         # train with (X, Y_noise) and predict for x=X, variant with xKeys/yKeys
-        lgr = LightGray(fUser)
-        y_fit = lgr(XY=(X, Y_nse, ['xx0', 'xx1'], ['yy']), x=X)
-
-        plot_X_Y_Yref(X, y_fit, Y_exa, ['X', 'y_{fit}', 'Y_{exa}'])
-        df = lgr.xy2frame()
-        print('df:\n', df)
+        model = LightGray(fUser)
+        model.silent = True
+        best = model(X=X, Y=Y)
+        y = model(x=X)
+        plot_X_Y_Yref(X, y, y_exa, ['X', 'y', 'y_{exa}'])
+        print('+++ best:', best)
+        # df = model.xy2frame()
+        # print('df:\n', df)
 
     if 1 or ALL:
         s = 'Creates exact Y(X), add noise, fit model, compare: y_fit vs Y_exa'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         noise = 0.25
-        X = md.grid((-1, 8), (0, 3), n=(8, 8))
-        Y_exa = White(fUser)(x=X)
-        Y_nse = md.noise(Y_exa, absolute=noise)
-        plot_X_Y_Yref(X, Y_nse, Y_exa, ['X', 'Y_{nse}', 'Y_{exa}'])
+        X = md.grid(8, [-1, 8], [0, 3])
+        y_exa = White(fUser)(x=X)
+        Y = md.noise(y_exa, absolute=noise)
+        plot_X_Y_Yref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
 
         # train with (X, Y_noise) and predict for x=X, variant with xKeys/yKeys
-        L2norm, bestMethod = np.inf, 'lm'
-        lgr = LightGray(fUser)
-        for fitMethod in ('lm', 'trf', 'dogbox'):
-            print('+++ fitMethod:', fitMethod)
+        y = LightGray(fUser)(X=X, Y=Y, x=X, silent=False)
 
-            y = lgr(XY=(X, Y_nse, ['xx0', 'xx1'], ['yy']), x=X,
-                    fitMethod=fitMethod)
+        plot_X_Y_Yref(X, y, y_exa, ['X', 'y', 'y_{exa}'])
 
-            print('x:', lgr.x.shape)
-            print('y:', lgr.y.shape)
-            print('X:', lgr.X.shape)
-            print('Y:', lgr.Y.shape)
-            print('+++ L2-norm(' + str(fitMethod) + '):', lgr._best[0],
-                  '\n\n')
-            if L2norm > lgr._best[0]:
-                L2norm = lgr._best[0]
-                Y_fit = y
-                fitMethod = fitMethod
-
-        print("bestMethod: '" + bestMethod + "', L2norm:", L2norm)
-        plot_X_Y_Yref(X, Y_fit, Y_exa, ['X', 'Y_{fit}', 'Y_{exa}'])
-
-        df = lgr.xy2frame()
-        print('df containing y=f(x):\n', df)
+        # df = lgr.xy2frame()
+        # print('df containing y=f(x):\n', df)

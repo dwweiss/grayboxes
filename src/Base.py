@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-01 DWW
+      2018-05-10 DWW
 
 Note on excution of a python script in from file manager on Windows:
     1. Install Python 3.0 or newer
@@ -81,8 +81,8 @@ class Base(object):
 
     - Object specialization in "vertical" and "horizontal" direction
         - leader-type objects implementing alternative control of tasks
-        - peer-type opjects implement empirical models (data-driven),
-          theoretical models, knowledge objects (e.g. properties of matter)
+        - peer-type opjects implement empirical submodels (data-driven),
+          theoretical submodels, knowledge objects (e.g. properties of matter)
           and generic service objects (e.g. plotting devices)
 
      - Uniform interface to code execution of objects derived from the
@@ -708,14 +708,15 @@ class Base(object):
                 self.logFile = None  # see setter, assigns: identifier + '.log'
 
         if self.isRoot():
-            self.write('+++ path: ', "'", self.path, "'")
+            self.write('=== path: ', "'", self.path, "'")
             silentPrevious = self.silent
             self.silent = True
             self.write('+++ date: ', str(datetime.now().date()),
                        ' ', str(datetime.now().time())[:8])
             self.silent = silentPrevious
 
-            self.write("\n*** This is: '", self.program, "'", None)
+            self.write()
+            self.write("*** This is: '", self.program, "'", None)
             if self.identifier and self.identifier != self.program:
                 self.write(", id: '", self.identifier, "'", None)
             self.write(", version: '", self.version, "'")

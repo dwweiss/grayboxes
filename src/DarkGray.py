@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-07 DWW
+      2018-05-14 DWW
 """
 
 import numpy as np
@@ -28,14 +28,33 @@ from Black import Black
 
 class DarkGray(Model):
     """
-    Implementation of dark gray box model
+    Dark gray box model
+
+    Example:
+        External function or method is assigned to self.f():
+            def f(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+                y0 = c0 * x[0]*x[0] + c1 * x[1]
+                y1 = x[1] * c3
+                return [y0, y1]
+
+            X = [[..], [..], ..]
+            Y = [[..], [..], ..]
+            x = [[..], [..], ..]
+
+            # expanded form:
+            model = DarkGray(f)
+            best = model.train(X, Y, neurons=[5])
+            y = model.predict(x)
+
+            # compact form:
+            y = DarkGray(f)(X=X, Y=Y, x=x, neurons=[5])
     """
 
     def __init__(self, f, identifier='DarkGray'):
         """
         Args:
             f (method or function):
-                theoretical submodel y = f(x) for single data point
+                theoretical submodel f(self, x) or f(x) for single data point
 
             identifier (string, optional):
                 object identifier
@@ -54,44 +73,7 @@ class DarkGray(Model):
 
     def train(self, X, Y, **kwargs):
         """
-        Trains dark gray box model
-
-        Args:
-            X (2D array_like of float):
-                training input
-
-            Y (2D array_like of float):
-                training target
-
-            kwargs (dict, optional):
-                keyword arguments:
-
-                ... Black() options
-
-        Returns:
-            (3-tuple of float, float, int):
-                (||y-Y||_2, max{|y-Y|}, index(max{|y-Y|}) if X and Y not None
-            or (None):
-                if X is None or Y is None or training fails
-
-        Example:
-            External function or method is assigned to self.f():
-                def f(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
-                    y0 = c0 * x[0]*x[0] + c1 * x[1]
-                    y1 = x[1] * c3
-                    return [y0, y1]
-
-                X = [[..], [..], ..]
-                Y = [[..], [..], ..]
-                x = [[..], [..], ..]
-
-                # expanded form:
-                model = DarkGray(f=f)
-                norm = model.train(X, Y, neural=[5])
-                y = model.predict(x)
-
-                # compact form:
-                y = DarkGray(f=f)(X=X, Y=Y, x=x, neural=[5])
+        see Model.train()
         """
         if X is None or Y is None:
             return None
@@ -100,24 +82,24 @@ class DarkGray(Model):
         opt = self.kwargsDel(kwargs, ('x'))
 
         y = Model.predict(self, x=self.X, **opt)
-        norm = self._black.train(X=np.c_[self.X, y], Y=y-self.Y, **opt)
+        self.best = self._black.train(X=np.c_[self.X, y], Y=y-self.Y, **opt)
 
-        return norm
+        return self.best
 
-    def predict(self, x=None, **kwargs):
+    def predict(self, x, **kwargs):
         """
-        Executes dark gray box model
+        Executes Model, stores input x as self.x and output as self.y
 
         Args:
-            x (2D array_like of float, optional):
-                prediction input
+            x (2D or 1D array_like of float):
+                prediction input, shape: (nPoint, nInp) or shape: (nInp)
 
             kwargs (dict, optional):
                 keyword arguments
 
         Returns:
-            self.y (2D array of float):
-                prediction result
+            (2D array of float):
+                prediction output, shape: (nPoint, nOut)
         """
         if x is None:
             return None
@@ -189,9 +171,9 @@ if __name__ == '__main__':
         s = 'Dark gray box model 1'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        drk = DarkGray(f='demo')
-        X, Y = drk.frame2arrays(df, ['x0', 'x4'], ['y0'])
-        y = drk(X=X, Y=Y, x=X, silent=True, neural=[10])
+        model = DarkGray(f='demo')
+        X, Y = model.frame2arrays(df, ['x0', 'x4'], ['y0'])
+        y = model(X=X, Y=Y, x=X, silent=True, neurons=[10])
         plotIsoMap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
         plotIsoMap(X[:, 0], X[:, 1], y[:, 0], title='y(X)')
         plotIsoMap(X[:, 0], X[:, 1], (y-Y)[:, 0], title='y(X)  -Y')
@@ -211,7 +193,7 @@ if __name__ == '__main__':
         def f(x):
             return x[0] + x[1]
 
-        y = DarkGray(f)(X=X, Y=Y, x=X, silent=True, neural=[10])
+        y = DarkGray(f)(X=X, Y=Y, x=X, silent=True, neurons=[10])
 
         plotIsoMap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
         plotIsoMap(X[:, 0], X[:, 1], y[:, 0], title='y(X)')
@@ -230,7 +212,7 @@ if __name__ == '__main__':
         X = np.asfarray(df.loc[:, ['mDot', 'p']])
         Y = np.asfarray(df.loc[:, ['A']])
 
-        y = Black()(X=X, Y=Y, neural=[], silent=True, x=X)
+        y = Black()(X=X, Y=Y, neurons=[], silent=True, x=X)
 
         plotIsoMap(X.T[0], X.T[1], Y.T[0] * 1e3, title=r'$A_{prc}\cdot 10^3$')
         plotIsoMap(X.T[0], X.T[1], y.T[0] * 1e3, title=r'$A_{blk}\cdot 10^3$')

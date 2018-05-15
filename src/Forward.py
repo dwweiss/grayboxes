@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-07 DWW
+      2018-05-14 DWW
 """
 
 import numpy as np
@@ -44,14 +44,15 @@ class Forward(Base):
 
         # create operation on model
         op = Forward(White(function))
+        or:
         op = Forward(White(method))
 
         # training and prediction
-        op(X=X, Y=Y)     # train
-        _, y = op(x=x)       # predict
+        best = op(X=X, Y=Y)     # train
+        x, y = op(x=x)          # predict
 
         # compact form
-        _, y = Forward(White(function))(X=X, Y=Y, x=x)
+        x, y = Forward(White(function))(X=X, Y=Y, x=x)
 
 
     Note:
@@ -97,24 +98,28 @@ class Forward(Base):
     def pre(self, **kwargs):
         """
         - Assigns box type model
-        - Assigns training data set (X, Y), and model input x
+        - Assigns training input and target (X, Y), and prediction input x
         - Trains model if (X, Y) are not None
 
         Args:
             kwargs (dict, optional):
                 keyword arguments:
 
-                XY (2-tuple of 2D array_like of float):
+                XY (2-tuple of 2D array_like of float, optional):
                     input and target of training, this argument supersedes X, Y
 
-                X (2D array_like of float):
-                    input of training
+                X (2D or 1D array_like of float, optional):
+                    training input, shape: (nPoint, nInp) or shape: (nPoint)
+                    default: self._X
 
-                Y (2D array_like of float):
-                    target of training
+                Y (2D or 1D array_like of float, optional):
+                    training target, shape: (nPoint, nOut) or shape: (nPoint)
+                    default: self._Y
 
-                x (2D array_like of float):
+                x (2D or 1D array_like of float, optional):
                     input to forward prediction or to sensitivity analysis
+                    shape: (nPoint, nInp) or shape: (nInp)
+                    default: self._x
         """
         super().pre(**kwargs)
 
@@ -126,7 +131,8 @@ class Forward(Base):
             X, Y = kwargs.get('X', None), kwargs.get('Y', None)
         if not isinstance(self.model, White):
             if X is not None and Y is not None:
-                self.model.train(X, Y, **self.kwargsDel(kwargs, ['X', 'Y']))
+                self.best = self.model.train(X, Y, **self.kwargsDel(kwargs,
+                                             ['X', 'Y']))
 
         x = kwargs.get('x', None)
         if type(self).__name__ in ('Minimum', 'Maximum', 'Inverse'):
@@ -145,7 +151,8 @@ class Forward(Base):
 
         Return:
             x, y (2-tuple of 2D arrays of float):
-                input and output of model prediction
+                input and output of model prediction,
+                x.shape: (nPoint, nInp) and y.shape: (nPoint, nOut)
         """
         super().task(**kwargs)
 

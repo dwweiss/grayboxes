@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-02 DWW
+      2018-05-12 DWW
 """
 
 import numpy as np
@@ -29,9 +29,9 @@ from Neural import Neural
 
 class Black(Model):
     """
-    Black box model y = f(x)
+    Black box model y = F^*(x, w), w = train(X, Y, f(x))
 
-        - Neural network is employed if argument 'neural' is passed by kwargs
+        - Neural network is employed if argument 'neurons' is passed by kwargs
           Best neural network of all trials is saved as 'self._empirical._net'
         - Splines are employed if the argument 'splines' is passed by kwargs
 
@@ -42,12 +42,12 @@ class Black(Model):
 
         # black box, neural network, expanded:
         model = Black()
-        model(X=X, Y=Y, neural=[2, 3])
+        model(X=X, Y=Y, neurons=[2, 3])
         yTrn = model(x=X)
         yTst = model(x=x)
 
         # black box, neural network, compact:
-        y = Black()(XY=(X, Y), neural=[2, 3], x=x)
+        y = Black()(XY=(X, Y), neurons=[2, 3], x=x)
     """
 
     def __init__(self, identifier='Black'):
@@ -71,20 +71,21 @@ class Black(Model):
 
     def train(self, X, Y, **kwargs):
         """
-        Trains black model
+        Trains model, stores X and Y as self.X and self.Y, and stores result
+        of best training trial as self.best
 
         Args:
-            X (1D or 2D array_like of float):
-                training input, shape: (nPoint, nInp)
+            X (2D or 1D array_like of float):
+                training input, shape: (nPoint, nInp) or shape: (nPoint)
 
-            Y (1D or 2D array_like of float):
-                training target, shape: (nPoint, nOut)
+            Y (2D or 1D array_like of float):
+                training target, shape: (nPoint, nOut) or shape: (nPoint)
 
             kwargs (dict, optional):
                 keyword arguments:
 
-                neural (int or 1D array_like of int):
-                    number of neurons in all hidden layers of neural network
+                neurons (int or 1D array_like of int):
+                    number of neurons in the hidden layers of neural network
 
                 splines (1D array_like of float:
                     not specified yet
@@ -92,13 +93,7 @@ class Black(Model):
                 ... additional training options of network, see Neural.train()
 
         Returns:
-            (3-tuple of float):
-                (||y-Y||_2, max{|y-Y|}, index(max{|y-Y|})
-            or (None):
-                if X is None or Y is None
-
-        Side effects:
-            self.X and self.Y are overwritten with X and Y
+            see Model.train()
         """
         if X is None or Y is None:
             return None
@@ -114,54 +109,50 @@ class Black(Model):
         assert self.X.shape[0] > 2, str(self.X.shape)
         assert self.Y.shape[0] > 2, str(self.Y.shape)
 
-        neural = kwargs.get('neural', None)
-        splines = kwargs.get('splines', None) if neural is None else None
+        neurons = kwargs.get('neurons', None)
+        splines = kwargs.get('splines', None) if neurons is None else None
 
-        if neural is not None:
-            self.write('+++ train neural network, hidden:', neural)
+        if neurons is not None:
+            self.write('+++ train neural, hidden neurons:', neurons)
 
             opt = kwargs.copy()
-            opt['hidden'] = opt.pop('neural')             # rename 'neural' key
             if self._empirical is not None:
                 del self._empirical
             self._empirical = Neural()
             self._empirical.silent = self.silent
 
-            self._empirical.train(self.X, self.Y, **opt)
-
+            self.best = self._empirical.train(self.X, self.Y, **opt)
             self.ready = self._empirical.ready
 
         elif splines is not None:
             # ...
+            self.best = None
             self.ready = False
             assert 0, 'splines not implemented'
 
         else:
+            self.best = None
             self.ready = False
             assert 0, 'unknown empirical method'
 
-        return self.error(self.X, self.Y)
+        return self.best
 
     def predict(self, x, **kwargs):
         """
-        Predicts y=f(x)
+        Executes Model, stores input x as self.x and output as self.y
 
         Args:
             x (2D or 1D array_like of float):
-                prediction input, x.shape: (nPoint, nInp) or (nInp,)
+                prediction input, shape: (nPoint, nInp) or shape: (nInp)
 
             kwargs (dict, optional):
                 keyword arguments
 
         Returns:
             (2D array of float):
-                prediction result self.y, shape: (nPoint, nOut)
-
-        Side effects:
-            self.x is overwritten with x
-
+                prediction output, shape: (nPoint, nOut)
         """
-        assert self.ready, 'Black is not trained'
+        assert self.ready
 
         self.x = x
         self.y = self._empirical.predict(x=self.x)
@@ -181,12 +172,11 @@ if __name__ == '__main__':
 
     def example1():
         noise = 0.1
-        X = np.linspace(0, 1, 20)
-        Y = X**2 + np.random.rand(X.size) * noise
-        X, Y = np.atleast_2d(X).T, np.atleast_2d(Y).T
+        X = md.grid(-20, [0, 1])
+        Y = md.noise(White(lambda x: [x[0]**2])(x=X), absolute=noise)
         print('X.shape:', X.shape, 'Y.shape:', Y.shape)
 
-        y = Black()(X=X, Y=Y, neural=[], x=X, silent=True)
+        y = Black()(X=X, Y=Y, x=X, neurons=[], silent=True)
 
         plt.plot(X, Y, '.', X, y, '-')
         plt.show()
@@ -214,16 +204,16 @@ if __name__ == '__main__':
         x = np.atleast_2d(np.linspace(X.min()-dx, X.max()+dx, nPointTst)).T
 
         blk = Black()
-        opt = {'neural': [10, 10], 'trials': 5, 'goal': 1e-6,
+        opt = {'neurons': [10, 10], 'trials': 5, 'goal': 1e-6,
                'epochs': 500, 'trainers': 'bfgs rprop'}
 
-        L2Trn, absTrn, iAbsTrn = blk(X=X, Y=Y, **opt)
+        bestTrn = blk(X=X, Y=Y, **opt)
         y = blk(x=x)
-        L2Tst, absTst, iAbsTst = blk.error(x, White(f)(x=x))
+        bestTst = blk.error(x, White(f)(x=x))
 
-        plt.title('$hidden:' + str(opt['neural']) +
-                  ', L_{2}^{train}:' + str(round(L2Trn, 4)) +
-                  ', L_{2}^{test}:' + str(round(L2Tst, 4)) + '$')
+        plt.title('$neurons:' + str(opt['neurons']) +
+                  ', L_{2}^{train}:' + str(round(bestTrn['L2'], 4)) +
+                  ', L_{2}^{test}:' + str(round(bestTst['L2'], 4)) + '$')
         plt.cla()
         plt.ylim(min(-2, Y.min(), y.min()), max(2, Y.max(), Y.max()))
         plt.yscale('linear')
@@ -231,8 +221,10 @@ if __name__ == '__main__':
         plt.scatter(X, Y, marker='x', c='r', label='training data')
         plt.plot(x, y, c='b', label='prediction')
         plt.plot(x, f(x), linestyle=':', label='analytical')
+        iAbsTrn = bestTrn['iAbs']
         plt.scatter([X[iAbsTrn]], [Y[iAbsTrn]], marker='o', color='r',
                     s=66, label='max abs train')
+        iAbsTst = bestTst['iAbs']
         plt.scatter([x[iAbsTst]], [y[iAbsTst]], marker='o', color='b',
                     s=66, label='max abs test')
         plt.legend(bbox_to_anchor=(1.1, 0), loc='lower left')
@@ -310,21 +302,20 @@ if __name__ == '__main__':
 
             # network training
             blk = Black()
-            L2Trn, absTrn, iAbsTrn = \
-                blk(X=X, Y=Y, neural=definition, trials=5, epochs=500,
-                    show=500, algorithms='bfgs', goal=1e-5)
+            bestTrn = blk(X=X, Y=Y, neurons=definition, trials=5, epochs=500,
+                          show=500, algorithms='bfgs', goal=1e-5)
 
             # network prediction
             y = blk.predict(x=x)
 
-            L2Tst, absTst, iAbsTst = blk.error(x, yRef, silent=False)
-            if L2TstBest > L2Tst:
-                L2TstBest = L2Tst
+            bestTst = blk.error(x, yRef, silent=False)
+            if L2TstBest > bestTst['L2']:
+                L2TstBest = bestTst['L2']
                 iDefBest = iDef
             row = definitionCopy.copy()
             row = row + [0]*(MAX_HIDDEN_LAYERS - len(row))
-            row.extend([L2Trn, absTrn, int(iAbsTrn),
-                        L2Tst,  absTst,  int(iAbsTst),
+            row.extend([bestTrn['L2'], bestTrn['abs'], bestTrn['iAbs'],
+                        bestTst['L2'], bestTst['abs'], bestTst['iAbs'],
                         0, 0, 0  # mse trainer epochs
                         ])
             # print('row:', row, len(row), 'columns:', collect.keys)
@@ -333,7 +324,8 @@ if __name__ == '__main__':
             if isinstance(blk._empirical, Neural):
                 print('+++ neural network definition:', definition)
             plt.title('$' + str(definitionCopy) + '\ \ L_2(tr/te):\ ' +
-                      str(round(L2Trn, 5)) + r', ' + str(round(L2Tst, 4)) +
+                      str(round(bestTrn['L2'], 5)) + r', ' +
+                      str(round(bestTst['L2'], 4)) +
                       '$')
             plt.xlim(x.min() - 0.25, x.max() + 0.25)
             plt.ylim(-2, 2)
@@ -341,10 +333,10 @@ if __name__ == '__main__':
             plt.scatter(X, Y, marker='>', c='g', label='training data')
             plt.plot(x, y, linestyle='-', label='prediction')
             plt.plot(x, yRef, linestyle=':', label='analytical')
-            plt.scatter([X[iAbsTrn]], [Y[iAbsTrn]], marker='o', color='c',
-                        s=60, label='max err train')
-            plt.scatter([x[iAbsTst]], [y[iAbsTst]], marker='o', color='r',
-                        s=60, label='max err test')
+            plt.scatter([X[bestTrn['iAbs']]], [Y[bestTrn['iAbs']]], marker='o',
+                        color='c', s=60, label='max err train')
+            plt.scatter([x[bestTst['iAbs']]], [y[bestTst['iAbs']]], marker='o',
+                        color='r', s=60, label='max err test')
             plt.legend(bbox_to_anchor=(1.15, 0), loc='lower left')
             if saveFigures:
                 f = file
@@ -393,7 +385,7 @@ if __name__ == '__main__':
                        f2]
 
         # neural network options
-        opt = {'trainers': 'bfgs rprop', 'neural': []}
+        opt = {'trainers': 'bfgs rprop', 'neurons': []}
 
         Y = np.array(df.loc[:, ['u']])                   # extracts an 2D array
         for f in definitions:
