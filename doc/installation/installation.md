@@ -43,7 +43,12 @@ Command lines starting with **$** will be executed in a Linux terminal
     $ sudo -H pip3 install neurolab
     $ sudo -H pip3 install tensorflow
     $ sudo -H pip3 install keras
-  
+
+##### Lmfit (non-Linear least-squares minimization)
+    $ sudo -H pip3 install asteval
+    $ sudo -H pip3 install lmfit
+
+
 ##### Fenics (finite elements)
 
     $ sudo add-apt-repository ppa:fenics-packages/fenics
