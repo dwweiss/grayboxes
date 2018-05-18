@@ -7,7 +7,7 @@ Command lines starting with **$** will be executed in a Linux terminal
 
 ##### System
 
-- Choose long-term supported (LTS) Linux and install it
+- Install a long-term supported (LTS) Linux
 - Consider a separate disk partition with directory **/X** besides the default /home/**USER** directory, 
   change permission after completion of Linux installation
   
