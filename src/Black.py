@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-12 DWW
+      2018-05-20 DWW
 """
 
 import numpy as np
@@ -98,7 +98,6 @@ class Black(Model):
         if X is None or Y is None:
             return None
 
-        # X or Y are 1D arrays, their must be shape: (nPoint) with nPoint > 2
         self.X, self.Y = np.atleast_2d(X), np.atleast_2d(Y)
         if self._X.shape[0] == 1:
             self._X = self._X.T
@@ -115,13 +114,12 @@ class Black(Model):
         if neurons is not None:
             self.write('+++ train neural, hidden neurons:', neurons)
 
-            opt = kwargs.copy()
             if self._empirical is not None:
                 del self._empirical
             self._empirical = Neural()
             self._empirical.silent = self.silent
 
-            self.best = self._empirical.train(self.X, self.Y, **opt)
+            self.best = self._empirical.train(self.X, self.Y, **kwargs)
             self.ready = self._empirical.ready
 
         elif splines is not None:
@@ -155,7 +153,7 @@ class Black(Model):
         assert self.ready
 
         self.x = x
-        self.y = self._empirical.predict(x=self.x)
+        self.y = self._empirical.predict(self.x, **kwargs)
         return self.y
 
 
@@ -174,7 +172,6 @@ if __name__ == '__main__':
         noise = 0.1
         X = md.grid(-20, [0, 1])
         Y = md.noise(White(lambda x: [x[0]**2])(x=X), absolute=noise)
-        print('X.shape:', X.shape, 'Y.shape:', Y.shape)
 
         y = Black()(X=X, Y=Y, x=X, neurons=[], silent=True)
 
@@ -185,7 +182,8 @@ if __name__ == '__main__':
 
     def example2():
         # neural network, 1D problem sin(x) with noise
-        def f(x, a=-0.2, b=0, c=0, d=0, e=0):
+        def f(x, *args):
+            a, b = args if len(args) > 0 else 1, 1
             return np.sin(x) + a * x + b
 
         # training data
@@ -236,7 +234,7 @@ if __name__ == '__main__':
     def example3():
         # 1D problem sin(x) with noise, variation of neural network structure
         saveFigures = True
-        path = 'c:/temp/'
+        path = Black().path
         file = 'sin_x_-3..3.5pi'
         nPoint = 20
         maxNeuronsInLayer = 2  # 16
@@ -246,7 +244,8 @@ if __name__ == '__main__':
         maxNoise = 0.0
 
         # compute training target ('X', 'U') and test data ('x', 'uAna')
-        def f(x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+        def f(x, *args):
+            c0, c1 = args if len(args) > 0 else 1, 1
             return np.sin(x) * c0 + c1
         X = np.linspace(-2*np.pi, +2*np.pi, nPoint)   # argument of train data
         if 0:
@@ -339,11 +338,11 @@ if __name__ == '__main__':
                         color='r', s=60, label='max err test')
             plt.legend(bbox_to_anchor=(1.15, 0), loc='lower left')
             if saveFigures:
-                f = file
+                f = path + '/' + file
                 for s in definitionCopy:
                     f += '_' + str(s)
                 print('file:', f)
-                plt.savefig(path + f + '.png')
+                plt.savefig(f + '.png')
             plt.show()
 
             print('+++ optimum: definition: ', definitions[iDefBest],

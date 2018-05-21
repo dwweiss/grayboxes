@@ -173,7 +173,8 @@ class MediumGray(md.Model):
 
         Example:
             Method f(self, x) or function f(x) is assigned to self.f, example:
-                def f(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+                def f(self, x, *args):
+                 c0, c1, c2 = args if len(args)m > 0 else 1, 1, 1
                     y0 = c0 * x[0]*x[0] + c1 * x[1]
                     y1 = x[1] * c3
                     return [y0, y1]
@@ -239,16 +240,16 @@ class MediumGray(md.Model):
                 prediction output, shape: (nPoint, nOut)
         """
         assert self._black is not None and self._black.ready
-        opt = self.kwargsDel(kwargs, 'x')
+        kw = self.kwargsDel(kwargs, 'x')
 
         self.x = x
 
         if '-l' in self.algorithm:
-            xTun = self._black.predict(x=self.x, **opt)
+            xTun = self._black.predict(x=self.x, **kw)
             xMod = np.c_[self.xCom, xTun]
-            self.y = md.predict(self, x=xMod, **opt)
+            self.y = md.predict(self, x=xMod, **kw)
         else:
-            self.y = self._black.predict(x=x, **opt)
+            self.y = self._black.predict(x=x, **kw)
 
         return self.y
 

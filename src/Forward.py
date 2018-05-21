@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-14 DWW
+      2018-05-19 DWW
 """
 
 import numpy as np
@@ -56,7 +56,7 @@ class Forward(Base):
 
 
     Note:
-        - Forward.__call__() returns 2-tuple of 2D arrays of float (x and y)
+        Forward.__call__() returns 2-tuple of 2D arrays of float (x and y)
     """
 
     def __init__(self, model, identifier='Forward'):
@@ -192,12 +192,12 @@ if __name__ == '__main__':
     from Black import Black
 
     # function without access to 'self' attributes
-    def function(x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+    def function(x, *args):
         print('0')
         return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
     # method with access to 'self' attributes
-    def method(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+    def method(self, x, *args):
         print('1')
         return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 

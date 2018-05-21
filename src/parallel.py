@@ -15,7 +15,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-14 DWW
+      2018-05-21 DWW
 """
 
 import numpy as np
@@ -35,6 +35,10 @@ if os.name == 'posix':
 
 """
 Note:
+    Execute python script parallel:
+        mpiexec -n 4 python3 foo.py     # ==> 4 processe
+
+References:
     Example for Spawn():
         https://gist.github.com/donkirkby/eec37a7cf25f89c6f259
 
@@ -85,19 +89,25 @@ def rank():
     return comm.Get_rank()
 
 
-def predict_scatter(f, x, **kwargs):
+def predict_scatter(f, x, *args, **kwargs):
     """
     Parallelizes prediction of model y = f(x) employing scatter() and gather()
 
     Args:
         f (function):
-            generic model f(x) without 'self' argument
+            generic function f(x) without 'self' argument
 
         x (2D or 1D array_like of float):
-            input array, shape: (nPoint, nInp)
+            prediction input, shape: (nPoint, nInp)
+
+        args (argument list, optional):
+            positional arguments
 
         kwargs (dict, optional):
             keyword arguments
+
+            silent (bool):
+            If silent is True then supress printing
 
     Returns:
         y (2D array of float):
@@ -108,10 +118,7 @@ def predict_scatter(f, x, **kwargs):
     assert f is not None
     assert x is not None
 
-    silent = kwargs.get('silent', False)
-    kw = kwargs.copy()
-    if 'x' in kw:
-        del kw['x']
+    silent = kwargs.get('silent', True)
 
     comm = communicator()
 
@@ -123,7 +130,7 @@ def predict_scatter(f, x, **kwargs):
 
     if not silent:
         print('+++ predictParallel(), rank: ', rank(),
-              ' (nProc: ', nProc, 'nCore: ', nCore, ')', sep='')
+              ' (nProc: ', nProc, ', nCore: ', nCore, ')', sep='')
 
     # splits single 2D input array to groups of 2D inputs (to array of 2D arr.)
     if rank() == 0:
@@ -136,10 +143,10 @@ def predict_scatter(f, x, **kwargs):
 
     yProc = []
     for xPoint in xProc:
-        yPoint = f(xPoint, **kw) if xPoint[0] != np.inf else [np.inf]
+        yPoint = np.atleast_1d(f(xPoint, *args)) if xPoint[0] != np.inf \
+                                                 else [np.inf]
         yProc.append(yPoint)
 
-    # collects 2D group outputs from multiple cores (in array of 2D arrays)
     yAll = comm.gather(yProc, 0)
 
     # merges array of 2D group outputs to single 2D output array
@@ -259,6 +266,10 @@ def merge(y3D):
     if y3D is None:
         return np.atleast_2d(np.inf)
 
+    y3D = np.array(y3D)
+    if y3D.ndim == 2:
+        return y3D
+
     y2D = []
     for yProc in y3D:
         for yPoint in yProc:
@@ -317,6 +328,8 @@ def xDemo(nPoint=24, nInp=2):
 # Examples ####################################################################
 
 if __name__ == '__main__':
+    ALL = 0
+
     #    if 'worker' in sys.argv:
     #
     #        def f(x, **kwargs):
@@ -344,10 +357,8 @@ if __name__ == '__main__':
     #
     #        print('x:', 'y:', y)
 
-    if 0:
-        ALL = 0
-
-        def f(x, **kwargs):
+    if 1 or ALL:
+        def f(x, *args, **kwargs):
             for i in range(10*1000):
                 sum = 0
                 for i in range(1000):
@@ -356,82 +367,86 @@ if __name__ == '__main__':
 
         comm = communicator()
         if comm is None:
-            nProc = 12
+            nProc = 4
         else:
             nProc = comm.Get_size()
             nCore = psutil.cpu_count(logical=False)
 
         nPoint, nInp = 5, 2
+        print('mpi():', mpi())
+        print('communicator():', communicator())
+        print('nCore nProc:', nCore, nProc)
 
-        #######################################################################
+    #######################################################################
 
-        if 0 or ALL:
-            x = xDemo(nPoint, nInp)
-            print('x:', x)
+    if 1 or ALL:
+        x = xDemo(nPoint, nInp)
+        print('x:', x)
 
-            if communicator() is not None:
-                print('+++ predict on muliple cores:',
-                      communicator().Get_size())
-                predict_scatter(f=f, x=x)
-            else:
-                print('+++ predict on single core')
-                y = []
-                for xPoint in x:
-                    yPoint = f(x=xPoint) if xPoint[0] != np.inf else np.inf
-                    y.append(np.atleast_1d(yPoint))
-                y = np.array(y)
+        if communicator() is not None:
+            print('+++ predict on muliple cores:',
+                  communicator().Get_size())
+            y = predict_scatter(f=f, x=x)
+        else:
+            print('+++ predict on single core')
+            y = []
+            for xPoint in x:
+                yPoint = f(x=xPoint) if xPoint[0] != np.inf else np.inf
+                y.append(np.atleast_1d(yPoint))
+            y = np.array(y)
 
+        print('x:', x.tolist())
+        print('y:', y.tolist())
+
+    #######################################################################
+
+    # TODO remove code below after module test
+
+    if 0 or ALL:
+        s = 'Generates example input'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+        x = xDemo(nPoint, nInp)
+        if nPoint <= 20:
+            print('x:', x.tolist(), '\n')
+
+        s = 'Split input into sequence of input groups for multiple cores'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+        xAll = split(x, nProc)
+        print(x3D2str(xAll))
+        if nPoint <= 20:
+            print('xAll:', xAll.tolist())
+
+        if communicator() is None:
+            s = 'Computes output on single core'
+            print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+            yAll = []
+            for xProc in xAll:
+                yProc = []
+                for xPoint in xProc:
+                    yPoint = f(xPoint) if xPoint[0] != np.inf else [np.inf]
+                    yProc.append(yPoint)
+                yAll.append(yProc)
+            yAll = np.array(yAll)
+            print(x3D2str(yAll))
+            if nPoint <= 20:
+                print('yAll:', yAll.tolist(), '\n')
+
+            s = "Merges output from multiple cores and removes 'inf'-rows"
+            print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+            y = merge(yAll)
+            if nPoint <= 20:
+                print('x:', x.tolist())
+            if nPoint <= 20:
+                print('y:', y.tolist())
+        else:
+            s = 'Computes output on multiple cores'
+            print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+            y = predict_scatter(f, x, silent=False)
+
+        if nPoint <= 20:
             print('x:', x.tolist())
             print('y:', y.tolist())
 
-        #######################################################################
-
-        # TODO remove code below after module test
-
-        if 0 or ALL:
-            s = 'Generates example input'
-            print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-            x = xDemo(nPoint, nInp)
-            if nPoint <= 20:
-                print('x:', x.tolist(), '\n')
-
-            s = 'Split input into sequence of input groups for multiple cores'
-            print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-            xAll = split(x, nProc)
-            print(x3D2str(xAll))
-            if nPoint <= 20:
-                print('xAll:', xAll.tolist())
-
-            if communicator() is None:
-                s = 'Computes output on single core'
-                print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-                yAll = []
-                for xProc in xAll:
-                    yProc = []
-                    for xPoint in xProc:
-                        yPoint = f(xPoint) if xPoint[0] != np.inf else [np.inf]
-                        yProc.append(yPoint)
-                    yAll.append(yProc)
-                yAll = np.array(yAll)
-                print(x3D2str(yAll))
-                if nPoint <= 20:
-                    print('yAll:', yAll.tolist(), '\n')
-
-                s = "Merges output from multiple cores and removes 'inf'-rows"
-                print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-                y = merge(yAll)
-                if nPoint <= 20:
-                    print('x:', x.tolist())
-                if nPoint <= 20:
-                    print('y:', y.tolist())
-            else:
-                s = 'Computes output on multiple cores'
-                print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-                y = predict_scatter(f, x, silent=False)
-
-            if nPoint <= 20:
-                print('x:', x.tolist())
-                print('y:', y.tolist())
 
         """ Example output:
         -----------------------

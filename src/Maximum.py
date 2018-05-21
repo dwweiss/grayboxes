@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-07 DWW
+      2018-05-19 DWW
 """
 
 from Minimum import Minimum
@@ -34,7 +34,8 @@ class Maximum(Minimum):
 
         Args:
             x (2D or 1D array_like of float):
-                input array of single or multiple data points
+                input of multiple or single data points,
+                shape: (nPoint, nInp) or shape: (nInp)
 
             kwargs (dict, optional):
                 keyword arguments
@@ -56,7 +57,8 @@ if __name__ == '__main__':
     from White import White
 
     # user defined method with theoretical submodel
-    def f(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+    def f(self, x, *args):
+        c0, c1, c2 = args if len(args) > 0 else 1, 1, 1
         return -(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)
 
     if 0 or ALL:

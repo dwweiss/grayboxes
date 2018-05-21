@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-14 DWW
+      2018-05-21 DWW
 """
 
 import inspect
@@ -342,52 +342,55 @@ class Model(Base):
     @f.setter
     def f(self, value):
         """
+        If value is 'demo' or 'rosen' then assign f_demo() to self.f
+        Otherwise assign 'value'
+
         Args:
-            value (method or function):
+            value (method or function or str):
                 theoretical submodel f(self, x) or f(x) for single data point
         """
         if not isinstance(value, str):
             f = value
         else:
-            f = self.f_demo if value.lower() == 'demo' else None
+            f = self.f_demo if value.startswith(('demo', 'rosen')) else None
         if f is not None:
             firstArg = list(inspect.signature(f).parameters.keys())[0]
             if firstArg == 'self':
                 f = f.__get__(self, self.__class__)
         self._f = f
 
-    def f_demo(self, x, **kwargs):
+    def f_demo(self, x, *args, **kwargs):
         """
-        Demo function f(self, x) for single data point
+        Demo function f(self, x) for single data point (Rosenbrook function)
 
         Args:
             x (1D array_like of float):
                 input, shape: (nInp)
 
+            args (argument list, optional):
+                positional arguments
+
             kwargs (dict, optional):
                 keyword arguments:
 
-                c0, c1, ..., c7 (float, optional):
+                c0, c1, ... (float, optional):
                     coefficients
+
+            kwargs (dict, optional):
+                keyword arguments:
 
         Returns:
             (1D array_like of float):
                 output, shape: (nOut)
-        Note:
-            alternative argument list of method:
-            def f_demo(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1)
         """
-        assert x is not None and len(x) > 1
-
-        c0 = kwargs.get('c0', 1)
-        c1 = kwargs.get('c1', 1)
-        c2 = kwargs.get('c3', 1)
-        c3 = kwargs.get('c3', 1)
-
-        # input is 1D array_like, np.array(x).shape: (nInp, )
-        y0 = c0 * np.sin(c1 * x[0]) + c2 * (x[0] - 1)**2 + c3
-
-        # output is 1D array_like, np.array(y).shape: (nOut, )
+        # minimum at f(a,a**2)=f(1,1)=0
+        a, b = args if len(args) > 0 else 1, 100
+        y0 = (a - x[0])**2 + b * (x[1] - x[0]**2)**2
+#        assert x is not None and len(x) > 1
+#        c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
+#        # input is 1D array_like, np.array(x).shape: (nInp, )
+#        y0 = c0 * np.sin(c1 * x[0]) + c2 * (x[0] - 1)**2 + c3
+#        # output is 1D array_like, np.array(y).shape: (nOut, )
         return [y0]
 
     @property
@@ -701,7 +704,7 @@ class Model(Base):
         if X is not None and Y is not None:
             self.X, self.Y = X, Y
             #
-            # ... INSERT TRAINING ...
+            # ... INSERT TRAINING IN DERIVED CLASSES ...
             #
             # SUCCESS = ...
             # self.ready = SUCCESS
@@ -712,7 +715,7 @@ class Model(Base):
 
         return self.best
 
-    def predict(self, x, **kwargs):
+    def predict(self, x, *args, **kwargs):
         """
         Executes model. If MPI is available, execution is distributed. x and
         y=f(x) is stored as self.x and self.y
@@ -721,14 +724,11 @@ class Model(Base):
             x (2D or 1D array_like of float):
                 prediction input, shape: (nPoint, nInp) or shape: (nInp)
 
+            args (list, optional):
+                arguments
+
             kwargs (dict, optional):
                 keyword arguments
-
-                c0, c1, ... (multiple float):
-                    coefficients for LightGray
-                    default: 1.0
-
-                ... further options for prediction
 
         Returns:
             (2D array of float):
@@ -742,14 +742,11 @@ class Model(Base):
         if not self.ready:
             self.y = None
         elif not parallel.communicator() or x.shape[0] <= 1:
-            # coefficients of LightGray box model
-            opt = {k: v for k, v in kwargs.items()
-                   if k.startswith(('c', 'C', 'x')) and k not in ('cross')}
-
             # self.y is a setter ensuring 2D numpy array
-            self.y = [np.atleast_1d(self.f(x, **opt)) for x in self.x]
+            self.y = [np.atleast_1d(self.f(x, *args)) for x in self.x]
         else:
-            self.y = parallel.predict_scatter(self.f, self.x, **opt)
+            self.y = parallel.predict_scatter(
+                self.f, self.x, *args, **self.kwargsDel(kwargs, 'x'))
 
         return self.y
 
@@ -848,8 +845,8 @@ class Model(Base):
 
         # trains model if self.X is not None and self.Y is not None
         if self.X is not None and self.Y is not None:
-            opt = self.kwargsDel(kwargs, ['X', 'Y'])
-            self.best = self.train(X=self.X, Y=self.Y, **opt)
+            kw = self.kwargsDel(kwargs, ['X', 'Y'])
+            self.best = self.train(X=self.X, Y=self.Y, **kw)
         else:
             self.best = self.initBest()
 
@@ -886,37 +883,44 @@ class Model(Base):
             return self.best
 
         self.x = x                  # self.x is a setter ensuring correct shape
-        opt = self.kwargsDel(kwargs, 'x')
-        self.y = self.predict(x=self.x, **opt)
+        kw = self.kwargsDel(kwargs, 'x')
+        self.y = self.predict(x=self.x, **kw)
         return self.y
 
 
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    ALL = 1
+    ALL = 0
 
     import matplotlib.pyplot as plt
     from White import White
-    from plotArrays import plotIsoMap
+    from plotArrays import plotIsoMap, plotSurface, plotIsolines
 
-    def fUser(self, x, **kwargs):
+    def fUser(self, x, *args, **kwargs):
         """
         Customized single point calculation method for Model
         """
-        c0, c1 = kwargs.get('c0', 1), kwargs.get('c1', 1)
-        c2 = kwargs.get('c2', 1)
-
-        x = np.asfarray(x)
-        assert x.ndim == 1, 'x.ndim: ' + str(x.ndim)
-        assert x.shape[0] >= 2, 'x.shape: ' + str(x.shape)
+        c0, c1, c2 = args if len(args) > 0 else np.ones(3)
+        x = np.atleast_1d(x)
 
         y0 = c2 * x[0]**2 + c1 * x[1] + c0
         y1 = x[1] * 2.1
-        y = np.asfarray([y0, y1])
-        return y
+        return np.asfarray([y0, y1])
 
     if 1 or ALL:
+        x = grid(100, [0.9, 1.1], [0.9, 1.1])
+        y_exa = White('demo')(x=x)
+        y = noise(y_exa, relative=20e-2)
+
+        plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa}$')
+        plotSurface(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa}$')
+        plotIsolines(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa}$',
+                     levels=[0, 1e-4, 5e-4, .003, .005, .01, .02, .05, .1, .2])
+        plotIsoMap(x[:, 0], x[:, 1], y[:, 0], title='$y$')
+        plotIsoMap(x[:, 0], x[:, 1], (y - y_exa)[:, 0], title='$y-y_{exa}$')
+
+    if 0 or ALL:
         x = grid(4, [0, 12], [0, 10])
         y_exa = White(fUser)(x=x)
         y = noise(y_exa, relative=20e-2)
@@ -947,8 +951,7 @@ if __name__ == '__main__':
     if 0 or ALL:
         # creates instance of Model
         foo = Model(fUser)
-
-        y = foo.f(x=[2, 3], c0=2, c1=0, c2=1)
+        y = foo.f([2, 3], 2, 0, 1)
         print('y:', y)
 
         # sets input

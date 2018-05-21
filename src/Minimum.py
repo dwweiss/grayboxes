@@ -17,11 +17,11 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-12 DWW
+      2018-05-20 DWW
 """
 
 import numpy as np
-from scipy.optimize import minimize, basinhopping
+from scipy.optimize import minimize, basinhopping, differential_evolution
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D          # needed for "projection='3d'"
@@ -35,25 +35,24 @@ class Minimum(Forward):
     Minimizes objective()
 
     Examples:
-        foo = Minimum(f)
+        op = Minimum(f)
 
         X = [[... ]]  input of training
         Y = [[... ]]  target of training
         xIni = [(x00, x01), ... ]
         bounds = [(x0min, x0max), (x1min, x1max), ... ]
 
-        x, y = foo(X=X, Y=Y, x=xIni)         # train lightgray box and optimize
-        x, y = foo(x=xIni, bounds=bounds)                            # optimize
-        x, y = foo(x=rand(9, [0, 1], [1, 2]))  # generate random x and optimize
-        norm = foo(XY=(X, Y, xKeys, yKeys))                        # train only
+        x, y = op(X=X, Y=Y, x=xIni)          # train lightgray box and optimize
+        x, y = op(x=xIni, bounds=bounds)                             # optimize
+        x, y = op(x=rand(9, [0, 1], [1, 2]))   # generate random x and optimize
+        norm = op(XY=(X, Y, xKeys, yKeys))                         # train only
 
     Note:
-        - for single target (Inverse: norm(y-Y), Optimum: one of y)
-        - only tested for 'Nelder-Mead'
+        - for single target (Inverse: norm(y - Y), Optimum: one of y)
         - penalty solution does not work yet
     """
 
-    def __init__(self, model, identifier='Minimize'):
+    def __init__(self, model, identifier='Minimum'):
         """
         Args:
             model (Model_like):
@@ -70,11 +69,21 @@ class Minimum(Forward):
         self._history = None       # history[iTrial][jStep] = (x, y, objective)
         self._trialHistory = None     # trialHistory[jStep] = (x, y, objective)
 
-        # the three leading characters of optimizer types are significant
-        self._validOptimizers = ['Nelder-Mead', 'Powell', 'CG', 'BFGS',
-                                 'Newton-CG', 'L-BFGS-B', 'TNC', 'COBYLA',
-                                 'SLSQP', 'dogleg', 'trust-ncg',
-                                 'basinhopping']
+        # the 3 leading char of optimizer are significant, but case-insensitive
+        self._validOptimizers = ['Nelder-Mead',
+                                 'Powell',
+                                 'CG',
+                                 'BFGS',
+                                 # 'Newton-CG',             # requires Jacobian
+                                 'L-BFGS-B',
+                                 'TNC',
+                                 'COBYLA',
+                                 'SLSQP',
+                                 # 'dogleg',                # requires Jacobian
+                                 # 'trust-ncg',             # requires Jacobian
+                                 'basinhopping',               # GLOBAL optimum
+                                 'differential_evolution',     # GLOBAL optimum
+                                 ]
         self._optimizer = self._validOptimizers[0]
 
     @property
@@ -122,8 +131,7 @@ class Minimum(Forward):
     @x.setter
     def x(self, value):
         """
-        1) Sets initial input before optimization
-        2) Sets input at best optimum after optimization
+        Sets x-array
 
         Args:
             value (float or 1D or 2D array_like of float):
@@ -137,8 +145,8 @@ class Minimum(Forward):
     @property
     def y(self):
         """
-        1) Target to class Inverse
-        2) Best output at optimum
+        1) Target to class Inverse before optimization
+        2) Best output at optimum after optimization
 
         Returns:
             (1D array of float):
@@ -149,8 +157,7 @@ class Minimum(Forward):
     @y.setter
     def y(self, value):
         """
-        1) Target to class Inverse
-        2) Best output at optimum
+        Sets y-array
 
         Args:
             value (1D array_like of float):
@@ -166,32 +173,32 @@ class Minimum(Forward):
         """
         Returns:
             (string):
-                kind of optimizer
+                optimization method
         """
         return str(self._optimizer)
 
     @optimizer.setter
     def optimizer(self, value):
         """
-        Sets optimizer, corrects too short strings and assigns default if value
-        is unknown
+        Sets optimization method(s), corrects too short strings and assigns
+        default if value is unknown method
 
         Args:
             value (string):
-                kind of optimizer
+                optimization method
         """
         if value is None:
             value = self._validOptimizers[0]
         value = str(value)
         if len(value) == 1:
-            self.write("??? optimizer too short (min. 3 char): '", value,
+            self.write("??? optimiz. method too short (min 3 char): '", value,
                        "', continue with: '", self._validOptimizers[0], "'")
             self._optimizer = self._validOptimizers[0]
 
         valids = [x.lower().startswith(value[:3].lower())
                   for x in self._validOptimizers]
         if not any(valids):
-            self.write("??? Unknown optimizer type: '", value,
+            self.write("??? Unknown optimization method: '", value,
                        "', continue with: '", self._validOptimizers[0], "'")
             self._optimizer = self._validOptimizers[0]
         else:
@@ -226,7 +233,7 @@ class Minimum(Forward):
 
     def objective(self, x, **kwargs):
         """
-        Objective function for minimization
+        Objective function to be minimized
 
         Args:
             x (2D or 1D array_like of float):
@@ -238,11 +245,11 @@ class Minimum(Forward):
 
         Returns:
             (float):
-                optimization criterion to be minimized
+                objective
         Note:
             If maximum is wanted, use minus sign in objective: max(x) = -min(x)
         """
-        y = np.atleast_2d(self.model.predict(x, **self.kwargsDel(kwargs, 'x')))
+        y = self.model.predict(x, **self.kwargsDel(kwargs, 'x'))
         out = y[0]
         opt = out[0]                        # first row, first column of output
 
@@ -260,11 +267,11 @@ class Minimum(Forward):
                     array of min/max pairs for optimization constraints etc
 
                 optimizer (string):
-                    type of optimizer
+                    optimization method
 
                 y (1D array_like of float):
                     target of inverse problem (only if 'self' is of type
-                    Inverse) shape: (nOut)
+                    Inverse), shape: (nOut)
 
         Returns:
             (2-tuple of 1D array of float):
@@ -283,6 +290,7 @@ class Minimum(Forward):
         optimizer = kwargs.get('optimizer', None)
         if optimizer is not None:
             self.optimizer = optimizer
+        self.write('+++ optimizer:', self.optimizer)
 
         # sets target for Inverse
         if type(self).__name__ in ('Inverse'):
@@ -292,27 +300,38 @@ class Minimum(Forward):
         assert self.model is not None
 
         xIni = self.x.copy()
-        trials = xIni.shape[0]
         self._history = []
-        for iTrial in range(trials):
+        for x0 in xIni:
             self._trialHistory = []
-            x0 = xIni[iTrial]
 
             if self.optimizer.startswith('bas'):
-                res = basinhopping(func=self.objective, x0=x0,
-                                   niter=100, T=1.0, stepsize=0.5,
-                                   minimizer_kwargs=None, take_step=None,
-                                   accept_test=None, callback=None,
-                                   interval=50, disp=False, niter_success=None)
+                res = basinhopping(
+                    func=self.objective, x0=x0, niter=100, T=1.0, stepsize=0.5,
+                    minimizer_kwargs=None, take_step=None, accept_test=None,
+                    callback=None, interval=50, disp=False, niter_success=None)
                 x = np.atleast_1d(res.x)
                 y = np.atleast_1d(res.fun)
-                success = True
+                success = 'success' in res.message[0]
+
+            elif self.optimizer.startswith('dif'):
+                if self.bounds is not None:
+                    bounds = self.bounds
+                else:
+                    bounds = [[-10, 10] for _x in x0]
+                res = differential_evolution(
+                    func=self.objective, bounds=bounds, strategy='best1bin',
+                    maxiter=None, popsize=15, tol=0.01, mutation=(0.5, 1),
+                    recombination=0.7, seed=None, disp=False, polish=True,
+                    init='latinhypercube')
+                x, y = res.x, res.fun
+                success = res.success
+
             else:
                 res = minimize(fun=self.objective, x0=x0,
                                method=self.optimizer,)
                 x = np.atleast_1d(res.x)
                 kw = self.kwargsDel(kwargs, 'x')
-                y = np.asfarray(self.model.predict(x=res.x, **kw)[0])
+                y = self.model.predict(x=res.x, **kw)[0]
                 success = res.success
 
             self._history.append(self._trialHistory)
@@ -351,10 +370,16 @@ class Minimum(Forward):
                    objectiveBest)
         return self.x, self.y
 
-    def plot(self):
-        self.plotHistory()
-        self.plotObjective()
-        self.plotTrajectory()
+    def plot(self, select=None):
+        if select is None or not isinstance(select, str):
+            select = 'all'
+        select = select.lower()
+        if select.startswith(('his', 'all')):
+            self.plotHistory()
+        if select.startswith(('obj', 'all')):
+            self.plotObjective()
+        if select.startswith(('tra', 'trj', 'all')):
+            self.plotTrajectory()
 
     def plotHistory(self):
         for iTrial, trialHist in enumerate(self._history):
@@ -511,54 +536,77 @@ class Minimum(Forward):
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    ALL = 1
+    from plotArrays import plotSurface, plotIsoMap
+    from scipy.optimize import rosen
 
-    from Model import rand
+    ALL = 0
+
+    from Model import rand, grid
     from White import White
 
-    # user defined method with theoretical submodel
-    def f(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+    # theoretical submodel
+    def f(x, *args):
+        c0, c1, c2 = args if len(args) > 0 else 1, 1, 1
         return +(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)
 
+    # theoretical submodel
+    def f1(x):
+        y = np.sin(x[0]) + (x[1])**2 + 2
+        return y
+
     if 0 or ALL:
-        s = 'Test minimizer from Minpack'
+        s = 'Use scipy.optimize.minimize()'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        def f1(x):
-            y = np.sin(x[0]) - (x[1] - 1)**2
-            return y
-        res = minimize(fun=f1, x0=(4, 2), method='nelder-mead',)
+        res = minimize(fun=f, x0=(4, 2), method='nelder-mead',)
         print('res.x:', res.x)
 
     if 0 or ALL:
-        s = 'Maximum, assigns series of initial x'
+        s = 'Minimum, assigns random series of initial x'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+
+        op = Minimum(White('demo'))
+        x, y = op(x=rand(10, [-5, 5], [-7, 7]), optimizer='nelder-mead',
+                  silent=True)
+        # op.plot()
+        print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)
+
+    if 0 or ALL:
+        s = 'Minimum, assigns random series of initial x'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         op = Minimum(White(f))
-        x, y = op(x=rand(10, [-5, 5], [-7, 7]), optimizer='nelder-mead')
-        op.plot()
+        x, y = op(x=rand(10, [-5, 5], [-7, 7]), optimizer='nelder-mead',
+                  silent=True)
+        # op.plot()
         print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)
 
     if 1 or ALL:
-        s = 'Optimum, generates series of initial x from ranges'
+        s = 'Minimum, generates series of initial x on grid'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        x, y = Forward(White(f))(x=rand(10, [-5, 5], [-7, 7]))
-
-        from plotArrays import plotSurface, plotIsoMap
+        x, y = Forward(White(f))(x=grid(3, [-2, 2], [-2, 2]))
         plotSurface(x[:, 0], x[:, 1], y[:, 0])
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
 
         op = Minimum(White(f))
         x, y = op(x=rand(3, [-5, 5], [-7, 7]))
+
         op.plot()
-        print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)
+        print('x:', x, 'y:', y)
 
     if 0 or ALL:
-        s = 'Optimum, generates default initial x'
+        s = 'Minimum, test all optimizers'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Minimum(White(f))
-        x, y = op(x=rand(5, [0, 1], [2, 3]))
-        op.plot()
-        print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)
+        if True:
+            op = Minimum(White('demo'))
+
+            for optimizer in op._validOptimizers:
+                print('\n'+'-'*60+'\n' + optimizer+'\n' + '-'*60+'\n')
+
+                x = rand(5, [0, 2], [0, 2])
+                x, y = op(x=x, optimizer=optimizer, silent=True)
+
+                op.plot('traj')
+                print('x:', x, 'y:', y)

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-12 DWW
+      2018-05-20 DWW
 """
 
 from Model import Model
@@ -70,7 +70,8 @@ if __name__ == '__main__':
     import Model as md
     from Forward import Forward
 
-    def fUser(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+    def fUser(self, x, *args):
+        c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
         x0, x1 = x[0], x[1]
         y0 = c0 + c1 * np.sin(c2 * x0) + c3 * (x1 - 1.5)**2
         return [y0]

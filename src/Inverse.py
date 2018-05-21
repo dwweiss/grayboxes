@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-12 DWW
+      2018-05-21 DWW
 """
 
 import numpy as np
@@ -29,14 +29,15 @@ class Inverse(Minimum):
     Finds the inverse x = f^{-1}(y)
 
     Examples:
-
         X = [[... ]]  input of training
         Y = [[... ]]  target of training
         xIni = [x00, x01, ... ]
         bounds = [(x0min, x0max), (x1min, x1max), ... ]
         yInv = (y0, y1, ... )
 
-        def f(self, x): return (x[0])
+        def f(self, x):
+            c0 = args if len(args) > 0 else 1
+            return [c0 * x[0]]
         op = Inverse(DarkGray(f=f))
 
         x, y = op(XY=(X, Y, xKeys, yKeys))               # only training
@@ -44,45 +45,35 @@ class Inverse(Minimum):
         x, y = op(x=rand(5, [1, 4], [0, 9]), y=yInv)     # only inverse
         x, y = op(x=xIni, bounds=bounds, y=yInv)         # only inverse
 
-        x, y = Inverse(LightGray('demo'))(XY=(X, Y), x=xIni, y=yInv)
+        x, y = Inverse(LightGray(f))(XY=(X, Y), CInit=1, x=xIni, y=yInv)
     """
-
-    def __init__(self, model, identifier='Inverse'):
-        """
-        Args:
-            model (Model_like):
-                box type model object
-
-            identifier (string, optional):
-                object identifier
-        """
-        super().__init__(model=model, identifier=identifier)
 
     def objective(self, x, **kwargs):
         """
         Defines objective function for inverse problem
 
         Args:
-            x (1D array_like of float):
-                (input array of single data point)
+            x (2D or 1D array_like of float):
+                input of multiple or single data points,
+                shape: (nPoint, nInp) or shape: (nInp)
 
             kwargs (dict, optional):
                 keyword arguments for predict()
 
         Returns:
             (float):
-                L2-norm measuring diff between actual prediction and target
+                L2-norm as measure of difference between prediction and target
         """
         # x is input of prediction, x.shape: (nInp,)
         yInv = self.model.predict(np.asfarray(x),
                                   **self.kwargsDel(kwargs, 'x'))
 
         # self.y is target, self.y.shape: (nOut,), yInv.shape: (1, nOut)
-        norm = np.sqrt(np.mean(np.square(yInv[0] - self.y))) + self.penalty(x)
+        L2 = np.sqrt(np.mean((yInv[0] - self.y)**2)) + self.penalty(x)
 
-        self._trialHistory.append([x, yInv[0], norm])
+        self._trialHistory.append([x, yInv[0], L2])
 
-        return norm
+        return L2
 
 
 # Examples ####################################################################
@@ -97,7 +88,8 @@ if __name__ == '__main__':
     from LightGray import LightGray
     from Black import Black
 
-    def f(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+    def f(self, x, *args):
+        c0, c1, c2 = args if len(args) > 0 else 1, 1, 1
         return [np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2]
 
     if 0 or ALL:
@@ -133,7 +125,7 @@ if __name__ == '__main__':
         #################
 
         model = LightGray(f)
-        Y_fit = model(X=X, Y=Y_noise, x=X, silent=True)
+        Y_fit = model(X=X, Y=Y_noise, CInit=3, x=X, silent=True)
         plot_X_Y_Yref(X, Y_fit, Y_exact, ['X', 'Y_{fit}', 'Y_{exa}'])
 
         op = Inverse(model)
@@ -173,7 +165,7 @@ if __name__ == '__main__':
         plot_X_Y_Yref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
 
         # trains and executes theoretical model Y_fit=f(X,w)
-        Y_fit = LightGray(f)(X=X, Y=Y_noise, x=X)
+        Y_fit = LightGray(f)(X=X, Y=Y_noise, CInit=3, x=X)
         plot_X_Y_Yref(X, Y_fit, Y_exact, ['X', 'Y_{fit}', 'Y_{exa}'])
 
         # meta-model of theoretical model Y_emp=g(X,w)

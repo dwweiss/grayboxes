@@ -545,7 +545,7 @@ def plotIsolines(x, y, z,
                  zrange=[0., 0.],
                  xLog=False,
                  yLog=False,
-                 levels=50,
+                 levels=None,  # 1D array_like of isolines
                  grid=False,
                  figsize=None,
                  fontsize=None,
@@ -578,7 +578,11 @@ def plotIsolines(x, y, z,
     if zrange[0] != zrange[1]:
         x, y, z = clip_xyz(x, y, z, zrange=zrange)
 
-    CS = plt.contour(x, y, z)
+    if levels is not None:
+        levels = np.atleast_1d(levels)
+        CS = plt.contour(x, y, z, levels)
+    else:
+        CS = plt.contour(x, y, z)
     plt.clabel(CS, inline=1, fontsize=10)
 
     # ax = fig.add_subplot(1, 1, 1, projection='3d')
@@ -592,7 +596,7 @@ def plotIsolines(x, y, z,
     plt.show()
 
 
-def plotVector(x, y, 
+def plotVector(x, y,
                vx, vy,
                labels=['x', 'y', 'z', '', '', ''],
                units=['[/]', '[/]', '[/]'],
@@ -603,7 +607,7 @@ def plotVector(x, y,
                figsize=None,
                fontsize=None,
                legendPosition='',
-               file=''):                       
+               file=''):
 #    if xrange[0] is None:
 #        xrange[0] = min(x)
 #    if xrange[1] is None:

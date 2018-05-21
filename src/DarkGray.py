@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-14 DWW
+      2018-05-21 DWW
 """
 
 import numpy as np
@@ -79,10 +79,8 @@ class DarkGray(Model):
             return None
 
         self.X, self.Y = X, Y
-        opt = self.kwargsDel(kwargs, ('x'))
-
-        y = Model.predict(self, x=self.X, **opt)
-        self.best = self._black.train(X=np.c_[self.X, y], Y=y-self.Y, **opt)
+        y = Model.predict(self, self.X, **self.kwargsDel(kwargs, 'x'))
+        self.best = self._black.train(np.c_[self.X, y], y-self.Y, **kwargs)
 
         return self.best
 
@@ -103,14 +101,11 @@ class DarkGray(Model):
         """
         if x is None:
             return None
-
         assert self._black is not None and self._black.ready
 
         self.x = x
-        opt = self.kwargsDel(kwargs, ('x', 'f'))
-
-        self._y = Model.predict(self, x=x, **opt)
-        self._y -= self._black.predict(x=np.c_[x, self._y], **opt)
+        self._y = Model.predict(self, x, **kwargs)
+        self._y -= self._black.predict(np.c_[x, self._y], **kwargs)
 
         return self.y
 
@@ -167,11 +162,11 @@ if __name__ == '__main__':
         0.003393,  1.000,    NaN, -0.002686,  0.000707
     """)
 
-    if 1 or ALL:
+    if 0 or ALL:
         s = 'Dark gray box model 1'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        model = DarkGray(f='demo')
+        model = DarkGray('demo')
         X, Y = model.frame2arrays(df, ['x0', 'x4'], ['y0'])
         y = model(X=X, Y=Y, x=X, silent=True, neurons=[10])
         plotIsoMap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
@@ -180,7 +175,7 @@ if __name__ == '__main__':
 
         print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
 
-    if 0 or ALL:
+    if 1 or ALL:
         s = 'Dark gray box model 2'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
@@ -190,7 +185,7 @@ if __name__ == '__main__':
         X = np.asfarray(df.loc[:, ['mDot', 'p']])
         Y = np.asfarray(df.loc[:, ['A']])
 
-        def f(x):
+        def f(x, *args, **kwargs):
             return x[0] + x[1]
 
         y = DarkGray(f)(X=X, Y=Y, x=X, silent=True, neurons=[10])
