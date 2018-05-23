@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-22 DWW
+      2018-05-23 DWW
 """
 
 import inspect
@@ -269,9 +269,9 @@ class Model(Base):
     """
     Parent class of White, LightGray, MediumGray, DarkGray and Black
 
-    - Array definition: input and output arrays are 2D. First index is data
+    - Array definition: input and output are 2D arrays. First index is data
       point index
-    - If X or Y passed as 1D array_like then they are transformed to:
+    - If X or Y passed as 1D array_like, then they are transformed to:
       self.X = np.atleast_2d(X).T and self.Y = np.atleast_2d(Y).T
 
     - Upper case 'X' is 2D training   input and 'Y' is 2D training   target
@@ -328,7 +328,7 @@ class Model(Base):
             see Model.train()
         """
         return {'trainer': None, 'L2': np.inf, 'abs': np.inf, 'iAbs': -1,
-                'epochs': -1, 'weights': None}
+                'epochs': -1, 'iterations': -1, 'weights': None}
 
     @property
     def f(self):
@@ -709,12 +709,13 @@ class Model(Base):
         Returns:
             (dict {str: float or str or int}):
                 result of best training trial:
-                    'trainer' (str): best trainer
-                    'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
-                    'abs'   (float): max{|net(x) - Y|} of best training
-                    'iAbs'    (int): index of Y where absolute error is maximum
-                    'epochs'  (int): number of epochs of best training
-                    'weights' (arr): weights if not White box model
+                    'trainer'    (str): best trainer
+                    'L2'       (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
+                    'abs'      (float): max{|net(x) - Y|} of best training
+                    'iAbs'       (int): index of Y where absolute error is max
+                    'epochs'     (int): number of epochs of best (neural) train
+                    'iterations' (int): number of iterations
+                    'weights'    (arr): weights if not White box model
 
         Note:
             If X or Y is None, or training fails then self.best['trainer']=None
@@ -769,9 +770,6 @@ class Model(Base):
         else:
             self.y = parallel.predict_scatter(
                 self.f, self.x, *args, **self.kwargsDel(kwargs, 'x'))
-
-        #print('mo 772 y:', self.y.shape)
-
         return self.y
 
     def error(self, X, Y, *args, **kwargs):
@@ -852,11 +850,13 @@ class Model(Base):
          Returns:
             (dict: {str: float or str or int})
                 result of best training trial:
-                    'trainer' (str): best trainer
-                    'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
-                    'abs'   (float): max{|net(x) - Y|} of best training
-                    'iAbs'    (int): index of Y where absolute error is maximum
-                    'epochs'  (int): number of epochs of best training
+                    'trainer'    (str): best trainer
+                    'L2'       (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
+                    'abs'      (float): max{|net(x) - Y|} of best training
+                    'iAbs'       (int): index of Y where absolute error is max
+                    'epochs'     (int): number of epochs of best (neural) train
+                    'iterations' (int): number of iterations
+                    'weights'    (arr): weights if not White box model
                 if 'XY' or ('X' and 'Y') in 'kwargs'
 
         Side effects:
@@ -894,11 +894,13 @@ class Model(Base):
             or
             (dict: {str: float or str or int})
                 otherwise: result of train() with best training trial:
-                    'trainer' (str): best trainer
-                    'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
-                    'abs'   (float): max{|net(x) - Y|} of best training
-                    'iAbs'    (int): index of Y where absolute error is maximum
-                    'epochs'  (int): number of epochs of best training
+                    'trainer'    (str): best trainer
+                    'L2'       (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
+                    'abs'      (float): max{|net(x) - Y|} of best training
+                    'iAbs'       (int): index of Y where absolute error is max
+                    'epochs'     (int): number of epochs of best (neural) train
+                    'iterations' (int): number of iterations
+                    'weights'    (arr): weights if not White box model
 
         Side effects:
             x is stored as self.x and prediction output as self.y
@@ -917,126 +919,118 @@ class Model(Base):
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    ALL = 0
+    ALL = 1
 
     import matplotlib.pyplot as plt
     from White import White
+    from LightGray import LightGray
     from plotArrays import plotIsoMap, plotSurface, plotIsolines
 
     def fUser(self, x, *args, **kwargs):
         """
         Customized single point calculation method for Model
         """
-        c0, c1, c2 = args if len(args) > 0 else np.ones(3)
+        nFit = 3
+        if x is None:
+            return nFit
         x = np.atleast_1d(x)
+        p = args if len(args) > 0 else np.ones(nFit)
 
-        y0 = c2 * x[0]**2 + c1 * x[1] + c0
-        y1 = x[1] * 2.1
-        return np.asfarray([y0, y1])
+        y0 = p[2] * x[0]**2 + p[1] * x[1] + p[0]
+        y1 = p[2] * x[1]
+        return [y0, y1]
 
     if 1 or ALL:
         x = grid(100, [0.9, 1.1], [0.9, 1.1])
         y_exa = White('demo')(x=x)
+        print('y_exa:', y_exa.shape)
         y = noise(y_exa, relative=20e-2)
 
-        plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa}$')
-        plotSurface(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa}$')
-        plotIsolines(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa}$',
+        plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
+        plotSurface(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
+        plotIsolines(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$',
                      levels=[0, 1e-4, 5e-4, .003, .005, .01, .02, .05, .1, .2])
-        plotIsoMap(x[:, 0], x[:, 1], y[:, 0], title='$y$')
-        plotIsoMap(x[:, 0], x[:, 1], (y - y_exa)[:, 0], title='$y-y_{exa}$')
+        plotIsoMap(x[:, 0], x[:, 1], y[:, 0], title='$y_0$')
+        plotIsoMap(x[:, 0], x[:, 1], (y-y_exa)[:, 0], title='$y_0-y_{exa,0}$')
 
     if 0 or ALL:
         x = grid(4, [0, 12], [0, 10])
         y_exa = White(fUser)(x=x)
         y = noise(y_exa, relative=20e-2)
 
-        plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
-        plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0])
-        plotIsoMap(x[:, 0], x[:, 1], (y - y_exa)[:, 0])
+        plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
+        plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 1], title='$y_{exa,1}$')
+        plotSurface(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
+        plotIsoMap(x[:, 0], x[:, 1], y[:, 0], title='$y_0$')
+        plotIsoMap(x[:, 0], x[:, 1], (y-y_exa)[:, 0], title='$y_0-y_{exa,0}$')
+        plotIsoMap(x[:, 0], x[:, 1], (y-y_exa)[:, 1], title='$y_1-y_{exa,1}$')
 
     if 0 or ALL:
         X = grid(5, [-1, 2], [3, 4])
         print('X:', X)
 
         Y_exa = White(fUser)(x=X)
-        plotIsoMap(X[:, 0], X[:, 1], Y_exa[:, 0], title='Y_exa[:,0]')
-        plotIsoMap(X[:, 0], X[:, 1], Y_exa[:, 1], title='Y_exa[:,1]')
+        plotIsoMap(X[:, 0], X[:, 1], Y_exa[:, 0], title='$Y_{exa,0}$')
+        plotIsoMap(X[:, 0], X[:, 1], Y_exa[:, 1], title='$Y_{exa,1}$')
         print('Y_exa:', Y_exa)
 
         Y = noise(Y_exa, absolute=0.1, uniform=True)
-        plotIsoMap(X[:, 0], X[:, 1], Y[:, 0], title='Y[:,0]')
-        plotIsoMap(X[:, 0], X[:, 1], Y[:, 1], title='Y[:,1]')
+        plotIsoMap(X[:, 0], X[:, 1], Y[:, 0], title='$Y_{0}$')
+        plotIsoMap(X[:, 0], X[:, 1], Y[:, 1], title='$Y_{1}$')
         print('Y:', Y)
 
         dY = Y - Y_exa
-        plotIsoMap(X[:, 0], X[:, 1], dY[:, 0], title='dY[:,0]')
-        plotIsoMap(X[:, 0], X[:, 1], dY[:, 1], title='dY[:,1]')
+        plotIsoMap(X[:, 0], X[:, 1], dY[:, 0], title='$Y - Y_{exa,0}$')
+        plotIsoMap(X[:, 0], X[:, 1], dY[:, 1], title='$Y - Y_{exa,1}$')
         print('dY:', dY)
 
     if 0 or ALL:
         # creates instance of Model
-        foo = Model(fUser)
-        y = foo.f([2, 3], 2, 0, 1)
+        model = Model(fUser)
+        y = model.f([2, 3], 2, 0, 1)
         print('y:', y)
 
         # sets input
-        foo.x = [1, 2]
-        print('1: foo.x:', foo.x, 'foo.y:', foo.y)
+        model.x = [1, 2]
+        print('1: model.x:', model.x, 'model.y:', model.y)
 
         print('test data frame import/export')
-        df = foo.xy2frame()
+        df = model.xy2frame()
         print('4: df:', df)
 
-        df = foo.XY2frame()
+        df = model.XY2frame()
         print('5: df:', df)
 
-        foo.X = [[2, 3], [4, 5]]
-        foo.Y = [[22, 33], [44, 55]]
-        df = foo.XY2frame()
+        model.X = [[2, 3], [4, 5]]
+        model.Y = [[22, 33], [44, 55]]
+        df = model.XY2frame()
         print('6: df:', df)
 
-        y0, y1 = foo.frame2arrays(df, ['y0'], ['y1'])
+        y0, y1 = model.frame2arrays(df, ['y0'], ['y1'])
         print('7 y0:', y0, 'y1:', y1)
-        y01 = foo.frame2arrays(df, ['y0', 'y1'])
+        y01 = model.frame2arrays(df, ['y0', 'y1'])
         print('8 y01:', y01)
-        y12, x0 = foo.frame2arrays(df, ['y0', 'y1'], ['x0'])
+        y12, x0 = model.frame2arrays(df, ['y0', 'y1'], ['x0'])
         print('9 y12:', y12, 'x0', x0)
 
     if 0 or ALL:
-        foo = Model(fUser)
+        model = LightGray(fUser)
         nPoint = 20
         X = rand(nPoint, [0, 10], [0, 10])
         Y = noise(White(fUser)(x=X), absolute=0.1)
+
         x = rand(nPoint, [0, 10], [0, 10])
         y_exa = White(fUser)(x=x)
+        y = model(X=X, Y=Y, x=x)
 
-        # trains light white box model. If an instance of Theoretical is not
-        # trained, it provides via predict() the white box model f(x)
-        combinedTrainAndPredict = False
-        trainWhiteBox = False
-        if not combinedTrainAndPredict:
-            if trainWhiteBox:
-                # trains light white box model. If an instance of Theoretical
-                # is not trained, it provides later with predict() the return
-                # of f(x)
-                foo(X=X, Y=Y)
-                # predicts light weight model or white box model (if not train)
-            y_fit = foo(x=x)
-        else:
-            # trains and executes light white box model
-            y_fit = foo(X=X, Y=Y, x=x)
-
-        y_exa = np.atleast_2d([foo.f(_x) for _x in x])
-
-        plt.scatter(X.T[0], Y.T[0], marker='o', label='Y(X) train')
-        plt.scatter(X.T[0], y_exa.T[0], marker='s', label='y(x) exa')
-        plt.scatter(foo.x.T[0], y_fit.T[0], marker='v', label='y(x) fit')
+        plt.scatter(X[:, 0], Y[:, 0], marker='o', label='$Y_0(X_0)$ train')
+        plt.scatter(x[:, 0], y_exa[:, 0], marker='s', label='$y_{exa,0}(x_0)$')
+        plt.scatter(model.x[:, 0], y[:, 0], marker='v', label='$y_0(x_0)$')
         plt.legend()
         plt.show()
-        plt.scatter(foo.x.T[0], y_fit.T[0] - y_exa.T[0], marker='s',
-                    label='Y_fit - y_exa[0]')
-        plt.scatter(foo.x.T[1], y_fit.T[1] - y_exa.T[1], marker='s',
-                    label='Y_fit - y_exa[1]')
+        plt.scatter(model.x[:, 0], y[:, 0] - y_exa[:, 0], marker='s',
+                    label='$y_0 - y_{exa,0}$')
+        plt.scatter(model.x[:, 0], y[:, 1] - y_exa[:, 1], marker='s',
+                    label='$y_1 - y_{exa,1}$')
         plt.legend()
         plt.show()
