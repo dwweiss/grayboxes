@@ -17,13 +17,20 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-21 DWW
+      2018-05-23 DWW
 """
 
+import sys
 import numpy as np
-from scipy.optimize import curve_fit
-
+import scipy.optimize
 from Model import Model
+#############################################
+try:
+    import krza_ga
+except ImportError:
+    print('??? module krza_ga not imported')
+HAS_KRZA_GA = 'krza_ga' in sys.modules
+#############################################
 
 
 class LightGray(Model):
@@ -34,14 +41,19 @@ class LightGray(Model):
     the theoretical submodel f(x) with constant fit parameters 'C'
 
     Notes:
-        - CInit (int, 1D or 2D array_like of float) is mandatory
-        - The curve fit is currently limited to nOut=1, see self._nMaxOut
+        - C0 (int, 1D or 2D array_like of float) is principally a
+          mandatory argument. Alternatively, self.f(x=None) must return
+          a C0-like value if 'C0' is not given as an argument
+        - The number of outputs y.shape[1] is limited to 1, see self._nMaxOut
 
     Examples:
-        def function(x, c0, c1, c1, c3):
+        def function(x, *args):
+            c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
             return [c0 + c1 * (c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)]
 
         def function2(x, *args):
+            if x is None:
+                return [1, 1, 1, 1]                    # initial fit parameters
             c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
             return [c0 + c1 * (c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)]
 
@@ -50,16 +62,16 @@ class LightGray(Model):
             return [c0 + c1 * (c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)]
 
         ### compact form:
-        y = LightGray(function)(X=X, Y=Y, x=x, CInit=4, trainers='lm')
+        y = LightGray(function)(X=X, Y=Y, x=x, C0=4, trainers='lm')
 
         ### expanded form:
-        # assign theoretical submodel f(x) as function or method (with 'self')
+        # assign theoretical submodel as function or method ('self'-attribute)
         model = LightGray(function)  or
         model = LightGray(method)
 
         # (X, Y): training data
         X = [(1,2), (2,3), (4,5), (6,7), (7,8)]
-        Y = [(1), (2), (3), (4), (5)]          # alternatively: [1, 2, 3, 4, 5]
+        Y = [(1,), (2,), (3,), (4,), (5,)]     # alternatively: [1, 2, 3, 4, 5]
 
         # x: test data
         x = [(1, 4), (6, 6)]
@@ -67,13 +79,13 @@ class LightGray(Model):
         # before training, result of theoretical submodel f(x) is returned
         y = model(x=x)                           # predict with white box model
 
-        # train light gray box model with data (X, Y)
-        model(X=X, Y=Y, C0=4)                                           # train
+        # train light gray with data (X, Y), C0 has 9 random initial fit params
+        model(X=X, Y=Y, C0=rand(9, [[-10, 10]] * 4))                    # train
 
         # after model is trained, it keeps its weights for further preddictions
         y = model(x=x)                      # predict with light gray box model
 
-        # combined traing and prediction
+        # alternatively: combined train and pred, single initial fit par set C0
         y = model(X=X, Y=Y, C0=4, x=x)                      # train and predict
     """
 
@@ -99,14 +111,15 @@ class LightGray(Model):
 
         Args:
             X (2D or 1D array_like of float):
-                training input, shape: (nPoint, nInp) or shape: (nPoint)
+                training input, shape: (nPoint, nInp) or shape: (nPoint,)
 
             Y (2D or 1D array_like of float):
-                training target, shape: (nPoint, nOut) or shape: (nPoint)
+                training target, shape: (nPoint, nOut) or shape: (nPoint,)
 
-            C0 (2D or 1D array_like of float, MANDATORY):
-                sequence of initial x (1D array), CInit.shape[1] is number
-                of fit parameters
+            C0 (2D or 1D array_like of float, optional):
+                sequence of initial guess of the tuning parameter sets,
+                If missing, then initial values will be all 1
+                C0.shape[1] is the number of fit parameters
                 [IS PASSED IN KWARGS to be compatible to parallel.py]
 
             kwargs (dict, optional):
@@ -116,119 +129,181 @@ class LightGray(Model):
                     list of pairs (xMin, xMax) limiting x
 
                 trainers (string or 1D array_like of string):
-                    optimizer method of scipy.optimizer.curve_fit()
-                    valid trainers: ('lm', 'trf', 'dogbox')
+                    optimizer method of
+                    - scipy.optimizer.curve_fit or
+                    - scipy.optimizer.minimize or
+                    - genetic algorithm
+                    see: self.validYrainers
                     default: 'trf'
 
         Returns:
             see Model.train()
+
+        Note:
+            If argument 'C0' is not given, self.f(None) must return the number
+            of tuning parameters or an array of initial tuning parameter sets
         """
         self.X = X if X is not None and Y is not None else self.X
         self.Y = Y if X is not None and Y is not None else self.Y
 
-        CInit = kwargs.get('C0', None)
-        if CInit is None:
-            CInit = kwargs.get('CInit', None)
-        if CInit is None:
-            CInit = [[]]
-        if isinstance(CInit, int):
-            CInit = np.ones(CInit)
-        CInit = np.atleast_2d(CInit)
-        nInp = CInit.shape[1]
+        # get series of initial fit par sets from 'C0', 'CInit' or self.f(None)
+        C0 = self.kwargsGet(kwargs, ('C0', 'CInit'))
+        if C0 is None:
+            C0 = self.f(None)
+        if isinstance(C0, int):
+            C0 = np.ones(C0)
+        C0 = np.atleast_2d(C0)                    # shape: (nTrial, nTun)
 
-        scipyOptimizeCurveFitTrainers = ('trf', 'lm', 'dogbox')
-        validTrainers = scipyOptimizeCurveFitTrainers
-        trainers = kwargs.get('trainers', None)
+        # get trainers from kwargs or 'validTrainers' list
+        scipyCurveFitTrainers = ['trf', 'lm', 'dogbox']
+        scipyMinimizeOptimizers = ['Nelder-Mead',
+                                   'Powell',
+                                   'CG',
+                                   'BFGS',
+                                   # 'Newton-CG',           # requires Jacobian
+                                   'L-BFGS-B',
+                                   'TNC',
+                                   'COBYLA',
+                                   'SLSQP',
+                                   # 'dogleg',              # requires Jacobian
+                                   # 'trust-ncg',           # requires Jacobian
+                                   'basinhopping',             # GLOBAL optimum
+                                   'differential_evolution',   # GLOBAL optimum
+                                   ]
+#############################################
+        if HAS_KRZA_GA:
+            geneticOptimizers = ['krza_ga']           # Krzystof's GA optimizer
+        else:
+            geneticOptimizers = []
+#############################################
+
+        self.validTrainers = scipyCurveFitTrainers + scipyMinimizeOptimizers +\
+            geneticOptimizers
+        trainers = self.kwargsGet(kwargs, ('trainers', 'trainer', 'train'))
         if trainers is None:
-            trainers = kwargs.get('trainer', None)
-        if trainers is None:
-            trainers = validTrainers[0]
+            trainers = self.validTrainers[0]
         trainers = np.atleast_1d(trainers)
         if trainers[0].lower() == 'all':
-            trainers = validTrainers
-
-        kw = self.kwargsDel(kwargs, 'x')
-        # xT.shape: (nInp, nPoint), xT.T.shape: (nPoint, nInp)
-        if nInp == 1:
-            def fScipyOptimizeCurveFit(xT, c0):
-                return Model.predict(self, xT.T, c0, **kw).ravel()
-        elif nInp == 2:
-            def fScipyOptimizeCurveFit(xT, c0, c1):
-                return Model.predict(self, xT.T, c0, c1, **kw).ravel()
-        elif nInp == 3:
-            def fScipyOptimizeCurveFit(xT, c0, c1, c2):
-                return Model.predict(self, xT.T, c0, c1, c2, **kw).ravel()
-        elif nInp == 4:
-            def fScipyOptimizeCurveFit(xT, c0, c1, c2, c3):
-                return Model.predict(self, xT.T, c0, c1, c2, c3, **kw).ravel()
-        elif nInp == 5:
-            def fScipyOptimizeCurveFit(xT, c0, c1, c2, c3, c4):
-                return Model.predict(self, xT.T, c0, c1, c2, c3, c4,
-                                     **kw).ravel()
-        elif nInp == 6:
-            def fScipyOptimizeCurveFit(xT, c0, c1, c2, c3, c4, c5):
-                return Model.predict(self, xT.T, c0, c1, c2, c3, c4, c5,
-                                     **kw).ravel()
-        elif nInp == 7:
-            def fScipyOptimizeCurveFit(xT, c0, c1, c2, c3, c4, c5, c6):
-                return Model.predict(self, xT.T, c0, c1, c2, c3, c4, c5, c6,
-                                     **kw).ravel()
-        elif nInp == 8:
-            def fScipyOptimizeCurveFit(xT, c0, c1, c2, c3, c4, c5, c6, c7):
-                return Model.predict(self, xT.T, c0, c1, c2, c3, c4, c5, c6,
-                                     c7, **kw).ravel()
-        else:
-            assert 0, str(nInp) + ' ' + str(CInit)
-
-        if any([tr not in validTrainers for tr in trainers]):
-            trainers = validTrainers[0]
+            trainers = self.validTrainers
+        if any([tr not in self.validTrainers for tr in trainers]):
+            trainers = self.validTrainers[0]
             self.write('??? unknown trainer found, correct to:', trainers)
-        # TODO activate bounds = kwargs.get('bounds', (-np.inf, np.inf))
 
-        self.best = self.initBest()
-        self._weights = None
+        bounds = kwargs.get('bounds', (-np.inf, np.inf))
+        printDetails = kwargs.get('detailed', False)
+
+        # function wrapper for scipy curve_fit
+        def f_curve_fit(xT, *args):
+            # xT.shape:(nInp, nPoint), xT.T.shape:(nPoint,nInp)
+            return Model.predict(self, xT.T, *args,
+                                 **self.kwargsDel(kwargs, 'x')).ravel()
+
+        # function wrapper for scipy minimize etc
+        def objective(weights):
+            y = Model.predict(self, self.X, *weights,
+                              **self.kwargsDel(kwargs, 'x'))
+            return np.sqrt(np.mean((y - self.Y)**2))
+
+        # loop over all trainers
         self.write('    fit (', None)
+        self.best = self.initBest()
+        self.ready = True                         # required by Model.predict()
         for trainer in trainers:
             self.write(trainer, ', ' if trainer != trainers[-1] else '', None)
 
-            for iTrial, cInit in enumerate(CInit):
-                #self.write('+++ cInit: ', np.round(cInit, 3))
+            # loop over all initial fit parameter sets
+            for iTrial, c0 in enumerate(C0):
+                if printDetails:
+                    if iTrial == 0:
+                        self.write()
+                    self.write('        C0: ', str(np.round(c0, 2)), None)
 
-                if trainer in scipyOptimizeCurveFitTrainers:
+                self.weights = None
+                self.ready = True                 # required by Model.predict()
+
+                if trainer in scipyCurveFitTrainers:
+                    _bounds = (-np.inf, +np.inf) if trainer == 'lm' else bounds
                     try:
-                        self.ready = True         # required by Model.predict()
-                        c, cov = curve_fit(f=fScipyOptimizeCurveFit,
-                                           xdata=self.X.T,     # (nInp, nPoint)
-                                           ydata=self.Y.ravel(),     # (nPoint)
-                                           p0=cInit, sigma=None,
-                                           absolute_sigma=False,
-                                           # TODO activate bounds=(-inf,+inf),
-                                           method=trainer)
-                        # TODO check for failure of curve_fit()
-                        self.ready = True
-                        if self.ready:
-                            self._weights = np.array(c)
+                        self.weights, cov = scipy.optimize.curve_fit(
+                            f=f_curve_fit, xdata=self.X.T,     # (nInp, nPoint)
+                            ydata=self.Y.ravel(),                   # (nPoint,)
+                            method=trainer, p0=c0,                    # (nTun,)
+                            sigma=None, absolute_sigma=False, bounds=_bounds)
                     except RuntimeError:
-                        self.ready = False
-                        print('\n??? max epochs exceeded,cont.with next trial')
-                        continue
-                else:
-                    assert 0, 'branch for curve fit optimizer'
+                        print('\n??? scipy curve_fit: maxiter exceeded')
 
-                if self.ready:
-                    #print('self._weights:', self._weights)
+                elif trainer in scipyMinimizeOptimizers:
+                    if trainer.startswith('bas'):
+                        res = scipy.optimize.basinhopping(
+                            func=objective,
+                            x0=c0,
+                            niter=100, T=1.0, stepsize=0.5,
+                            minimizer_kwargs=None, take_step=None,
+                            accept_test=None, callback=None, interval=50,
+                            disp=False, niter_success=None)
+                        if 'success' in res.message[0]:
+                            self.weights = res.x
+                        else:
+                            self.weights = None
+
+                    elif trainer.startswith('dif'):
+                        res = scipy.optimize.differential_evolution(
+                            func=objective,
+                            bounds=[[-10, 10]]*c0.size,
+                            strategy='best1bin', maxiter=None,
+                            popsize=15, tol=0.01, mutation=(0.5, 1),
+                            recombination=0.7, seed=None, disp=False,
+                            polish=True, init='latinhypercube')
+                        if res.success:
+                            self.weights = np.atleast_1d(res.x)
+                        else:
+                            self.weights = None
+
+                    else:
+                        validKeys = ['maxiter', 'tol', 'options']
+                        kw = {k: kwargs[k] for k in validKeys if k in kwargs}
+                        res = scipy.optimize.minimize(fun=objective, x0=c0,
+                                                      method=trainer, **kw)
+                        if res.success:
+                            self.weights = np.atleast_1d(res.x)
+                        else:
+                            self.weights = None
+
+                elif trainer in geneticOptimizers:
+                    if HAS_KRZA_GA and trainer == 'ga_ka':
+                        #############################################
+                        validKeys = ['tol', 'options']  # see scipy's minimize
+                        kw = {k: kwargs[k] for k in validKeys if k in kwargs}
+                        res = krza_ga.minimize(fun=objective, x0=c0,
+                                               method=trainer, **kw)
+                        #############################################
+                        if res.success:
+                            self.weights = np.atleast_1d(res.x)
+                        else:
+                            self.weights = None
+                else:
+                    assert 0, str(trainer)
+
+                if self.weights is not None:
                     actual = self.error(X=X, Y=Y, silent=True)
                     if self.best['L2'] > actual['L2']:
                         self.best = actual
+                        self.best['weights'] = self.weights
                         self.best['trainer'] = trainer
                         self.best['epochs'] = -1
                         self.best['iTrial'] = iTrial
+                        if printDetails:
+                            self.write(' +++', None)
+                    if printDetails:
+                        self.write(' L2: ', round(actual['L2'], 14))
+                else:
+                    self.write(' ----------')
 
-        assert self._weights is not None
-        assert self._nMaxWeights >= self._weights.size, str(self._weights.size)
-        assert CInit.size >= self._weights.size, str(self._weights.size)
+        self.weights = self.best['weights']
+        self.ready = self.weights is not None
+
         self.write('), w: ', None)
-        self.write(np.round(self._weights, 4))
+        self.write(str(np.round(self.weights, 4)))
         self.write('    best trainer: ', "'", self.best['trainer'], "'",
                    ', L2: ', float(str(round(self.best['L2'], 4))),
                    ', abs: ', float(str(round(self.best['abs'], 4))),
@@ -267,49 +342,63 @@ if __name__ == '__main__':
     import Model as md
     from White import White
 
-    def fUser(self, x, *args, **kwargs):
-        c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
-        x0, x1 = x[0], x[1]
+    def f(self, x, *args, **kwargs):
+        """
+        Theoretical submodel for single data point
 
-        y0 = c0 + c1 * np.sin(c2 * x0) + c3 * (x1 - 1.5)**2
+        Aargs:
+            x (1D array_like of float):
+                input
 
+            args (argument list):
+                fit parameters as positional arguments
+
+            kwargs (dict, optional):
+                keyword arguments {str: float or int or str}
+        """
+        p = args if len(args) > 0 else np.ones(4)
+        y0 = p[0] + p[1] * np.sin(p[2] * x[0]) + p[3] * (x[1] - 1.5)**2
         return [y0]
 
+    s = 'Creates exact output y_exa(X), add noise, target is Y(X)'
+    print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+
+    noise_abs = 0.25
+    noise_rel = 10e-2
+    X = md.grid(8, [-1, 8], [0, 3])
+    y_exa = White(f)(x=X, silent=True)
+    Y = md.noise(y_exa, absolute=noise_abs, relative=noise_rel)
+    plot_X_Y_Yref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
+
     if 0 or ALL:
-        s = 'Light gray: add noise to Y_exa, fit, compare: y with Y_exa'
+        s = 'Fits model, compare: y(X) vs y_exa(X)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        noise = 10e-2
-        X = md.grid(8, [-1, 2], [0, 2])
-        y_exa = White(fUser)(x=X, silent=True)
-        Y = md.noise(y_exa, relative=noise)
-        plot_X_Y_Yref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
+        # train with 9 random initial tuning parameter sets
+        C0 = md.rand(16, [0, 2], [0, 2], [0, 2], [0, 2])
+        model = LightGray(f)
 
-        # train with (X, Y_noise) and predict for x=X, variant with xKeys/yKeys
-        model = LightGray(fUser)
-        model.silent = True
-        best = model(X=X, Y=Y, C0=4)
-        y = model(x=X)
+#############################################
+        if HAS_KRZA_GA:
+            trainer = 'krza_ga'
+        else:
+            trainer = ['differential_evolution', 'lm']
+        y = model(X=X, Y=Y, C0=C0, x=X, trainer=trainer, detailed=True)
+#############################################
+
         plot_X_Y_Yref(X, y, y_exa, ['X', 'y', 'y_{exa}'])
-        print('+++ best:', best)
-        # df = model.xy2frame()
-        # print('df:\n', df)
+        if 0:
+            print('best:', model.best)
+            df = model.xy2frame()
+            print('=== df:\n', df)
 
     if 1 or ALL:
-        s = 'Creates exact Y(X), add noise, fit model, compare: y_fit vs Y_exa'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+        def f2(self, x, *args, **kwargs):
+            if x is None:
+                return 4
+            p = args if len(args) > 0 else np.ones(4)
+            y0 = p[0] + p[1] * np.sin(p[2] * x[0]) + p[3] * (x[1] - 1.5)**2
+            return [y0]
 
-        noise = 0.25
-        X = md.grid(8, [-1, 8], [0, 3])
-        y_exa = White(fUser)(x=X)
-        Y = md.noise(y_exa, absolute=noise)
-        plot_X_Y_Yref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
-
-        # train with (X, Y_noise) and predict for x=X, variant with xKeys/yKeys
-        C0 = md.rand(9, [-100, 100], [-20, 20], [-10, 10], [0, 1000])
-        y = LightGray(fUser)(X=X, Y=Y, C0=C0, x=X, silent=True)
-
-        plot_X_Y_Yref(X, y, y_exa, ['X', 'y', 'y_{exa}'])
-
-        # df = lgr.xy2frame()
-        # print('df containing y=f(x):\n', df)
+        # train with single initial tuning parameter set, nTun from f2(None)
+        y = LightGray(f2)(X=X, Y=Y, x=X, silent=not True, trainer='all')

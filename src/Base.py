@@ -594,6 +594,30 @@ class Base(object):
                 del dic[key]
         return dic
 
+    def kwargsGet(self, kwargs, keys, default=None):
+        """
+        Returns value of kwargs for first matching key, otherwise  return
+        'default' value
+
+        Args:
+            kwargs (dict):
+                keyword arguments
+
+            keys (string or array_like of strings):
+                keyword or list of alternative keywords
+
+            default(any type, optional):
+                value to be returns if none of the keys in kwargs
+
+        Returns:
+            (any type):
+                value of first matching key or value of 'default'
+        """
+        for key in np.atleast_1d(keys):
+            if key in kwargs:
+                return kwargs[key]
+        return default
+
     def terminate(self, message=''):
         if not message:
             message = 'Fatal error'

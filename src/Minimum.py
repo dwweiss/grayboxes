@@ -20,14 +20,23 @@
       2018-05-20 DWW
 """
 
+import sys
 import numpy as np
-from scipy.optimize import minimize, basinhopping, differential_evolution
+import scipy.optimize
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D          # needed for "projection='3d'"
 
 from Base import Base
 from Forward import Forward
+#############################################
+try:
+    import krza_ga
+except ImportError:
+    print('??? module krza_ga not imported')
+HAS_KRZA_GA = 'krza_ga' in sys.modules
+#############################################
 
 
 class Minimum(Forward):
@@ -84,6 +93,10 @@ class Minimum(Forward):
                                  'basinhopping',               # GLOBAL optimum
                                  'differential_evolution',     # GLOBAL optimum
                                  ]
+#############################################
+        if HAS_KRZA_GA:
+            self._validOptimizers += ['krza_ga']      # Krzystof's GA optimizer
+#############################################
         self._optimizer = self._validOptimizers[0]
 
     @property
@@ -305,7 +318,7 @@ class Minimum(Forward):
             self._trialHistory = []
 
             if self.optimizer.startswith('bas'):
-                res = basinhopping(
+                res = scipy.optimize.basinhopping(
                     func=self.objective, x0=x0, niter=100, T=1.0, stepsize=0.5,
                     minimizer_kwargs=None, take_step=None, accept_test=None,
                     callback=None, interval=50, disp=False, niter_success=None)
@@ -318,7 +331,7 @@ class Minimum(Forward):
                     bounds = self.bounds
                 else:
                     bounds = [[-10, 10] for _x in x0]
-                res = differential_evolution(
+                res = scipy.optimize.differential_evolution(
                     func=self.objective, bounds=bounds, strategy='best1bin',
                     maxiter=None, popsize=15, tol=0.01, mutation=(0.5, 1),
                     recombination=0.7, seed=None, disp=False, polish=True,
@@ -326,9 +339,24 @@ class Minimum(Forward):
                 x, y = res.x, res.fun
                 success = res.success
 
+            elif self.optimizer.startswith('krz'):
+                #############################################
+                if HAS_KRZA_GA:
+                    validKeys = ['tol', 'options']       # see scipy's minimize
+                    kw = {k: kwargs[k] for k in validKeys if k in kwargs}
+                    res = krza_ga.minimize(
+                        fun=self.objective, x0=x0, method=self.optimizer, **kw)
+                    x = np.atleast_1d(res.x)
+                    kw = self.kwargsDel(kwargs, 'x')
+                    y = self.model.predict(x=res.x, **kw)[0]
+                    success = res.success
+                else:
+                    success = False
+                #############################################
+
             else:
-                res = minimize(fun=self.objective, x0=x0,
-                               method=self.optimizer,)
+                res = scipy.optimize.minimize(
+                    fun=self.objective, x0=x0, method=self.optimizer,)
                 x = np.atleast_1d(res.x)
                 kw = self.kwargsDel(kwargs, 'x')
                 y = self.model.predict(x=res.x, **kw)[0]
@@ -537,7 +565,6 @@ class Minimum(Forward):
 
 if __name__ == '__main__':
     from plotArrays import plotSurface, plotIsoMap
-    from scipy.optimize import rosen
 
     ALL = 0
 
@@ -546,7 +573,7 @@ if __name__ == '__main__':
 
     # theoretical submodel
     def f(x, *args):
-        c0, c1, c2 = args if len(args) > 0 else 1, 1, 1
+        c0, c1, c2 = args if len(args) > 0 else (1, 1, 1)
         return +(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)
 
     # theoretical submodel
@@ -558,7 +585,7 @@ if __name__ == '__main__':
         s = 'Use scipy.optimize.minimize()'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        res = minimize(fun=f, x0=(4, 2), method='nelder-mead',)
+        res = scipy.optimize.minimize(fun=f, x0=(4, 2), method='nelder-mead',)
         print('res.x:', res.x)
 
     if 0 or ALL:
@@ -595,7 +622,7 @@ if __name__ == '__main__':
         op.plot()
         print('x:', x, 'y:', y)
 
-    if 0 or ALL:
+    if 1 or ALL:
         s = 'Minimum, test all optimizers'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 

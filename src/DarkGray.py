@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-21 DWW
+      2018-05-23 DWW
 """
 
 import numpy as np
@@ -32,7 +32,8 @@ class DarkGray(Model):
 
     Example:
         External function or method is assigned to self.f():
-            def f(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+            def f(self, x, *args):
+                c0, c1, c3 = args if len(args) > 0 else (1, 1, 1)
                 y0 = c0 * x[0]*x[0] + c1 * x[1]
                 y1 = x[1] * c3
                 return [y0, y1]
@@ -90,7 +91,7 @@ class DarkGray(Model):
 
         Args:
             x (2D or 1D array_like of float):
-                prediction input, shape: (nPoint, nInp) or shape: (nInp)
+                prediction input, shape: (nPoint, nInp) or shape: (nInp,)
 
             kwargs (dict, optional):
                 keyword arguments

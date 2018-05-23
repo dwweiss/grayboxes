@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-21 DWW
+      2018-05-22 DWW
 """
 
 import inspect
@@ -328,7 +328,7 @@ class Model(Base):
             see Model.train()
         """
         return {'trainer': None, 'L2': np.inf, 'abs': np.inf, 'iAbs': -1,
-                'epochs': -1}
+                'epochs': -1, 'weights': None}
 
     @property
     def f(self):
@@ -384,7 +384,7 @@ class Model(Base):
                 output, shape: (nOut)
         """
         # minimum at f(a,a**2)=f(1,1)=0
-        a, b = args if len(args) > 0 else 1, 100
+        a, b = args if len(args) > 0 else (1, 100)
         y0 = (a - x[0])**2 + b * (x[1] - x[0]**2)**2
 #        assert x is not None and len(x) > 1
 #        c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
@@ -455,7 +455,7 @@ class Model(Base):
         """
         Args:
             value(2D or 1D array_like of float):
-                x array of prediction input, shape: (nPoint, nInp) or (nInp)
+                x array of prediction input, shape: (nPoint, nInp) or (nInp,)
         """
         if value is None:
             self._x = None
@@ -476,7 +476,7 @@ class Model(Base):
         """
         Args:
             value(2D or 1D array_like of float):
-                y array of prediction output, shape: (nPoint, nOut) or (nOut)
+                y array of prediction output, shape: (nPoint, nOut) or (nOut,)
         """
         if value is None:
             self._y = None
@@ -657,6 +657,27 @@ class Model(Base):
             return col[0], col[1], col[2], col[3], col[4], col[5], col[6], \
                    col[7]
 
+    @property
+    def weights(self):
+        """
+        Returns:
+            (array of float):
+                array of weights
+        """
+        return self._weights
+
+    @weights.setter
+    def weights(self, value):
+        """
+        Args:
+            value(2D or 1D array_like of float):
+                array of weights
+        """
+        if value is None:
+            self._weights = None
+        else:
+            self._weights = np.array(value)
+
     def train(self, X, Y, **kwargs):
         """
         Trains model. This method has to be overwritten in derived classes.
@@ -693,6 +714,7 @@ class Model(Base):
                     'abs'   (float): max{|net(x) - Y|} of best training
                     'iAbs'    (int): index of Y where absolute error is maximum
                     'epochs'  (int): number of epochs of best training
+                    'weights' (arr): weights if not White box model
 
         Note:
             If X or Y is None, or training fails then self.best['trainer']=None
@@ -722,10 +744,10 @@ class Model(Base):
 
         Args:
             x (2D or 1D array_like of float):
-                prediction input, shape: (nPoint, nInp) or shape: (nInp)
+                prediction input, shape: (nPoint, nInp) or shape: (nInp,)
 
             args (list, optional):
-                arguments
+                positional arguments
 
             kwargs (dict, optional):
                 keyword arguments
@@ -748,9 +770,11 @@ class Model(Base):
             self.y = parallel.predict_scatter(
                 self.f, self.x, *args, **self.kwargsDel(kwargs, 'x'))
 
+        #print('mo 772 y:', self.y.shape)
+
         return self.y
 
-    def error(self, X, Y, **kwargs):
+    def error(self, X, Y, *args, **kwargs):
         """
         Evaluates difference between prediction y(X) and reference array Y(X)
 
@@ -760,6 +784,9 @@ class Model(Base):
 
             Y (2D array_like of float):
                 reference output, shape: (nPoint, nOut)
+
+            args (argument list, optional):
+                positional arguments
 
             kwargs (dict, optional):
                 keyword arguments:
@@ -782,7 +809,7 @@ class Model(Base):
         else:
             assert X.shape[0] == Y.shape[0], str(X.shape) + str(Y.shape)
 
-            y = self.predict(x=X, **self.kwargsDel(kwargs, 'x'))
+            y = self.predict(x=X, *args, **self.kwargsDel(kwargs, 'x'))
 
             try:
                 dy = y.ravel() - Y.ravel()
@@ -859,7 +886,7 @@ class Model(Base):
                 keyword arguments:
 
                 x (2D or 1D array_like of float):
-                    prediction input, shape: (nPoint, nInp) or shape: (nInp)
+                    prediction input, shape: (nPoint, nInp) or shape: (nInp,)
 
         Returns:
             (2D array of float):
@@ -882,9 +909,8 @@ class Model(Base):
         if x is None:
             return self.best
 
-        self.x = x                  # self.x is a setter ensuring correct shape
-        kw = self.kwargsDel(kwargs, 'x')
-        self.y = self.predict(x=self.x, **kw)
+        self.x = x                       # self.x is a setter ensuring 2D shape
+        self.y = self.predict(x=self.x, **self.kwargsDel(kwargs, 'x'))
         return self.y
 
 
