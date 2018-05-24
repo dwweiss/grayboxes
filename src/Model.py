@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-23 DWW
+      2018-05-24 DWW
 """
 
 import inspect
@@ -310,25 +310,40 @@ class Model(Base):
                 object identifier
         """
         super().__init__(identifier=identifier)
-        self.f = f                    # user-defined function if not black box
+        self.f = f                       # theoretical submodel if not Black
 
-        self._X = None                # input to training (2D array)
-        self._Y = None                # target for training (2D array)
-        self._x = None                # input to prediction (1D or 2D array)
-        self._y = None                # output of prediction  (1D or 2D array)
-        self._xKeys = None            # x-keys for data sel.(1D list of string)
-        self._yKeys = None            # y-keys for data sel.(1D list of string)
-        self._best = self.initBest()  # initialize best training trial result
-        self._weights = None          # weights of empirical submodels
+        self._X = None                   # input to training (2D array)
+        self._Y = None                   # target for training (2D array)
+        self._x = None                   # input to prediction (1D or 2D array)
+        self._y = None                   # output of pred.  (1D or 2D array)
+        self._xKeys = None               # x-keys for data sel.(1D list of str)
+        self._yKeys = None               # y-keys for data sel.(1D list of str)
+        self._best = self.initResults()  # initialize best result set
+        self._weights = None             # weights of empirical submodels
 
-    def initBest(self):
+    def initResults(self, keys=None, values=None):
         """
+        Sets default values to results dict
+
+        Args:
+            keys (str or 1D array_like of str):
+                list of keys to be updated or added
+
+            values (float or int or str, or 1D array_like of float & int& str):
+                list of values to be updated or added
+
         Returns:
             default for results of best training trial,
             see Model.train()
         """
-        return {'trainer': None, 'L2': np.inf, 'abs': np.inf, 'iAbs': -1,
-                'epochs': -1, 'iterations': -1, 'weights': None}
+        results = {'trainer': None,
+                   'L2': np.inf, 'abs': np.inf, 'iAbs': -1,
+                   'iterations': -1, 'evaluations': -1, 'epochs': -1,
+                   'weights': None}
+        if keys is not None and values is not None:
+            for key, value in zip(np.atleast_1d(keys), np.atleast_1d(values)):
+                results[key] = value
+        return results
 
     @property
     def f(self):
@@ -386,11 +401,6 @@ class Model(Base):
         # minimum at f(a,a**2)=f(1,1)=0
         a, b = args if len(args) > 0 else (1, 100)
         y0 = (a - x[0])**2 + b * (x[1] - x[0]**2)**2
-#        assert x is not None and len(x) > 1
-#        c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
-#        # input is 1D array_like, np.array(x).shape: (nInp, )
-#        y0 = c0 * np.sin(c1 * x[0]) + c2 * (x[0] - 1)**2 + c3
-#        # output is 1D array_like, np.array(y).shape: (nOut, )
         return [y0]
 
     @property
@@ -722,7 +732,7 @@ class Model(Base):
         """
         self.ready = True
         self._weights = None
-        self.best = self.initBest()
+        self.best = self.initResults()
 
         if X is not None and Y is not None:
             self.X, self.Y = X, Y
@@ -802,7 +812,7 @@ class Model(Base):
             - maximum abs index is 1D index, e.g. yAbsMax = Y.ravel()[iAbsMax]
         """
         if X is None or Y is None:
-            best = self.initBest()
+            best = self.initResults()
             best = {key: best[key] for key in ('L2', 'abs', 'iAbs')}
         else:
             assert X.shape[0] == Y.shape[0], str(X.shape) + str(Y.shape)
@@ -875,7 +885,7 @@ class Model(Base):
             kw = self.kwargsDel(kwargs, ['X', 'Y'])
             self.best = self.train(X=self.X, Y=self.Y, **kw)
         else:
-            self.best = self.initBest()
+            self.best = self.initResults()
 
         return self.best
 
@@ -928,22 +938,20 @@ if __name__ == '__main__':
 
     def fUser(self, x, *args, **kwargs):
         """
-        Customized single point calculation method for Model
+        theoretical submodel y=f(x,c) for single data point
         """
         nFit = 3
         if x is None:
             return nFit
-        x = np.atleast_1d(x)
-        p = args if len(args) > 0 else np.ones(nFit)
+        c0, c1, c2 = args if len(args) > 0 else np.ones(nFit)
 
-        y0 = p[2] * x[0]**2 + p[1] * x[1] + p[0]
-        y1 = p[2] * x[1]
+        y0 = c2 * x[0]**2 + c1 * x[1] + c0
+        y1 = c2 * x[1]
         return [y0, y1]
 
     if 1 or ALL:
         x = grid(100, [0.9, 1.1], [0.9, 1.1])
         y_exa = White('demo')(x=x)
-        print('y_exa:', y_exa.shape)
         y = noise(y_exa, relative=20e-2)
 
         plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
@@ -961,7 +969,9 @@ if __name__ == '__main__':
         plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
         plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 1], title='$y_{exa,1}$')
         plotSurface(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
+        plotSurface(x[:, 0], x[:, 1], y_exa[:, 1], title='$y_{exa,1}$')
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0], title='$y_0$')
+        plotIsoMap(x[:, 0], x[:, 1], y[:, 1], title='$y_1$')
         plotIsoMap(x[:, 0], x[:, 1], (y-y_exa)[:, 0], title='$y_0-y_{exa,0}$')
         plotIsoMap(x[:, 0], x[:, 1], (y-y_exa)[:, 1], title='$y_1-y_{exa,1}$')
 
@@ -985,7 +995,6 @@ if __name__ == '__main__':
         print('dY:', dY)
 
     if 0 or ALL:
-        # creates instance of Model
         model = Model(fUser)
         y = model.f([2, 3], 2, 0, 1)
         print('y:', y)

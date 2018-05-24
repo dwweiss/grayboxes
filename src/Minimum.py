@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-20 DWW
+      2018-05-23 DWW
 """
 
 import sys
@@ -251,7 +251,7 @@ class Minimum(Forward):
         Args:
             x (2D or 1D array_like of float):
                 input of multiple or single data points,
-                shape: (nPoint, nInp) or shape: (nInp)
+                shape: (nPoint, nInp) or shape: (nInp,)
 
             kwargs (dict, optional):
                 keyword arguments
@@ -262,13 +262,15 @@ class Minimum(Forward):
         Note:
             If maximum is wanted, use minus sign in objective: max(x) = -min(x)
         """
+        assert np.atleast_2d(x).shape[0] == 1, str(np.atleast_2d(x).shape[0])
+
         y = self.model.predict(x, **self.kwargsDel(kwargs, 'x'))
-        out = y[0]
-        opt = out[0]                        # first row, first column of output
+        out = y[0]                                           # first data point
+        obj = out[0]                                             # first output
 
-        self._trialHistory.append([x, out, opt])
+        self._trialHistory.append([x, out, obj])
 
-        return opt + self.penalty(x)
+        return obj + self.penalty(x)
 
     def task(self, **kwargs):
         """
@@ -608,7 +610,7 @@ if __name__ == '__main__':
         # op.plot()
         print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)
 
-    if 1 or ALL:
+    if 0 or ALL:
         s = 'Minimum, generates series of initial x on grid'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 

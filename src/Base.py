@@ -204,6 +204,7 @@ class Base(object):
                 residuum from range 0.0 .. 1.0 indicating error of task
                 or -1.0 if parallel and rank > 0
         """
+        
         # skip model execution if parallelized with MPI and rank > 0
         if parallel.rank():
             return -1.0
