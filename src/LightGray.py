@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-24 DWW
+      2018-05-25 DWW
 """
 
 import sys
@@ -42,8 +42,10 @@ class LightGray(Model):
 
     Notes:
         - C0 (int, 1D or 2D array_like of float) is principally a mandatory
-          argument. Alternatively, self.f() can return this value if called
-          as self.f(None). In this case an 'C0' argument is not necessary
+          argument.
+          Alternatively, self.f() can return this value if called as
+          self.f(None). In this case an 'C0' argument is not necessary
+
         - The number of outputs y.shape[1] is limited to 1, see self._nMaxOut
 
     Examples:
@@ -103,16 +105,12 @@ class LightGray(Model):
         self._nMaxOut = 1        # max nOut is '1' due to implementation limits
 
         # populate 'validTrainers' list
-        self.scipyCurveFitters = ['trf',  # trust region reflective,constrained
-                                  'lm',    # Levenberg-Marquardt, unconstrained
-                                  'dogbox'                        # constrained
-                                  ]
-        self.scipyMinimizers = ['Nelder-Mead',
-                                'Powell',
+        self.scipyMinimizers = ['BFGS',
+                                'L-BFGS-B',             # BFGS with less memory
+                                'Nelder-Mead',          # gradient-free simplex
+                                'Powell',              # gradient-free shooting
                                 'CG',
-                                'BFGS',
                                 # 'Newton-CG',              # requires Jacobian
-                                'L-BFGS-B',
                                 'TNC',
                                 'COBYLA',
                                 'SLSQP',
@@ -121,8 +119,13 @@ class LightGray(Model):
                                 'basinhopping',        # global (brute) optimum
                                 'differential_evolution',      # GLOBAL optimum
                                 ]
-        self.scipyEquationMinimizers = ['least_squares',          # constrained
-                                        'leastsq',  # same as curve_fit with lm
+        self.scipyRootFinders = ['lm',
+                                 # 'hybr', 'broyden1', 'broyden2', 'anderson',
+                                 # 'linearmixing', 'diagbroyden',
+                                 # 'excitingmixing', 'krylov', 'df-sane'
+                                 ]
+        self.scipyEquationMinimizers = ['least_squares',      # Levenberg-Marq.
+                                        'leastsq',
                                         ]
         #############################################
         if HAS_KRZA_GA:
@@ -130,14 +133,8 @@ class LightGray(Model):
         else:
             self.geneticMinimizers = []
         #############################################
-        self.validTrainers = self.scipyCurveFitters + self.scipyMinimizers + \
+        self.validTrainers = self.scipyMinimizers + self.scipyRootFinders + \
             self.scipyEquationMinimizers + self.geneticMinimizers
-
-    # function wrapper for scipy curve_fit
-    def f_curve_fit(self, xT, *args, **kwargs):
-        # xT.shape:(nInp, nPoint), xT.T.shape:(nPoint,nInp)
-        return Model.predict(self, xT.T, *args,
-                             **self.kwargsDel(kwargs, 'x')).ravel()
 
     # function wrapper for scipy minimize
     def meanSquareErrror(self, weights, **kwargs):
@@ -151,7 +148,7 @@ class LightGray(Model):
                               **self.kwargsDel(kwargs, 'x')) -
                 self.Y).ravel()
 
-    def optimize(self, trainer, c0, **kwargs):
+    def minimizeLeastSquares(self, trainer, c0, **kwargs):
         """
         Minimizes least squares: sum(self.f(self.X)-self.Y)^2)/X.size
             for SINGLE initial fit param set
@@ -160,6 +157,8 @@ class LightGray(Model):
         Args:
             trainer (str):
                 type of optimizer for minimizing objective function
+                [recommendation: 'BFGS' or 'L-BFGS-B' if ill-conditioned
+                                 'Nelder-Mead' or 'Powell' if noisy data]
 
             c0 (1D array_like of float):
                 initial guess of fit parameter set
@@ -181,25 +180,7 @@ class LightGray(Model):
         self.weights = None                       # required by Model.predict()
         self.ready = True                         # required by Model.predict()
 
-        # scipy's curve_fit can probably be replaced by least_sqaures & lestsq
-        if trainer in self.scipyCurveFitters:
-            bounds = kwargs.get('bounds', (-np.inf, np.inf))
-            if trainer == 'lm':
-                bounds = (-np.inf, +np.inf)
-            try:
-                popt, pcov = scipy.optimize.curve_fit(
-                    f=self.f_curve_fit,
-                    xdata=self.X.T,                            # (nInp, nPoint)
-                    ydata=self.Y.ravel(),                           # (nPoint,)
-                    method=trainer, p0=c0,                            # (nTun,)
-                    sigma=None, absolute_sigma=False, bounds=bounds)
-                results['weights'] = np.atleast_1d(popt)
-                results['iterations'] = -1
-                results['evaluations'] = -1
-            except RuntimeError:
-                self.write('\n??? ', trainer, ': ', 'maxiter exceeded')
-
-        elif trainer in self.scipyMinimizers:
+        if trainer in self.scipyMinimizers:
             if trainer.startswith('bas'):
                 nItMax = kwargs.get('nItMax', 100)
 
@@ -209,7 +190,6 @@ class LightGray(Model):
                     stepsize=0.5, minimizer_kwargs=None,
                     take_step=None, accept_test=None, callback=None,
                     interval=50, disp=False, niter_success=None)
-
                 if 'success' in res.message[0]:
                     results['weights'] = np.atleast_1d(res.x)
                     results['iterations'] = res.nit
@@ -226,7 +206,6 @@ class LightGray(Model):
                     tol=0.01, mutation=(0.5, 1), recombination=0.7,
                     seed=None, disp=False, polish=True,
                     init='latinhypercube')
-
                 if res.success:
                     results['weights'] = np.atleast_1d(res.x)
                     results['iterations'] = res.nit
@@ -240,10 +219,7 @@ class LightGray(Model):
                     kw['options'] = {}
                     kw['options']['maxiter'] = kwargs.get('nItMax', None)
                     if trainer == 'Nelder-Mead':
-                        kw['options']['adaptive'] = kwargs.get('adaptive',
-                                                               False)
                         kw['options']['xatol'] = kwargs.get('goal', 1e-4)
-
                 try:
                     res = scipy.optimize.minimize(
                         fun=self.meanSquareErrror, x0=c0, method=trainer, **kw)
@@ -257,9 +233,27 @@ class LightGray(Model):
                 except scipy.optimize.OptimizeWarning:
                     results['weights'] = None
                     self.write('\n??? ', trainer, ': ', res.message)
-                    print(kw)
-                    print(kwargs)
-                    assert 0
+
+        elif trainer in self.scipyRootFinders:
+            nItMax = kwargs.get('nItMax', 0)
+
+            if trainer.startswith('lm'):
+                res = scipy.optimize.root(
+                    fun=self.difference, x0=c0, args=(), method='lm', jac=None,
+                    tol=None, callback=None,
+                    options={  # 'func': None,mesg:_root_leastsq() got multiple
+                             #                       values for argument 'func'
+                             'col_deriv': 0, 'xtol': 1.49012e-08,
+                             'ftol': 1.49012e-8, 'gtol': 0., 'maxiter': nItMax,
+                             'eps': 0.0, 'factor': 100, 'diag': None})
+                if res.success:
+                    results['weights'] = np.atleast_1d(res.x)
+                    results['iterations'] = -1
+                    results['evaluations'] = res.nfev
+                else:
+                    self.write('\n??? ', trainer, ': ', res.message)
+            else:
+                print("\n??? trainer:'" + str(trainer) + "' not implemented")
 
         elif trainer in self.scipyEquationMinimizers:
             if trainer.startswith('leastsq'):
@@ -327,11 +321,10 @@ class LightGray(Model):
 
                 trainers (string or 1D array_like of string):
                     optimizer method of
-                    - scipy.optimizer.curve_fit or
                     - scipy.optimizer.minimize or
                     - genetic algorithm
                     see: self.validTrainers
-                    default: 'trf'
+                    default: 'BFGS'
 
                 bounds (2-tuple of float or 2-tuple of 1D array_like of float):
                     list of pairs (xMin, xMax) limiting x
@@ -362,9 +355,16 @@ class LightGray(Model):
         trainers = np.atleast_1d(trainers)
         if trainers[0].lower() == 'all':
             trainers = self.validTrainers
+        elif trainers[0].lower() == 'root':
+            trainers = self.scipyRootFinders
+        if trainers[0].lower() == 'least':
+            trainers = self.scipyEquationMinimizers
+        if trainers[0].lower() == 'minimize':
+            trainers = self.scipyMinimizers
         if any([tr not in self.validTrainers for tr in trainers]):
             trainers = self.validTrainers[0]
-            self.write('??? invalid trainer found, correct to: ', trainers)
+            self.write("??? correct trainers: '", trainers, "' ==> ", trainers)
+        trainers = np.atleast_1d(trainers)
 
         # set detailed print (only if not silent)
         printDetails = kwargs.get('detailed', False)
@@ -382,7 +382,7 @@ class LightGray(Model):
                         self.write()
                     self.write('        C0: ', str(np.round(c0, 2)), None)
 
-                results = self.optimize(
+                results = self.minimizeLeastSquares(
                     trainer, c0, **self.kwargsDel(kwargs, ('trainer', 'c0')))
 
                 if results['weights'] is not None:
@@ -482,16 +482,17 @@ if __name__ == '__main__':
         s = 'Fits model, compare: y(X) vs y_exa(X)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        # train with 9 random initial tuning parameter sets
-        C0 = md.rand(16, [0, 2], [0, 2], [0, 2], [0, 2])
+        # train with 9 random initial tuning parameter sets, each of size 4
+        C0 = md.rand(9, *(4 * [[0, 2]]))
         model = LightGray(f)
 
 #############################################
         if HAS_KRZA_GA:
             trainer = 'krza_ga'
         else:
-            trainer = ['all']
-            # ['leastsq', 'least_squares', 'differential_evolution']
+            # trainer = ['all']
+            trainer = ['L-BFGS-B', 'BFGS', 'Powell',
+                       'Nelder-Mead', 'differential_evolution']
         y = model(X=X, Y=Y, C0=C0, x=X, trainer=trainer, detailed=True,
                   nItMax=5000)
 #############################################
