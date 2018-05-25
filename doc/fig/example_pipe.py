@@ -80,7 +80,7 @@ if __name__ == '__main__':
         model.silent = not True
 
     # min and max number of hidden neurons
-    medNrnRng, drkNrnRng, blkNrnRng = (1, 1), (10, 20), (15, 30)
+    medNrnRng, drkNrnRng, blkNrnRng = (1, 1), (5, 15), (15, 30)
     relNoise = 10e-2
     trialsLgr = 2
 
