@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-24 DWW
+      2018-05-25 DWW
 """
 
 import math
@@ -46,13 +46,13 @@ def f(x, *args, **kwargs):
     Theoretical submodel
     """
     if x is None:
-        return [(0, 2), (0, 2), (0, 2), (0, 2)]       # return could also be: 4
+        return 4 * [[0, 2]]                    # return could also be an int: 4
     c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
 
     v1 = x[0]
-    if math.isclose(v1, 0):             # zero velocity causes no pressure drop
-        return 0
     nu = x[1] * 1e-6                                            # mm2/s to m2/s
+    if math.isclose(v1, 0.) or math.isclose(nu, 0.):         # no pressure drop
+        return 0.
 
     D1, L1 = kwargs.get('D1', 15e-3), kwargs.get('L1', 100e-3)
     D2, L2 = kwargs.get('D2', D1/2),  kwargs.get('L2', L1/2)
@@ -61,7 +61,6 @@ def f(x, *args, **kwargs):
     eps_rough = kwargs.get('eps_rough', 10e-6)
     res = dp_in_red_mid_exp_out(v1, D1, L1, D2, L2, D3, L3, nu, rho, eps_rough,
                                 c0, c1, c2, c3)
-
     return res[0] * 1e-6                                            # Pa to MPa
 
 
@@ -83,11 +82,11 @@ if __name__ == '__main__':
     # min and max number of hidden neurons
     medNrnRng, drkNrnRng, blkNrnRng = (1, 1), (10, 20), (15, 30)
     relNoise = 10e-2
-    trialsLgr = 3
+    trialsLgr = 2
 
     # shape of training (X, Y) and test data (x, y), shape: (nPoint, nInp/nOut)
-    nX, nY, xTrnRng, yTrnRng = 20, 3, [3, 12], [1, 50]  # [/, /, m/s, mm2/s]
-    nx, ny, xTstRng, yTstRng = 40, 3, [0, 15], [1, 50]  # [/, /, m/s, mm2/s]
+    nX, nY, xTrnRng, yTrnRng = 20+1, 5, [3,  9], [10, 50]  # [/, /, m/s, mm2/s]
+    nx, ny, xTstRng, yTstRng = 40+1, 5, [0, 12], [10, 50]  # [/, /, m/s, mm2/s]
 
     X = md.grid((nX, nY), xTrnRng, yTrnRng)  # shape:(nX*nY,2), [m/s,1e-5*m2/s]
     x = md.grid((nx, ny), xTstRng, yTstRng)  # shape:(nx*ny,2), [m/s, mm2/s]
@@ -97,8 +96,8 @@ if __name__ == '__main__':
 
     if 1:
         xRng, yRng = xTstRng, pd.Series(yTstRng)*10
-        plotSurface(x[:, 0], x[:, 1]*10, y_exa[:, 0],
-                    labels=('$v$', r'$\nu_{kin}$', r'$\Delta\,p_{exa}$'),
+        plotSurface(x[:, 1], x[:, 0]*10, y_exa[:, 0],
+                    labels=(r'$\nu_{kin}$', '$v$', r'$\Delta\,p_{exa}$'),
                     xrange=xRng, yrange=yRng, units=['m/s', 'mm$^2$/s', 'MPa'])
         plotIsolines(x[:, 0], x[:, 1]*10, y_exa[:, 0],
                      labels=('$v$', r'$\nu_{kin}$', r'$\Delta\,p_{exa}$'),
@@ -132,9 +131,9 @@ if __name__ == '__main__':
             res = {'x': x, 'y': y, 'X': X, 'dY': model(x=X) - Y, 'neurons': 0}
         elif isinstance(model, (LightGray)):
             model._weights = None
-            y = model(X=X, Y=Y, x=x,
-                      C0=md.rand(5, [0, 2], [0, 2], [0, 2], [0, 2]),
-                      trainers='BFGS', detailed=True)
+            y = model(X=X, Y=Y, x=x, C0=md.rand(trialsLgr, *(4*[[0, 2]])),
+                      trainers=['BFGS', 'differential_evolution'],
+                      detailed=True)
             res = {'x': x, 'y': y, 'X': X, 'dY': model(x=X) - Y, 'neurons': 0}
         else:
             model.silent = not True
