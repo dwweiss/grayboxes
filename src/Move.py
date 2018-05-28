@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-01-22 DWW
+      2018-05-28 DWW
 """
 
 from math import isclose
@@ -30,15 +30,16 @@ from Loop import Loop
 
 class Move(Loop):
     """
-    Moves an object along a trajectory in 3D space as function of time.
+    Moves an object along a trajectory and provides its velocity, position and
+    rotation in 3D space as a function of time.
 
     The object travels along a given trajectory defined by:
         a) polygons defined by way-points (x,y,z) and constant speed or
         b) polygons defined by way-points (x,y,z,t) for every time step
 
-    Velocity and position at a given time are defined by an array of waypoints.
-    The initial position of the object corresponds to the position of the
-    first way-point. The initial velocity is zero.
+    Velocity, position at a given time are defined by an array of waypoints.
+    The initial position of the object corresponds to the position of the first
+    way-point. The initial velocity is zero.
 
     When the last way-point is reached, the position of the object becomes
     static and its velocity is zero. When a object is positioned between two
@@ -51,18 +52,24 @@ class Move(Loop):
         super().__init__(identifier=identifier)
 
         self._wayPoints = None          # array of wayPoints [m, m, m, s]
-        self._position = xyz()          # object position in 3D space [m, m, m]
-        self._velocity = xyz()          # velocity in 3D space [m/s, m/s, m/s]
+        self._rotations = None          # rotations in 3D space [rad]
+        self._position = xyz()          # object position in 3D space [m]
+        self._velocity = xyz()          # velocity in 3D space [m/s]
+        self._rotation = xyz()          # rotation in 3D space [rad]
         self._iLastWayPoint = 0         # index of last passed way point
         self._trajectoryHistory = None  # plot data
 
-    def setTrajectory(self, wayPoints, speed=None, tBegin=0, tEnd=None):
+    def setTrajectory(self, way, rot=None, speed=None, tBegin=0, tEnd=None):
         """
         Defines list of waypoints
 
         Args:
-            wayPoints (array of xyz or xyzt):
+            way (array_like of xyz or xyzt):
                 way points in 3D space [m, m, m] or [m, m, m, s]
+
+            rot (array_like of xyz):
+                rotation of waypoints in 3D space [rad], size can be 0, 1, or
+                length of wayPoints
 
             speed (float, optional):
                 constant magnitude of object velocity [m/s]
@@ -73,7 +80,7 @@ class Move(Loop):
             tEnd (float, optional):
                 end time [s]
         """
-        self._wayPoints = list(wayPoints)
+        self._wayPoints = list(way)
         if len(self._wayPoints) <= 1:
             return
         self._wayPoints = [xyzt(point=P) for P in self._wayPoints]
@@ -82,6 +89,14 @@ class Move(Loop):
         for i in range(1, len(self._wayPoints)):
             Dl = (self._wayPoints[i] - self._wayPoints[i-1]).magnitude()
             way.append(way[i-1] + Dl)
+
+        if rot is None or len(rot) == 0:
+            rot = [xyz()]
+        assert len(rot) == 1 or len(rot) == len(self._wayPoints)
+        if len(rot) == 1:
+            self._rotations = rot * len(self._wayPoints)
+        else:
+            self._rotations = [xyz(point=r) for r in rot]
 
         if speed is None:
             if tEnd is None or isclose(tEnd, 0.):
@@ -97,6 +112,7 @@ class Move(Loop):
 
         self._position = self._wayPoints[0]
         self._velocity = self.velocity(0)
+        self._rotation = self.rotation(0)
 
         del way
 
@@ -134,7 +150,7 @@ class Move(Loop):
         iPrev = iStart
         iNext = n-1
         while True:
-            iCenter = (iPrev + iNext) // 2            # '//' is as 'div' in C++
+            iCenter = (iPrev + iNext) // 2
             if t < self._wayPoints[iCenter].t:
                 iNext = iCenter
             else:
@@ -145,27 +161,30 @@ class Move(Loop):
 
     def initialCondition(self):
         """
-        Initializes object position and velocity
+        Initializes object positionm velocity and rotation
         """
         super().initialCondition()
 
         if self._wayPoints is not None:
             self._position = self._wayPoints[0]
             self._velocity = self.velocity(0)
+            self._rotation = self.rotation(0)
         else:
             self._position = xyz()
             self._velocity = xyz()
+            self._rotation = xyz()
 
         if self.silent:
             self._trajectoryHistory = None
         else:
-            self._trajectoryHistory = [[self._position.x], [self._position.y],
-                                       [self._position.z], [self._velocity.x],
-                                       [self._velocity.y], [self._velocity.z]]
+            self._trajectoryHistory = \
+                [[self._position.x], [self._position.y], [self._position.z],
+                 [self._velocity.x], [self._velocity.y], [self._velocity.z],
+                 [self._rotation.x], [self._rotation.y], [self._rotation.z]]
 
     def updateTransient(self):
         """
-        Updates object position and velocity
+        Updates object position, velocity and rotation
 
         Note:
             Actual time is available as self.t
@@ -174,14 +193,20 @@ class Move(Loop):
 
         self._position = self.position(self.t)
         self._velocity = self.velocity(self.t)
+        self._rotation = self.rotation(self.t)
 
         if self._trajectoryHistory:
             self._trajectoryHistory[0].append(self._position.x)
             self._trajectoryHistory[1].append(self._position.y)
             self._trajectoryHistory[2].append(self._position.z)
+
             self._trajectoryHistory[3].append(self._velocity.x)
             self._trajectoryHistory[4].append(self._velocity.y)
             self._trajectoryHistory[5].append(self._velocity.z)
+
+            self._trajectoryHistory[6].append(self._rotation.x)
+            self._trajectoryHistory[7].append(self._rotation.y)
+            self._trajectoryHistory[8].append(self._rotation.z)
 
     def position(self, t=None):
         """
@@ -215,6 +240,37 @@ class Move(Loop):
         Dt = self._wayPoints[iAhead].t - self._wayPoints[iAhead-1].t
         P = self._wayPoints[iAhead-1] + DP * (dt / Dt)
         return xyz(P.x, P.y, P.z)
+
+    def rotation(self, t=None):
+        """
+        Args:
+            t (float, optional):
+                time [s]
+
+        Returns:
+            Value of self._rotations if t is None and if self._rotations is not
+            None. Otherwise the actual rotation is calculated as function of
+            time [rad]
+
+        Note:
+            The calculated rotation is NOT stored as 'self._rotation'
+        """
+        if t is None and self._rotations is not None:
+            return self._rotations
+        if self._wayPoints is None:
+            return xyz()
+
+        if t is None or t < 0.:
+            t = 0.
+        if t >= self._wayPoints[-1].t:
+            return self._rotations[-1]
+
+        # R = R' + (R"-R') * (t-t') / (t"-t')
+        iAhead = self.iWayPointAhead(t)
+        DR = self._rotations[iAhead] - self._rotations[iAhead-1]
+        dt = t - self._wayPoints[iAhead-1].t
+        Dt = self._wayPoints[iAhead].t - self._wayPoints[iAhead-1].t
+        return self._rotations[iAhead-1] + DR * (dt / Dt)
 
     def way(self, t=None):
         """
@@ -263,7 +319,7 @@ class Move(Loop):
             (xyz):
                 Value of self._velocity if 't' is None and self._velocity is
                 not None. Otherwise the actual velocity is calculated as
-                function of time [m/s, m/s, m/s]
+                function of time [m/s]
 
         Note:
             The calculated velocity is NOT stored as 'self._velocity'
@@ -281,15 +337,19 @@ class Move(Loop):
         return DP * (1 / Dt)
 
     def __str__(self):
-        return str([str(P) for P in self._wayPoints])
+        return str([str(P) for P in self._wayPoints]) + ' ' + \
+            str(self._rotations)
 
     def plot(self, title=None):
         if title is None:
             title = 'trajectory (x, y)'
 
+        assert len(self._rotations) == len(self._wayPoints)
+
         X = [P.x for P in self._wayPoints]
         Y = [P.y for P in self._wayPoints]
         Z = [P.z for P in self._wayPoints]
+
         T = [P.t for P in self._wayPoints]
         W = [self.way(P.t) for P in self._wayPoints]
         S = [self.velocity(P.t).magnitude() for P in self._wayPoints]
@@ -341,6 +401,20 @@ class Move(Loop):
         plt.grid()
         plt.show()
 
+        plt.title('rotation vs waypoint index')
+        tWay = [w.t for w in self._wayPoints]
+        plt.plot(tWay, [rot.x for rot in self._rotations], 'o', label='rot x')
+        plt.plot(tWay, [rot.y for rot in self._rotations], 'o', label='rot y')
+        plt.plot(tWay, [rot.z for rot in self._rotations], 'o', label='rot z')
+
+        tMany = np.linspace(0, self._wayPoints[-1].t, 100)
+        plt.plot(tMany, [self.rotation(t).x for t in tMany], label='rot.x(t)')
+        plt.plot(tMany, [self.rotation(t).y for t in tMany], label='rot.y(t)')
+        plt.plot(tMany, [self.rotation(t).z for t in tMany], label='rot.z(t)')
+        plt.legend()
+        plt.grid()
+        plt.show()
+
         if self._trajectoryHistory:
             plt.title('velocity from update() 1(3)')
             plt.quiver(self._trajectoryHistory[0], self._trajectoryHistory[1],
@@ -370,25 +444,57 @@ class Move(Loop):
             plt.grid()
             plt.show()
 
+            plt.title('rotation from update() 1(3)')
+            plt.quiver(self._trajectoryHistory[0], self._trajectoryHistory[1],
+                       self._trajectoryHistory[6], self._trajectoryHistory[7],
+                       angles='xy', scale_units='xy')
+            plt.xlim(0, )
+            plt.xlabel('x')
+            plt.ylabel('y')
+            plt.grid()
+            plt.show()
+            plt.title('rotation from update() 2(3)')
+            plt.quiver(self._trajectoryHistory[0], self._trajectoryHistory[1],
+                       self._trajectoryHistory[6], self._trajectoryHistory[8],
+                       angles='xy', scale_units='xy')
+            plt.xlim(0, )
+            plt.xlabel('x')
+            plt.ylabel('z')
+            plt.grid()
+            plt.show()
+            plt.title('rotation from update() 3(3)')
+            plt.quiver(self._trajectoryHistory[0], self._trajectoryHistory[1],
+                       self._trajectoryHistory[7], self._trajectoryHistory[8],
+                       angles='xy', scale_units='xy')
+            plt.xlim(0, )
+            plt.xlabel('y')
+            plt.ylabel('z')
+            plt.grid()
+            plt.show()
+
 
 # Examples ####################################################################
 
 if __name__ == '__main__':
     ALL = 1
-                                    #   y
-    way = [xyz(0.0,  0.0, 0.0),     #   ^
-           xyz(0.1,  0.1, 0.0),     # +1|      /\
-           xyz(0.2,  0.2, 0.0),     #   |    /    \
-           xyz(0.3,  0.1, 0.0),     #   |  /        \             0.8
-           xyz(0.4,  0.0, 0.0),     # 0 |/----0.2-----\----0.6-----/-->
-           xyz(0.5, -0.1, 0.0),     #   |            0.4\        /    x
-           xyz(0.6, -0.2, 0.0),     #   |                 \    /
-           xyz(0.7, -0.1, 0.0),     # -1|                   \/
-           xyz(0.8,  0.0, 0.0)]     #   | trajectory W=W(t)
+                                 #   y
+    way = [xyz(.0,  .0, .0),     #   ^
+           xyz(.1,  .1, .0),     # +1|      /\
+           xyz(.2,  .2, .0),     #   |    /    \
+           xyz(.3,  .1, .0),     #   |  /        \             0.8
+           xyz(.4,  .0, .0),     # 0 |/----0.2-----\----0.6-----/-->
+           xyz(.5, -.1, .0),     #   |            0.4\        /    x
+           xyz(.6, -.2, .0),     #   |                 \    /
+           xyz(.7, -.1, .0),     # -1|                   \/
+           xyz(.8,  .0, .0)]     #   | trajectory W=W(t)
+
+    rot = [xyz(20 * np.sin(i*3), 4*i-20, i*i-30) for i in range(len(way))]
+    print(len(rot), [str(rot[i]) for i in range(9)])
 
     foo = Move('')
     speed = 0.8
-    foo.setTrajectory(way, speed=speed)
+    foo.setTrajectory(way, rot=rot, speed=speed)
+
     print('-' * 40)
     print('test:', foo)
     print('-' * 40)
@@ -434,29 +540,30 @@ if __name__ == '__main__':
         Y = [p.y for p in P]
         T = [p.t for p in P]
 
-        plt.title('trajectory 1(3)')
-        plt.plot(X, Y, label='position()')
-        plt.scatter(x, y, label='wayPoints')
-        plt.xlabel('x')
-        plt.ylabel('y')
-        plt.legend(bbox_to_anchor=(1.1, 1.025), loc='upper left')
-        plt.grid()
-        plt.show()
+        if 0:
+            plt.title('trajectory 1(3)')
+            plt.plot(X, Y, label='position()')
+            plt.scatter(x, y, label='wayPoints')
+            plt.xlabel('x')
+            plt.ylabel('y')
+            plt.legend(bbox_to_anchor=(1.1, 1.025), loc='upper left')
+            plt.grid()
+            plt.show()
 
-        plt.title('trajectory 2(3)')
-        plt.plot(X, T, label='position()')
-        plt.scatter(x, t, label='wayPoints')
-        plt.xlabel('x')
-        plt.ylabel('t')
-        plt.legend(bbox_to_anchor=(1.1, 1.025), loc='upper left')
-        plt.grid()
-        plt.show()
+            plt.title('trajectory 2(3)')
+            plt.plot(X, T, label='position()')
+            plt.scatter(x, t, label='wayPoints')
+            plt.xlabel('x')
+            plt.ylabel('t')
+            plt.legend(bbox_to_anchor=(1.1, 1.025), loc='upper left')
+            plt.grid()
+            plt.show()
 
-        plt.title('trajectory 3(3)')
-        plt.plot(Y, T, label='position()')
-        plt.scatter(y, t, label='wayPoints')
-        plt.xlabel('y')
-        plt.ylabel('t')
-        plt.legend(bbox_to_anchor=(1.1, 1.025), loc='upper left')
-        plt.grid()
-        plt.show()
+            plt.title('trajectory 3(3)')
+            plt.plot(Y, T, label='position()')
+            plt.scatter(y, t, label='wayPoints')
+            plt.xlabel('y')
+            plt.ylabel('t')
+            plt.legend(bbox_to_anchor=(1.1, 1.025), loc='upper left')
+            plt.grid()
+            plt.show()
