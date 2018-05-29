@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-01-30 DWW
+      2018-05-29 DWW
 """
 
 import numpy as np
@@ -107,7 +107,7 @@ def toRegularMesh(x, y, z, nx=50, ny=None):
 def clip_xyz(x, y, z, z2=None, xrange=[0., 0.], yrange=[0., 0.],
              zrange=[0., 0.]):
     """
-    - Clips irregular arrays for x, y, z (1D arrays of same length)
+    - Clips IRREGULAR arrays for x, y, z (1D arrays of same length)
     - Assigns array of size 2 to ranges if size is not 2
     - Clips x, y, z, z2 arrays according to x-, y- and z-ranges if lower and
       upper bound of a range is not equal
@@ -123,9 +123,11 @@ def clip_xyz(x, y, z, z2=None, xrange=[0., 0.], yrange=[0., 0.],
             ranges in x-, y- and z-direction
 
     Returns:
-        (three 1D arrays of float) if z2 is None
-        (four 1D arrays of float) otherwise
-            clipped arrays (no clipping if mesh is not irregular)
+        (three 1D arrays of float):
+            if z2 is None
+        or
+        (four 1D arrays of float):
+            if z2 is not None
     """
     x = np.asfarray(x)
     y = np.asfarray(y)
@@ -140,7 +142,6 @@ def clip_xyz(x, y, z, z2=None, xrange=[0., 0.], yrange=[0., 0.],
         yrange = [None, None]
     if not zrange:
         zrange = [None, None]
-
     if xrange[0] is None:
         xrange[0] = min(x)
     if xrange[1] is None:
@@ -153,35 +154,20 @@ def clip_xyz(x, y, z, z2=None, xrange=[0., 0.], yrange=[0., 0.],
         zrange[0] = min(z)
     if zrange[1] is None:
         zrange[1] = max(z)
-    noXRange = xrange[0] == xrange[1]
-    noYRange = yrange[0] == yrange[1]
-    noZRange = zrange[0] == zrange[1]
+    hasXRange = xrange[0] != xrange[1]
+    hasYRange = yrange[0] != yrange[1]
+    hasZRange = zrange[0] != zrange[1]
+
     indices = []
     for i in range(len(z)):
-        if noXRange or (xrange[0] <= x[i] and x[i] <= xrange[1]):
-            if noYRange or (yrange[0] <= y[i] and y[i] <= yrange[1]):
-                if noZRange or (zrange[0] <= z[i] and z[i] <= zrange[1]):
+        if not hasXRange or (xrange[0] <= x[i] and x[i] <= xrange[1]):
+            if not hasYRange or (yrange[0] <= y[i] and y[i] <= yrange[1]):
+                if not hasZRange or (zrange[0] <= z[i] and z[i] <= zrange[1]):
                     indices.append(i)
-    nInd = len(indices)
-    if nInd == len(z):
-        if z2 is None:
-            return (x, y, z)
-        else:
-            return (x, y, z, z2)
-
-    xx, yy, zz = np.empty(nInd), np.empty(nInd), np.empty(nInd)
-    if z2 is not None:
-        zz2 = np.empty(nInd)
-    for iSel, iOriginal in enumerate(indices):
-        xx[iSel] = x[iOriginal]
-        yy[iSel] = y[iOriginal]
-        zz[iSel] = z[iOriginal]
-        if z2 is not None:
-            zz2[iSel] = z2[iOriginal]
-    if z2 is not None:
-        return (xx, yy, zz)
+    if z2 is None:
+        return (x[indices], y[indices], z[indices])
     else:
-        return (xx, yy, zz, zz2)
+        return (x[indices], y[indices], z[indices], z2[indices])
 
 
 def plt_pre(xLabel='x', yLabel='y', title='', xLog=False, yLog=False,
@@ -192,7 +178,10 @@ def plt_pre(xLabel='x', yLabel='y', title='', xLog=False, yLog=False,
     if figsize is None:
         figsize = (6, 3.5)
     if not fontsize:
-        fontsize = round(0.5 * (figsize[0] * 3)) * 2
+        fontsize = round(0.4 * (figsize[0] * 3)) * 2
+    plt.rcParams.update({'font.size': fontsize})
+    plt.rcParams['legend.fontsize'] = fontsize
+
     fig = plt.figure(figsize=figsize)
     if xLabel:
         plt.xlabel(xLabel)
@@ -210,8 +199,6 @@ def plt_pre(xLabel='x', yLabel='y', title='', xLog=False, yLog=False,
         plt.title(title, y=1.01)
     if grid:
         plt.grid()
-    plt.rcParams.update({'font.size': fontsize})
-    plt.rcParams['legend.fontsize'] = fontsize
     return fig
 
 
@@ -251,21 +238,21 @@ def plot1(x, y, labels=['x', 'y'], title='', xLog=False, yLog=False,
 
 def plotCurves(x,
                y1, y2=[], y3=[], y4=[],
-               labels=None,              # axis labels
-               title='',                 # title of plot
-               styles=['', '', ''],      # curve styles ('-:')
-               marker='',                # plot markers ('<>*+')
-               linestyle='-',            # line style ['-','--',':'']
-               units=None,               # axis units
-               offsetAxis2=90,           # space to first right-hand axis
-               offsetAxis3=180,          # space to second right-hand axis
+               labels=None,             # axis labels
+               title='',                # title of plot
+               styles=['', '', ''],     # curve styles ('-:')
+               marker='',               # plot markers ('<>*+')
+               linestyle='-',           # line style ['-','--',':'']
+               units=None,              # axis units
+               offsetAxis2=90,          # space to first right-hand axis
+               offsetAxis3=180,         # space to second right-hand axis
                xrange=[0, 0],
                y1range=[0, 0], y2range=[0, 0], y3range=[0, 0], y4range=[0, 0],
                xLog=False, yLog=False, grid=False,
                figsize=(6, 3.5),
                fontsize=14,
-               legendPosition=None,  # dimensionless legend pos in (1,1)-space
-               file='',              # file name of image (no image if empty)
+               legendPosition=None,     # dimensionless leg pos in (1,1)-space
+               file='',                 # file name of image (no save if empty)
                ):
     plt.figure(figsize=figsize)
     plt.rcParams.update({'font.size': fontsize})
@@ -486,7 +473,7 @@ def plotIsoMap(x, y, z,
                scatter=False,     # indicate irregular data with marker
                triangulation=False,
                figsize=None,      # figure size in inch
-               fontsize=14,
+               fontsize=None,
                legendPosition='',
                cmap=None,    # color map
                file='',           # name of image file
@@ -503,10 +490,9 @@ def plotIsoMap(x, y, z,
 
     if not title and len(labels) > 2:
         title = labels[2] + ' ' + units[2]
-    plt_pre(xLabel=labels[0] + ' ' + units[0],
-            yLabel=labels[1] + ' ' + units[1],
-            xLog=xLog, yLog=yLog,
-            title=title, figsize=figsize, fontsize=fontsize)
+    fig = plt_pre(xLabel=labels[0] + ' ' + units[0],
+                  yLabel=labels[1] + ' ' + units[1], xLog=xLog, yLog=yLog,
+                  title=title, figsize=figsize, fontsize=fontsize)
 
     assert len(x) == len(y) and len(x) == len(z), 'size of x, y & z unequal' +\
         ' (' + str(len(x)) + ', ' + str(len(y)) + ', ' + str(len(z)) + ')'
@@ -570,8 +556,9 @@ def plotIsolines(x, y, z,
     for i in range(len(units)):
         if not units[i].startswith('['):
             units[i] = '[' + units[i] + ']'
-    plt_pre(xLabel=labels[0], yLabel=labels[1], title='', xLog=xLog, yLog=yLog,
-            figsize=figsize, grid=grid, fontsize=fontsize, )
+    fig = plt_pre(xLabel=labels[0], yLabel=labels[1], title='', 
+                  xLog=xLog, yLog=yLog,
+                  figsize=figsize, grid=grid, fontsize=fontsize, )
 
     if all([arr.ndim == 1 for arr in [x, y, z]]):
         x, y, z = toRegularMesh(x, y, z)
@@ -934,27 +921,27 @@ def plot_X_Y_Yref(X, Y, Y_ref, labels=['X', 'Y', 'Y_{ref}']):
     """
 
     # plots Y
-    plotIsoMap(X.T[0], X.T[1], Y.T[0], title='$'+labels[1]+'$',
+    plotIsoMap(X[:, 0], X[:, 1], Y[:, 0], title='$'+labels[1]+'$',
                labels=['$'+labels[0]+'_0$',
-               '$'+labels[0]+'_1$', '$'+labels[1]+'$'])
-    plotSurface(X.T[0], X.T[1], Y.T[0], title='$'+labels[1]+'$',
+                       '$'+labels[0]+'_1$', '$'+labels[1]+'$'])
+    plotSurface(X[:, 0], X[:, 1], Y[:, 0], title='$'+labels[1]+'$',
                 labels=['$'+labels[0]+'_0$',
                         '$'+labels[0]+'_1$', '$'+labels[1]+'$'])
 
     # plots Y_ref
-    plotIsoMap(X.T[0], X.T[1], Y_ref.T[0], title='$'+labels[2]+'$',
+    plotIsoMap(X[:, 0], X[:, 1], Y_ref[:, 0], title='$'+labels[2]+'$',
                labels=['$'+labels[0]+'_0$',
-               '$'+labels[0]+'_1$', '$'+labels[2]+'$'])
-    plotSurface(X.T[0], X.T[1], Y_ref.T[0], title='$'+labels[2]+'$',
+                       '$'+labels[0]+'_1$', '$'+labels[2]+'$'])
+    plotSurface(X[:, 0], X[:, 1], Y_ref[:, 0], title='$'+labels[2]+'$',
                 labels=['$'+labels[0]+'_0$',
                         '$'+labels[0]+'_1$', '$'+labels[2]+'$'])
 
     # plots Y - Y_ref
-    plotIsoMap(X.T[0], X.T[1], (Y - Y_ref).T[0],
+    plotIsoMap(X[:, 0], X[:, 1], (Y - Y_ref)[:, 0],
                title='$'+labels[1]+' - '+labels[2]+'$',
                labels=['$'+labels[0]+'_0$', '$'+labels[0]+'_1$',
                        '$'+labels[1]+' - '+labels[2]+'$'])
-    plotSurface(X.T[0], X.T[1], (Y - Y_ref).T[0],
+    plotSurface(X[:, 0], X[:, 1], (Y - Y_ref)[:, 0],
                 title='$'+labels[1]+' - '+labels[2]+'$',
                 labels=['$'+labels[0]+'_0$', '$'+labels[0]+'_1$',
                         '$'+labels[1]+' - '+labels[2]+'$'])
@@ -972,9 +959,11 @@ if __name__ == '__main__':
         z = np.sin(x) + np.cos(y) * x
         plotIsoMap(x, y, z)
         plotIsolines(x, y, z)
-        plotIsoMap(x, y, z, title=r'$\alpha$ [$^o$]')
+        plotIsoMap(x, y, z, title=r'$\alpha$ [$\degree$]')
+        print('pl979')
         x, y, z = clip_xyz(x, y, z, zrange=[0.2, 1.2])
-        plotIsoMap(x, y, z, title=r'$\alpha$ [$^o$]', triangulation=True)
+        print('pl981')
+        plotIsoMap(x, y, z, title=r'$\alpha$ [$\degree$]', triangulation=True)
 
     if 1 or ALL:
         # irregular grid
