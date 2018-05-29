@@ -9,19 +9,19 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 - Install a long-term supported (LTS) Linux
 - Consider a separate disk partition with directory **/X** besides the default /home/**USER** directory, 
   change permission after completion of Linux installation
-  
-      sudo chown USER /X
-      ln -s /X /home/USER/X
+ 
+    sudo chown USER /X
+    ln -s /X /home/USER/X
 
      
 - Optionally: password for root (for login as root)
 
-      sudo passwd root 
+    sudo passwd root 
 
 - Update Linux
 
-      sudo apt-get update
-      sudo apt-get -y upgrade
+    sudo apt-get update
+    sudo apt-get -y upgrade
 
 ##### Python 3
 
