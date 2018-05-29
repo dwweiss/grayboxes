@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-25 DWW
+      2018-05-29 DWW
 """
 
 import math
@@ -43,10 +43,10 @@ Source code for example 'Pressure drop in pipework' in grayBoxes wiki
 
 def f(x, *args, **kwargs):
     """
-    Theoretical submodel
+    Theoretical submodel of pressure drop in a pipework combination
     """
     if x is None:
-        return 4 * [[0, 2]]                    # return could also be an int: 4
+        return 4 * [(0., 2.)]                  # return could also be an int: 4
     c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
 
     v1 = x[0]
@@ -77,51 +77,53 @@ if __name__ == '__main__':
               Black()
               ]
     for model in models:
-        model.silent = not True
+        model.silent = True
+    figsize = (4, 3)                                    # excluding plotSurface
 
-    # min and max number of hidden neurons
-    medNrnRng, drkNrnRng, blkNrnRng = (1, 1), (5, 15), (15, 30)
+    # min and max number of hidden neurons for medium dark and black box models
+    medNrnRng, drkNrnRng, blkNrnRng = (1, 1), (2, 8), (15, 25)
     relNoise = 10e-2
     trialsLgr = 2
 
-    # shape of training (X, Y) and test data (x, y), shape: (nPoint, nInp/nOut)
-    nX, nY, xTrnRng, yTrnRng = 20+1, 5, [3,  9], [10, 50]  # [/, /, m/s, mm2/s]
-    nx, ny, xTstRng, yTstRng = 40+1, 5, [0, 12], [10, 50]  # [/, /, m/s, mm2/s]
+    # shape & ranges of train (X,Y) & test data (x,y), shape:(nPoint,nInp/nOut)
+    nX, nY, xTrnRng, yTrnRng = 16+1, 4+1, [2, 10], [40, 100]  # [/ / m/s mm2/s
+    nx, ny, xTstRng, yTstRng = 128+1, 128+1, [0, 12], [40, 100]
 
-    X = md.grid((nX, nY), xTrnRng, yTrnRng)  # shape:(nX*nY,2), [m/s,1e-5*m2/s]
-    x = md.grid((nx, ny), xTstRng, yTstRng)  # shape:(nx*ny,2), [m/s, mm2/s]
+    X = md.grid((nX, nY), xTrnRng, yTrnRng)   # shape: (nX*nY, 2), [m/s, mm2/s]
+    x = md.grid((nx, ny), xTstRng, yTstRng)   # shape: (nx*ny, 2), [m/s, mm2/s]
     Y_exa = White(f)(x=X, silent=True)
     y_exa = White(f)(x=x, silent=True)
     Y = md.noise(y=Y_exa, absolute=0, relative=relNoise, uniform=True)
 
     if 1:
-        xRng, yRng = xTstRng, pd.Series(yTstRng)*10
-        plotSurface(x[:, 1], x[:, 0]*10, y_exa[:, 0],
-                    labels=(r'$\nu_{kin}$', '$v$', r'$\Delta\,p_{exa}$'),
+        lx0, lx1 = '$v$', r'$\nu_{kin}$'
+        lYexa, lY = r'$\Delta\,p_{exa}$', r'$\Delta\,p_{trn}$'
+        xRng, yRng = xTstRng, pd.Series(yTstRng)
+        plotSurface(x[:, 0], x[:, 1], y_exa[:, 0], labels=(lx0, lx1, lYexa),
                     xrange=xRng, yrange=yRng, units=['m/s', 'mm$^2$/s', 'MPa'])
-        plotIsolines(x[:, 0], x[:, 1]*10, y_exa[:, 0],
-                     labels=('$v$', r'$\nu_{kin}$', r'$\Delta\,p_{exa}$'),
-                     xrange=xRng, yrange=yRng,
-                     units=['m/s', 'mm$^2$/s', 'MPa'])
-        plotIsoMap(x[:, 0], x[:, 1]*10, y_exa[:, 0],
-                   labels=('$v$', r'$\nu_{kin}$', r'$\Delta\,p_{exa}$'),
+        plotSurface(x[:, 1], x[:, 0], y_exa[:, 0], labels=(lx1, lx0, lYexa),
+                    xrange=xRng, yrange=yRng, units=['m/s', 'mm$^2$/s', 'MPa'])
+        plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0],
+                   labels=(lx0, lx1, lYexa), figsize=figsize,
                    xrange=xRng, yrange=yRng, units=['m/s', 'mm$^2$/s', 'MPa'])
-        plotIsolines(X[:, 0], X[:, 1]*10, Y[:, 0],
-                     labels=('$v$', r'$\nu_{kin}$', r'$\Delta\,p_{nse}$'),
+        plotIsolines(x[:, 0], x[:, 1], y_exa[:, 0],
+                     labels=(lx0, lx1, lYexa), figsize=figsize,
                      xrange=xRng, yrange=yRng,
                      units=['m/s', 'mm$^2$/s', 'MPa'])
-        plotIsoMap(X[:, 0], X[:, 1]*10, Y[:, 0],
-                   labels=('$v$', r'$\nu_{kin}$', r'$\Delta\,p_{nse}$'),
-                   xrange=xRng, yrange=yRng,
-                   units=['m/s', 'mm$^2$/s', 'MPa'])
-        plotIsoMap(X[:, 0], X[:, 1]*10, Y[:, 0] - Y_exa[:, 0],
-                   labels=('$v$', r'$\nu_{kin}$',
-                           r'$\Delta\,p_{nse}-\Delta\,p_{exa}$'),
-                   xrange=xRng, yrange=yRng,
-                   units=['m/s', 'mm$^2$/s', 'MPa'])
+        plotIsoMap(X[:, 0], X[:, 1], Y[:, 0],
+                   labels=(lx0, lx1, lY), figsize=figsize,
+                   xrange=xRng, yrange=yRng, units=['m/s', 'mm$^2$/s', 'MPa'])
+        plotIsolines(X[:, 0], X[:, 1], Y[:, 0],
+                     labels=(lx0, lx1, lY), figsize=figsize,
+                     xrange=xRng, yrange=yRng,
+                     units=['m/s', 'mm$^2$/s', 'MPa'])
+        plotIsoMap(X[:, 0], X[:, 1], Y[:, 0] - Y_exa[:, 0],
+                   labels=(lx0, lx1, lY + ' - ' + lYexa), figsize=figsize,
+                   xrange=xRng, yrange=yRng, units=['m/s', 'mm$^2$/s', 'MPa'])
     results = {}
-    optNeur = {'neurons': [], 'rr': 0.,  'epochs': 2000, 'show': 0,
+    optNeur = {'neurons': [], 'rr': 0.,  'epochs': 2500, 'show': 0,
                'goal': 1e-6, 'trainers': 'rprop', 'trials': 3, 'plot': 0}
+    plt.figure(figsize=(4, 3))
 
     for model in models:
         print('+++ train and predict:', model.identifier)
@@ -136,7 +138,7 @@ if __name__ == '__main__':
                       detailed=True)
             res = {'x': x, 'y': y, 'X': X, 'dY': model(x=X) - Y, 'neurons': 0}
         else:
-            model.silent = not True
+            model.silent = True
             print('    nrn:', end=' ')
             allNrn = range(min(medNrnRng[0], drkNrnRng[0], blkNrnRng[0]),
                            max(medNrnRng[1], drkNrnRng[1], blkNrnRng[1])+1)
@@ -162,7 +164,8 @@ if __name__ == '__main__':
                         res = {'x': x, 'y': y, 'X': X, 'dY': model(x=X) - Y,
                                'neurons': neurons}
             print()
-            plt.title('$||y-Y||_2$ vs neurons (' + model.identifier + ')')
+            plt.figure(figsize=figsize)
+            plt.title('$||y-Y||_2$ vs neur. (' + model.identifier + ')')
             plt.xlabel('neurons [/]')
             plt.ylabel('$L_2$ norm (test) [/]')
             plt.plot(L2_tst_vs_neurons)
@@ -175,27 +178,31 @@ if __name__ == '__main__':
           for key, val in results.items()
           if 'neurons' in val and val['neurons'] > 0])
 
+    def curveIndices(nx, ny, pos):
+        i = {'min': (0,          nx),
+             'med': (nx*(ny//2), nx*(ny//2+1)),
+             'max': (nx*(ny-1),  nx*ny)}
+        return i[pos]
+    nu_pos = {'min': X[:, 1].min(), 'med': (X[:, 1].min() + X[:, 1].max()) / 2,
+              'max': X[:, 1].max(), }
+
     for pos in ['min', 'med', 'max']:
-        plt.title(r"$\varphi(x)$ at '" + pos + "'-position")
+        plt.figure(figsize=figsize)
+        plt.title(r'$\Delta p_{prd} (\nu$=' + str(round(nu_pos[pos])) + ')')
         plt.xlabel('$v$ [m/s]')
         plt.ylabel(r'$\Delta p$ [MPa]')
         plt.xlim(xTstRng[0], xTstRng[1])
-
         for key, res in results.items():
             _nx, _ny = (nx, ny) if key not in ('noise') else (nX, nY)
-            if pos == 'min':
-                b, e = 0, _nx
-            elif pos == 'med':
-                b, e = _nx*(_ny//2), _nx*(_ny//2+1)
-            elif pos == 'max':
-                b, e = _nx*(_ny-1), _nx*_ny
+            b, e = curveIndices(_nx, _ny, pos)
+
             if key.lower() not in ():
                 ls = '-' if key not in ('noise') else '--'
                 x, y = res['x'], res['y']
                 n = res['neurons']
                 s = ' [' + str(n) + ']' if 'neurons' in res and n > 0 else ''
-                s = s + 'oise' if key == 'noise' else s
-                plt.plot(x[b:e, 0], y[b:e, 0], label=key[0] + s, ls=ls)
+                s = s + 'se' if key == 'noise' else s
+                plt.plot(x[b:e, 0], y[b:e, 0], label=key[:3] + s, ls=ls)
         plt.axvline(x=xTrnRng[0], ls='--', lw=1.5, c='tab:gray')
         plt.axvline(x=xTrnRng[1], ls='--', lw=1.5, c='tab:gray',
                     label='train')
@@ -204,29 +211,45 @@ if __name__ == '__main__':
         plt.show()
 
     for pos in ['min', 'med', 'max']:
-        plt.title(r"$\varphi(X) - Y(X)$ at '" + pos + "'-position")
+        plt.figure(figsize=figsize)
+        plt.title(r'$\Delta p_{prd} - \Delta p_{trn} (\nu$=' +
+                  str(round(nu_pos[pos])) + ')')
         plt.xlabel('$v$ [m/s]')
         plt.ylabel(r'$\Delta(\Delta p)$ [MPa]')
         plt.xlim(xTstRng[0], xTstRng[1])
 
         for key, res in results.items():
             if key != 'noise':
-                _nx, _ny = (nX, nY)
-                if pos == 'min':
-                    b, e = 0, _nx
-                elif pos == 'med':
-                    b, e = _nx*(_ny//2), _nx*(_ny//2+1)
-                elif pos == 'max':
-                    b, e = _nx*(_ny-1), _nx*_ny
+                b, e = curveIndices(nX, nY, pos)
+
                 if key.lower() not in ():
                     ls = '-' if key not in ('noise') else '--'
                     x, y = res['X'], res['dY']
                     n = res['neurons']
                     s = ' ['+str(n)+']' if 'neurons' in res and n > 0 else ''
-                    plt.plot(x[b:e, 0], y[b:e, 0], label=key[0]+s, ls=ls)
+                    plt.plot(x[b:e, 0], y[b:e, 0], label=key[:3]+s, ls=ls)
         plt.axvline(x=xTrnRng[0], ls='--', lw=1.5, c='tab:gray')
         plt.axvline(x=xTrnRng[1], ls='--', lw=1.5, c='tab:gray',
                     label='train')
         plt.legend(bbox_to_anchor=(1.1, 1.05), loc='upper left')
         plt.grid()
         plt.show()
+
+    plt.figure(figsize=figsize)
+    plt.title(r'$\Delta p_{exa}(v,\nu_{kin}$=const)')
+    plt.xlabel('$v$ [m/s]')
+    plt.ylabel(r'$\Delta p$ [MPa]')
+    plt.xlim(xTstRng[0], xTstRng[1])
+
+    x = md.grid((nx, ny), xTstRng, yTstRng)   # shape: (nx*ny, 2), [m/s, mm2/s]
+    y = White(f)(x=x, silent=True)
+    for pos in ['min', 'med', 'max']:
+        b, e = curveIndices(nx, ny, pos)
+        plt.plot(x[b:e, 0], y[b:e, 0], label=r'$\nu_{kin}$: ' +
+                 str(round(nu_pos[pos])))
+
+    plt.axvline(x=xTrnRng[0], ls='--', lw=1.5, c='tab:gray')
+    plt.axvline(x=xTrnRng[1], ls='--', lw=1.5, c='tab:gray', label='train')
+    plt.legend(bbox_to_anchor=(1.1, 1.05), loc='upper left')
+    plt.grid()
+    plt.show()
