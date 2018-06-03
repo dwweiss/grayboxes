@@ -34,7 +34,7 @@ class White(Model):
             f (method or function):
                 theoretical submodel f(self, x) or f(x) for single data point
 
-            identifier (string, optional):
+            identifier (str, optional):
                 object identifier
         """
         super().__init__(f=f, identifier=identifier)

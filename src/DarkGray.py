@@ -57,7 +57,7 @@ class DarkGray(Model):
             f (method or function):
                 theoretical submodel f(self, x) or f(x) for single data point
 
-            identifier (string, optional):
+            identifier (str, optional):
                 object identifier
         """
         super().__init__(identifier=identifier, f=f)
@@ -114,7 +114,7 @@ class DarkGray(Model):
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    ALL = 1
+    ALL = 0
 
     from io import StringIO
     import pandas as pd
@@ -176,7 +176,7 @@ if __name__ == '__main__':
 
         print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
 
-    if 1 or ALL:
+    if 0 or ALL:
         s = 'Dark gray box model 2'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
@@ -197,7 +197,7 @@ if __name__ == '__main__':
 
         print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
 
-    if 0 or ALL:
+    if 1 or ALL:
         s = 'Black box model, measured Y(X) = E(mDot, p)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 

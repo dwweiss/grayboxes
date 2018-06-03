@@ -49,7 +49,7 @@ class Sensitivity(Forward):
             model (Model_like):
                 box type model
 
-            identifier (string, optional):
+            identifier (str, optional):
                 object identifier
         """
         super().__init__(model=model, identifier=identifier)

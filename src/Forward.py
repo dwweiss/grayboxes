@@ -65,7 +65,7 @@ class Forward(Base):
             model (Model_like):
                 box type model
 
-            identifier (string, optional):
+            identifier (str, optional):
                 object identifier
         """
         super().__init__(identifier)

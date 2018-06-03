@@ -306,7 +306,7 @@ class Model(Base):
             f (method or function):
                 theoretical submodel f(self, x) or f(x) for single data point
 
-            identifier (string, optional):
+            identifier (str, optional):
                 object identifier
         """
         super().__init__(identifier=identifier)
@@ -336,7 +336,7 @@ class Model(Base):
             default for results of best training trial,
             see Model.train()
         """
-        results = {'trainer': None,
+        results = {'method': None,
                    'L2': np.inf, 'abs': np.inf, 'iAbs': -1,
                    'iterations': -1, 'evaluations': -1, 'epochs': -1,
                    'weights': None}
@@ -503,12 +503,12 @@ class Model(Base):
             Y (2D or 1D array_like of float):
                 training target, shape: (nPoint, nOut) or shape: (nPoint)
 
-            xKeys (1D list of string):
+            xKeys (1D list of str):
                 list of column keys for data selection
                 use self._xKeys keys if xKeys is None,
                 default: ['x0', 'x1', ... ]
 
-            yKeys (1D list of string):
+            yKeys (1D list of str):
                 list of column keys for data selection
                 use self._yKeys keys if yKeys is None,
                 default: ['y0', 'y1', ... ]
@@ -519,19 +519,19 @@ class Model(Base):
     def XY(self, value):
         """
         Args:
-            value (4-tuple of two arrays of float and two arrays of string):
+            value (4-tuple of two arrays of float and two arrays of str):
                 X (2D or 1D array_like of float):
                     training input, shape: (nPoint, nInp) or shape: (nPoint)
 
                 Y (2D or 1D array_like of float):
                     training target, shape: (nPoint, nOut) or shape: (nPoint)
 
-                xKeys (1D array_like of string, optional):
+                xKeys (1D array_like of str, optional):
                     list of column keys for data selection
                     use self._xKeys keys if xKeys is None,
                     default: ['x0', 'x1', ... ]
 
-                yKeys (1D array_like of string, optional):
+                yKeys (1D array_like of str, optional):
                     list of column keys for data selection
                     use self._yKeys keys if yKeys is None,
                     default: ['y0', 'y1', ... ]
@@ -623,10 +623,10 @@ class Model(Base):
             df (pandas.DataFrame of float):
                 data object
 
-            keys0 (1D array_like of string):
+            keys0 (1D array_like of str):
                 keys for data selection
 
-            keys1..keys7 (1D array_like of string, optional):
+            keys1..keys7 (1D array_like of str, optional):
                 keys for data selection
 
         Returns:
@@ -703,8 +703,8 @@ class Model(Base):
             kwargs (dict, optional):
                 keyword arguments
 
-                trainers (string or list of string):
-                    type of trainers
+                methods (str or list of str):
+                    training methods
 
                 epochs (int):
                     maximum number of epochs
@@ -713,13 +713,13 @@ class Model(Base):
                     residuum to be met
 
                 trials (int):
-                    number of repetitions of training with same trainer
+                    number of repetitions of training with same method
                 ...
 
         Returns:
             (dict {str: float or str or int}):
                 result of best training trial:
-                    'trainer'    (str): best trainer
+                    'method'     (str): best training method
                     'L2'       (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
                     'abs'      (float): max{|net(x) - Y|} of best training
                     'iAbs'       (int): index of Y where absolute error is max
@@ -728,7 +728,7 @@ class Model(Base):
                     'weights'    (arr): weights if not White box model
 
         Note:
-            If X or Y is None, or training fails then self.best['trainer']=None
+            If X or Y is None, or training fails then self.best['method']=None
         """
         self.ready = True
         self._weights = None
@@ -743,7 +743,7 @@ class Model(Base):
             # self.ready = SUCCESS
             # if self.ready:
             #    self._weights = ...
-            #    self.best = {'trainer': ..., 'L2': ..., 'abs': ...,
+            #    self.best = {'method': ..., 'L2': ..., 'abs': ...,
             #                 'iAbs': ..., 'epochs': ...}
 
         return self.best
@@ -843,7 +843,7 @@ class Model(Base):
                 keyword arguments:
 
                 XY (4-tuple of two 2D array_like of float, and
-                    optionally two list of string):
+                    optionally two list of str):
                     training input & training target, optional keys of X and Y
                     'XY' supersede 'X' and 'Y'
 
@@ -860,7 +860,7 @@ class Model(Base):
          Returns:
             (dict: {str: float or str or int})
                 result of best training trial:
-                    'trainer'    (str): best trainer
+                    'method '    (str): best training method
                     'L2'       (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
                     'abs'      (float): max{|net(x) - Y|} of best training
                     'iAbs'       (int): index of Y where absolute error is max
@@ -904,7 +904,7 @@ class Model(Base):
             or
             (dict: {str: float or str or int})
                 otherwise: result of train() with best training trial:
-                    'trainer'    (str): best trainer
+                    'method'     (str): best training method
                     'L2'       (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
                     'abs'      (float): max{|net(x) - Y|} of best training
                     'iAbs'       (int): index of Y where absolute error is max

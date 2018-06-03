@@ -53,7 +53,7 @@ class Black(Model):
     def __init__(self, identifier='Black'):
         """
         Args:
-            identifier (string, optional):
+            identifier (str, optional):
                 object identifier
         """
         super().__init__(f=None, identifier=identifier)
@@ -203,7 +203,7 @@ if __name__ == '__main__':
 
         blk = Black()
         opt = {'neurons': [10, 10], 'trials': 5, 'goal': 1e-6,
-               'epochs': 500, 'trainers': 'bfgs rprop'}
+               'epochs': 500, 'methods': 'bfgs rprop'}
 
         bestTrn = blk(X=X, Y=Y, **opt)
         y = blk(x=x)
@@ -265,7 +265,7 @@ if __name__ == '__main__':
         columns = ['n' + str(i+1) for i in range(MAX_HIDDEN_LAYERS)]
         columns.extend(['L2Train', 'absTrain', 'iAbsTrain',
                         'L2Test', 'absTest', 'iAbsTest',
-                        'mse', 'trainer', 'epochs'])
+                        'mse', 'method', 'epochs'])
         collect = pd.DataFrame(columns=columns)
         definitionMax = [maxNeuronsInLayer for i in range(nHiddenLayers)]
         definitionMax = definitionMax + [0] * (MAX_HIDDEN_LAYERS -
@@ -315,7 +315,7 @@ if __name__ == '__main__':
             row = row + [0]*(MAX_HIDDEN_LAYERS - len(row))
             row.extend([bestTrn['L2'], bestTrn['abs'], bestTrn['iAbs'],
                         bestTst['L2'], bestTst['abs'], bestTst['iAbs'],
-                        0, 0, 0  # mse trainer epochs
+                        0, 0, 0  # mse training method epochs
                         ])
             # print('row:', row, len(row), 'columns:', collect.keys)
             collect.loc[collect.shape[0]] = row
@@ -384,7 +384,7 @@ if __name__ == '__main__':
                        f2]
 
         # neural network options
-        opt = {'trainers': 'bfgs rprop', 'neurons': []}
+        opt = {'methods': 'bfgs rprop', 'neurons': []}
 
         Y = np.array(df.loc[:, ['u']])                   # extracts an 2D array
         for f in definitions:

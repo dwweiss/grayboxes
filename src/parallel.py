@@ -286,11 +286,11 @@ def x3D2str(data, indent='    '):
         data (3D array_like of float):
             input or output array, shape=(nProc, nPointPerProc, nInp)
 
-        indent (string or int):
+        indent (str or int):
             indent in string description as string or indent * ' '
 
     Returns:
-        (string):
+        (str):
             string representation of segment of process and of filled up values
     """
     assert data is not None
@@ -446,7 +446,6 @@ if __name__ == '__main__':
         if nPoint <= 20:
             print('x:', x.tolist())
             print('y:', y.tolist())
-
 
         """ Example output:
         -----------------------

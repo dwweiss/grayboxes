@@ -204,7 +204,6 @@ class Base(object):
                 residuum from range 0.0 .. 1.0 indicating error of task
                 or -1.0 if parallel and rank > 0
         """
-        
         # skip model execution if parallelized with MPI and rank > 0
         if parallel.rank():
             return -1.0
@@ -415,7 +414,7 @@ class Base(object):
         - Assigns 'None' to log file if opening of log file fails.
 
         Args:
-            file (string or IOBase or None):
+            file (str or IOBase or None):
                 file name or binding to log file; 'None' stops logging
         """
         if self._logFile is not None:
@@ -505,7 +504,7 @@ class Base(object):
         root
 
         Args:
-            identifier (string):
+            identifier (str):
                 identifier of searched node
 
         Returns:
@@ -520,7 +519,7 @@ class Base(object):
         from 'fromNode'
 
         Args:
-            identifier (string):
+            identifier (str):
                 identifier of wanted node
 
             fromNode (binding):
@@ -583,7 +582,7 @@ class Base(object):
             kwargs (dict):
                 keyword arguments
 
-            remove (string or list of strings):
+            remove (str or list of str):
                 keywords of items to be removed
 
         Returns:
@@ -604,7 +603,7 @@ class Base(object):
             kwargs (dict):
                 keyword arguments
 
-            keys (string or array_like of strings):
+            keys (str or array_like of str):
                 keyword or list of alternative keywords
 
             default(any type, optional):
