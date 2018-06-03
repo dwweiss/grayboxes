@@ -29,6 +29,6 @@ _grayBoxes_ contributes to the creation and evaluation of hybrid models. A Pytho
 
 ### Dependencies
 
-Neural.py is dependent on `neurolab`, install with `sudo pip3 install neurolab`
+`Neural.py` is dependent on `neurolab`, install with `sudo pip3 install neurolab`
 
-LightGray.py and Minimum.py are dependent on `modestga`, install with `sudo pip3 install modestga`
+`LightGray.py` and `Minimum.py` are dependent on `modestga`, install with `sudo pip3 install modestga`
