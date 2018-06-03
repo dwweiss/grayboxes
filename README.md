@@ -6,7 +6,7 @@ A remedy is the combination of theoretical with empirical models. Such hybrid mo
 
 _grayBoxes_ contributes to the creation and evaluation of hybrid models. A Python framework for implementation of empirical, theoretical and hybrid models is provided. The generic model access and the possibility to distribute models over subdomains supports long-distance collaboration.
 
-[Link to Wiki](https://github.com/dwweiss/grayBoxes/wiki)
+[[Link to Wiki]](https://github.com/dwweiss/grayBoxes/wiki)
 
 <br>
 
