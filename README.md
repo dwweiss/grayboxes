@@ -8,8 +8,9 @@ _grayBoxes_ contributes to the creation and evaluation of hybrid models. A Pytho
 
 [Link to Wiki](https://github.com/dwweiss/grayBoxes/wiki)
 
+<br>
 
-## Content of project 
+### Content of project 
 
     src 
         Training, sensitivity analysis and execution of white box, gray box and black box models
@@ -21,12 +22,12 @@ _grayBoxes_ contributes to the creation and evaluation of hybrid models. A Pytho
         Figures and manuals used in wiki
         
 
-## Installation
+### Installation
 
     $ git clone https://github.com/dwweiss/grayBoxes.git
 
 
-## Dependency
+### Dependencies
 
 Neural.py is dependent on `neurolab`, install with `sudo pip3 install neurolab` or:
 LightGray.py and Minimum.py are dependent on `modestga`, install with `sudo pip3 install modestga`
