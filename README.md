@@ -27,4 +27,4 @@ _grayBoxes_ contributes to the creation and evaluation of hybrid models. A Pytho
     $ git clone https://github.com/dwweiss/grayBoxes.git
     $ sudo python3 setup.py install `
 
-`LightGray.py` and `Minimum.py` are dependent on `modestga`, install with `sudo pip3 install modestga`
+`LightGray.py` and `Minimum.py` are dependent on `modestga` and `Neural.py` is dependent on `neurolab`
