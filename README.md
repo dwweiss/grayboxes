@@ -24,8 +24,8 @@ _grayBoxes_ contributes to the creation and evaluation of hybrid models. A Pytho
 
 ### Installation
 
-    $ git clone https://github.com/dwweiss/grayBoxes.git
-    $ sudo python3 setup.py install `
+    git clone https://github.com/dwweiss/grayBoxes.git
+    sudo python3 setup.py install `
 
 ### Dependencies
 
