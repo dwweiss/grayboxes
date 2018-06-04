@@ -32,7 +32,6 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
       sudo apt-get install cpufreq-info
       sudo apt-get install conky
 
-
 ##### Python 3
 
     python3 -V
@@ -67,9 +66,13 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
     
 &nbsp; See: [Correction for netgen on Ubuntu 16.04 LTS](https://sourceforge.net/p/netgen-mesher/discussion/905307/thread/946ccfc2/), (in file _/usr/share/netgen/drawing.tcl_ change _-indirect true_ to _-indirect false_)
 
-##### Result viewer
+##### Neural networks
 
-    sudo apt-get install paraview
+    sudo -H pip3 install neurolab
+    
+##### Genetic algorithms
+
+    sudo -H pip3 install modestga
 
 ##### Wiki
 
