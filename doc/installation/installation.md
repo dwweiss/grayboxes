@@ -13,7 +13,6 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
     sudo chown USER /X
     ln -s /X /home/USER/X
 
-     
 - Optionally: password for root (for login as root)
 
     sudo passwd root 
@@ -22,6 +21,11 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
     sudo apt-get update
     sudo apt-get -y upgrade
+
+- Folder encryption
+
+    sudo add-apt-repository ppa:gencfsm && sudo apg-get update
+    sudo apt-get install -y ecryptfs-utils gnome-encfs-manager
 
 ##### Python 3
 
@@ -38,6 +42,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 ##### Spyder (python development)
 
     sudo apt-get install spyder3
+    sudo -H pip3 install rope
 
 ##### Neural networks
 
@@ -47,8 +52,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### Fenics (finite elements)
 
-    sudo add-apt-repository ppa:fenics-packages/fenics
-    sudo apt-get update
+    sudo add-apt-repository ppa:fenics-packages/fenics && sudo apg-get update
     sudo apt-get install fenics
 
 ##### Mesh generation
@@ -68,3 +72,9 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 ##### Text processing
 
     sudo apt-get install texlive texlive-science texmaker
+
+##### Monitor hardware
+
+    sudo apt-get install cpufreq-info
+    sudo apt-get install conky
+
