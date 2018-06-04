@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-10 DWW
+      2018-06-04 DWW
 
 Note on excution of a python script in from file manager on Windows:
     1. Install Python 3.0 or newer

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-21 DWW
+      2018-06-03 DWW
 """
 
 import numpy as np
@@ -69,7 +69,7 @@ class Inverse(Minimum):
                                   **self.kwargsDel(kwargs, 'x'))
 
         # self.y is target, self.y.shape: (nOut,), yInv.shape: (1, nOut)
-        L2 = np.sqrt(np.mean((yInv[0] - self.y)**2)) + self.penalty(x)
+        L2 = np.sqrt(np.mean((yInv[0] - self.y)**2))
 
         self._trialHistory.append([x, yInv[0], L2])
 
@@ -79,7 +79,7 @@ class Inverse(Minimum):
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    ALL = 1
+    ALL = 0
 
     from plotArrays import plot_X_Y_Yref
     import Model as md
@@ -100,15 +100,16 @@ if __name__ == '__main__':
         x, y = op(x=md.grid(3, [-1, 1], [4, 8], [3, 5]), y=[0.5])
         op.plot()
 
-    if 0 or ALL:
+    if 1 or ALL:
         s = 'Inverse, replaced model'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         op = Inverse(White('demo'))
-        xInv, yInv = op(x=md.grid((5, 4), [-10, 10], [-15, 15]), y=[0.5])
+        xInv, yInv = op(x=md.rand(3, [-5, 5], [-5, 5]), y=[0.5],
+                        method='ga', bounds=2*[(-8, 8)], generations=2000)
         op.plot()
 
-    if 1 or ALL:
+    if 0 or ALL:
         s = 'Inverse operation on light gray box model'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
