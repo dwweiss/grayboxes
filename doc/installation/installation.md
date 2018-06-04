@@ -27,7 +27,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
       sudo add-apt-repository ppa:gencfsm && sudo apg-get update  
       sudo apt-get install -y ecryptfs-utils gnome-encfs-manager
 
--Optional: Monitor hardware
+- Optional: Monitor hardware
 
       sudo apt-get install cpufreq-info
       sudo apt-get install conky
