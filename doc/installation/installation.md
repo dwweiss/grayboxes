@@ -10,22 +10,28 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 - Consider a separate disk partition with directory **/X** besides the default /home/**USER** directory, 
   change permission after completion of Linux installation
  
-    sudo chown USER /X
-    ln -s /X /home/USER/X
+      sudo chown USER /X
+      ln -s /X /home/USER/X
 
-- Optionally: password for root (for login as root)
+- Optional: password for root (for login as root)
 
-    sudo passwd root 
+      sudo passwd root 
 
 - Update Linux
 
-    sudo apt-get update
-    sudo apt-get -y upgrade
+      sudo apt-get update
+      sudo apt-get -y upgrade
 
-- Folder encryption
+- Optional: Folder encryption
 
-    sudo add-apt-repository ppa:gencfsm && sudo apg-get update  
-    sudo apt-get install -y ecryptfs-utils gnome-encfs-manager
+      sudo add-apt-repository ppa:gencfsm && sudo apg-get update  
+      sudo apt-get install -y ecryptfs-utils gnome-encfs-manager
+
+-Optional: Monitor hardware
+
+      sudo apt-get install cpufreq-info
+      sudo apt-get install conky
+
 
 ##### Python 3
 
@@ -72,9 +78,4 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 ##### Text processing
 
     sudo apt-get install texlive texlive-science texmaker
-
-##### Monitor hardware
-
-    sudo apt-get install cpufreq-info
-    sudo apt-get install conky
 
