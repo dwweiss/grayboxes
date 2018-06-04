@@ -6,7 +6,7 @@ A remedy is the combination of theoretical with empirical models. Such hybrid mo
 
 _grayBoxes_ contributes to the creation and evaluation of hybrid models. A Python framework for implementation of empirical, theoretical and hybrid models is provided. The generic model access and the possibility to distribute models over subdomains supports long-distance collaboration.
 
-[[Link to _grayBoxes_ Wiki]](https://github.com/dwweiss/grayBoxes/wiki)
+[[Link to grayBoxes Wiki]](https://github.com/dwweiss/grayBoxes/wiki)
 
 <br>
 
@@ -29,5 +29,5 @@ _grayBoxes_ contributes to the creation and evaluation of hybrid models. A Pytho
 
 ### Dependencies
 
-- `LightGray.py` and `Minimum.py` are dependent on `modestga`  
-- `Neural.py` is dependent on `neurolab`
+- _LightGray.py_ and `Minimum.py` are dependent on package [_modestga_](/dwweiss/grayBoxes/wiki/References#mga18)
+- _Neural.py_ is dependent on package [_neurolab_](wiki/References#nlb15)
