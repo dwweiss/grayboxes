@@ -2,7 +2,7 @@
 
 <!-- Version: 2018-03-20 Dietmar Wilhelm Weiss -->
 
-In the text below **USER** depicts the actual user name and **X** the disk partition for models etc.
+In the text below **USER** depicts the actual user name and **X** the disk partition for the workspace
 
 ##### System
 
