@@ -1,6 +1,6 @@
 # grayBoxes
 
-Data-driven modelling is gaining interest due to the availibility of machine learning tools such as TensorFlow, Keras etc. The success of data-driven tools is bound to the availibility of large data sets. In contrast, multi-purpose packages employing finite element or finite volume methods are not dependent on data. They are often limitated in reproducing the behaviour of the real process. This is especially true if the process to be modelled has chaotic elements as for instance in welding.
+Data-driven modeling is gaining interest due to the availibility of machine learning tools such as TensorFlow, Keras etc. The success of data-driven tools is bound to the availibility of large data sets. In contrast, multi-purpose packages employing finite element or finite volume methods are not dependent on data. They are often limitated in reproducing the behaviour of the real process. This is especially true if the process to be modelled has chaotic elements as for instance in welding.
 
 A remedy is the combination of theoretical with empirical models. Such hybrid models lower the expenses of theoretical model development and can be calibrated to given experimental sets, however it is still difficult to estimate the split in the share of the empirical submodel relative to the theoretical one. The availability of such an estimate is essential for evaluation of the model reliability and its further development.
 
@@ -12,10 +12,10 @@ _grayBoxes_ contributes to the creation and evaluation of hybrid models. A Pytho
 
 ### Content of project 
 
-    src 
-        Training, sensitivity analysis and execution of white box, gray box and black box models
+    grayBoxes
+        Training, sensitivity analysis and prediction with white box, gray box and black box models
 
-    src/tests
+    tests
         Selected test cases
 
     doc
@@ -25,10 +25,6 @@ _grayBoxes_ contributes to the creation and evaluation of hybrid models. A Pytho
 ### Installation
 
     $ git clone https://github.com/dwweiss/grayBoxes.git
-
-
-### Dependencies
-
-`Neural.py` is dependent on `neurolab`, install with `sudo pip3 install neurolab`
+    $ sudo python3 setup.py install `
 
 `LightGray.py` and `Minimum.py` are dependent on `modestga`, install with `sudo pip3 install modestga`
