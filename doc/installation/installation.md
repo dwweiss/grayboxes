@@ -24,7 +24,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 - Folder encryption
 
-    sudo add-apt-repository ppa:gencfsm && sudo apg-get update
+    sudo add-apt-repository ppa:gencfsm && sudo apg-get update  
     sudo apt-get install -y ecryptfs-utils gnome-encfs-manager
 
 ##### Python 3
