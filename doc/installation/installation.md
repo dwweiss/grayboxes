@@ -74,6 +74,11 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
     sudo -H pip3 install modestga
 
+
+##### Graphics
+
+    sudo -H pip3 install mayavi
+
 ##### Wiki
 
     sudo apt-get install retext
