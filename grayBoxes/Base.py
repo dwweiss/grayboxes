@@ -17,14 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-04 DWW
-
-Note on excution of a python script in from file manager on Windows:
-    1. Install Python 3.0 or newer
-    2. Find location of "python.exe" employing windows command "where.exe":
-       > where python.exe
-    3. In file manager, [Properties] -> [Change] -> [Browse] to: 'python.exe'
-    4. Now this python script starts in file manager with double-click
+      2018-06-13 DWW
 
 Note on program arguments:
     - no arguments                 : program starts in default mode
@@ -36,7 +29,8 @@ Note on program arguments:
     - one argument '-g'            : graphic mode with information to console
 
 
-Example: see code below line starting with: "if __name__ == '__main__':"
+Examples: 
+    see code below line with: "if __name__ == '__main__':"
 """
 
 from io import IOBase
@@ -66,7 +60,7 @@ except ImportError:
 
 class Base(object):
     """
-    Base connects objects in process modeling and controls their execution
+    Connects model objects and controls their execution
 
     The objects are organized in overlapping tree structures. The concept of
     conservative leader-follower relationships (authoritarian) is extended by
@@ -162,7 +156,7 @@ class Base(object):
         self._identifier = str(identifier)
         self.argv = argv
         self.program = self.__class__.__name__
-        self.version = '010518_dww'
+        self.version = '130618_dww'
 
         self._execTimeStart = 0.0       # start measuring execution time
         self._minExecTimeShown = 1.0    # times less than limit are not shown
@@ -182,10 +176,10 @@ class Base(object):
         self._lineCompleted = True      # helper variable for self.write()
         self._logFile = None            # log file, see self.write()
 
-        self._leader = None             # binding to leader object
-        self._followers = []            # array of bindings to followers
+        self._leader = None             # leader object
+        self._followers = []            # array of follower objects
 
-        self._data = None               # binding to DataFrame
+        self._data = None               # data organized in a DataFrame
         self._csvSeparator = ','        # separator in csv-files
 
     def __call__(self, **kwargs):
