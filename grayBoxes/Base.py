@@ -172,7 +172,6 @@ class Base(object):
         self._gui = False               # no graphic user interface if False
         self._batch = False             # no user interaction if True
         self._silent = False            # no console output if True
-#        self._silentPrevious = False    # previous value of self._silent
 
         self._ready = True              # if True, successful train/prediction
 
