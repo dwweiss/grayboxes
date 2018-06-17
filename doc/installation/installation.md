@@ -57,8 +57,14 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### Fenics (finite elements)
 
-    sudo add-apt-repository ppa:fenics-packages/fenics && sudo apg-get update
+    sudo add-apt-repository ppa:fenics-packages/fenics && sudo apt-get update
     sudo apt-get install fenics
+
+##### FiPy (finite volumes)
+
+    sudo apt-get install python-pip
+    pip2 install --upgrade pip setuptools
+    sudo -H pip2 install fipy
 
 ##### Mesh generation
 
