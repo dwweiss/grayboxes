@@ -17,14 +17,14 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-20 DWW
+      2018-06-19 DWW
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from Forward import Forward
-from plotArrays import plotBarArrays
+from grayboxes.Forward import Forward
+from grayboxes.plotArrays import plotBarArrays
 
 
 class Sensitivity(Forward):
@@ -196,8 +196,8 @@ class Sensitivity(Forward):
 if __name__ == '__main__':
     ALL = 1
 
-    from White import White
-    import Model as md
+    from grayboxes.White import White
+    import grayboxes.Model as Model
 
     def f(self, x, *args, **kwargs):
         return np.sin(x[0]) + (x[1] - 1)**2
@@ -206,7 +206,7 @@ if __name__ == '__main__':
         s = 'Sensitivity with method f(self, x)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        xRef, dy_dx = Sensitivity(White(f))(x=md.cross(3, [2, 3], [3, 4]))
+        xRef, dy_dx = Sensitivity(White(f))(x=Model.cross(3, [2, 3], [3, 4]))
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()
         print('dy_dx:', dy_dx)
@@ -217,7 +217,7 @@ if __name__ == '__main__':
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         op = Sensitivity(White('demo'))
-        xRef, dy_dx = op(x=md.cross(3, [2, 3], [3, 4], [4, 5]))
+        xRef, dy_dx = op(x=Model.cross(3, [2, 3], [3, 4], [4, 5]))
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()
         print('dy_dx:', dy_dx)
