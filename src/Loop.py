@@ -23,7 +23,7 @@
 from time import time
 import numpy as np
 
-from Base import Base
+from grayboxes.Base import Base
 
 
 class Loop(Base):
