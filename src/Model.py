@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-24 DWW
+      2018-06-19 DWW
 """
 
 import inspect
@@ -25,11 +25,8 @@ import random
 from collections import OrderedDict
 import numpy as np
 from pandas import DataFrame
-from Base import Base
-try:
-    import parallel
-except ImportError:
-    print("!!! Module 'parallel' not imported")
+from grayboxes.Base import Base
+form grayboxes.parallel import parallel
 
 
 def grid(n, *ranges):
@@ -932,9 +929,9 @@ if __name__ == '__main__':
     ALL = 1
 
     import matplotlib.pyplot as plt
-    from White import White
-    from LightGray import LightGray
-    from plotArrays import plotIsoMap, plotSurface, plotIsolines
+    from grayboxes.White import White
+    from grayboxes.LightGray import LightGray
+    from grayboxes.plotArrays import plotIsoMap, plotSurface, plotIsolines
 
     def fUser(self, x, *args, **kwargs):
         """
