@@ -17,10 +17,10 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-20 DWW
+      2018-06-19 DWW
 """
 
-from Model import Model
+from grayboxes.Model import Model
 
 
 class White(Model):
@@ -66,9 +66,9 @@ if __name__ == '__main__':
     ALL = 1
 
     import numpy as np
-    from plotArrays import plotIsoMap
-    import Model as md
-    from Forward import Forward
+    from grayboxes.plotArrays import plotIsoMap
+    from grayboxes.Model import Model
+    from grayboxes.Forward import Forward
 
     def fUser(self, x, *args):
         c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
@@ -100,7 +100,7 @@ if __name__ == '__main__':
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         model = White(fUser)
-        x, y = Forward(model)(x=md.grid(8, [-1, 8], [0, 3]))
+        x, y = Forward(model)(x=Model.grid(8, [-1, 8], [0, 3]))
 
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
 
@@ -108,6 +108,6 @@ if __name__ == '__main__':
         s = 'Forward operator on demo White box'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        x, y = Forward(White('demo'))(x=md.cross(9, [-1, 8], [0, 3]))
+        x, y = Forward(White('demo'))(x=Model.cross(9, [-1, 8], [0, 3]))
 
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
