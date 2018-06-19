@@ -1,6 +1,6 @@
 ### Linux installation proposal
 
-<!-- Version: 2018-03-20 Dietmar Wilhelm Weiss -->
+<!-- Version: 2018-06-19 DWW -->
 
 In the text below **USER** depicts the actual user name and **X** the disk partition for the workspace
 
@@ -40,20 +40,20 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
     sudo apt-get -y install build-essential libssl-dev libffi-dev python3-dev
  
     sudo apt-get install python3-tk
-    sudo -H pip3 install mpi4py
-    sudo -H pip3 install futures
-    sudo -H pip3 install traitsui
+    pip3 install --user mpi4py
+    pip3 install --user futures
+    pip3 install --user traitsui
 
 ##### Spyder (python development)
 
     sudo apt-get install spyder3
-    sudo -H pip3 install rope
+    pip3 install --user rope
 
 ##### Neural networks
 
-    sudo -H pip3 install neurolab
-    sudo -H pip3 install tensorflow
-    sudo -H pip3 install keras
+    pip3 install --user neurolab
+    pip3 install --user tensorflow
+    pip3 install --user keras
 
 ##### Fenics (finite elements)
 
@@ -64,29 +64,25 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
     sudo apt-get install python-pip
     pip2 install --upgrade pip setuptools
-    sudo -H pip2 install fipy
+    pip2 install --user fipy
 
 ##### Mesh generation
 
     sudo apt-get install gmsh netgen
     
 &nbsp; See: [Correction for netgen on Ubuntu 16.04 LTS](https://sourceforge.net/p/netgen-mesher/discussion/905307/thread/946ccfc2/), (in file _/usr/share/netgen/drawing.tcl_ change _-indirect true_ to _-indirect false_)
-
-##### Neural networks
-
-    sudo -H pip3 install neurolab
     
 ##### Genetic algorithms
 
-    sudo -H pip3 install modestga
+    pip3 install --user modestga
 
 ##### Multigrid solver
 
-    sudo -H pip3 install pyamg
+    pip3 install --user pyamg
 
 ##### Graphics
 
-    sudo -H pip3 install mayavi
+    pip3 install --user mayavi
 
 ##### Wiki
 
