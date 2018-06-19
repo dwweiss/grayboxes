@@ -12,7 +12,7 @@ _grayboxes_ contributes to the creation and evaluation of hybrid models. A Pytho
 
 ### Content of project 
 
-    grayBoxes
+    src
         Training, sensitivity analysis and prediction with white box, gray box and black box models
 
     tests
