@@ -1,6 +1,6 @@
 from setuptools import setup
 
-setup(name='grayBoxes',
+setup(name='grayboxes',
       version='0.1',
       description='Gray box modeling',
       url='https://github.com/dwweiss/grayBoxes',
@@ -8,7 +8,8 @@ setup(name='grayBoxes',
       author='Dietmar Wilhelm Weiss',
       license='GLGP 3.0',
       platforms=['Linux', 'Windows'],
-      packages=['grayBoxes'],
+      packages=['grayboxes'],
+      package_dir={'grayboxes': 'src'},
       include_package_data=True,
       install_requires=['numpy', 'matplotlib', 'pandas', 'scipy', 'neurolab',
                         'modestga'],
