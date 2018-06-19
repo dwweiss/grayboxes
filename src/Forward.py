@@ -17,14 +17,14 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-19 DWW
+      2018-06-19 DWW
 """
 
 import numpy as np
 
-from Base import Base
-from Model import Model
-from White import White
+from grayboxes.Base import Base
+from grayboxes.Model import Model
+from grayboxes.White import White
 
 
 class Forward(Base):
@@ -183,13 +183,13 @@ class Forward(Base):
 if __name__ == '__main__':
     ALL = 1
 
-    from plotArrays import plotIsoMap
-    from Model import grid, cross, rand
+    from grayboxes.plotArrays import plotIsoMap
+    from grayboxes.Model import grid, cross, rand
 
-    from LightGray import LightGray
-    from MediumGray import MediumGray
-    from DarkGray import DarkGray
-    from Black import Black
+    from grayboxes.LightGray import LightGray
+    from grayboxes.MediumGray import MediumGray
+    from grayboxes.DarkGray import DarkGray
+    from grayboxes.Black import Black
 
     # function without access to 'self' attributes
     def function(x, *args):
