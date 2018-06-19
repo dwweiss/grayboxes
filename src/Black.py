@@ -17,14 +17,14 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-20 DWW
+      2018-06-19 DWW
 """
 
 import numpy as np
 import pandas as pd
 
-from Model import Model
-from Neural import Neural
+from grayboxes.Model import Model
+from grayboxes.Neural import Neural
 
 
 class Black(Model):
