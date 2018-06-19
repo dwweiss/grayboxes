@@ -17,10 +17,10 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-19 DWW
+      2018-06-19 DWW
 """
 
-from Minimum import Minimum
+from grayboxes.Minimum import Minimum
 
 
 class Maximum(Minimum):
@@ -53,8 +53,8 @@ if __name__ == '__main__':
     ALL = 1
 
     import numpy as np
-    from Model import rand
-    from White import White
+    from grayboxes.Model import rand
+    from grayboxes.White import White
 
     # user defined method with theoretical submodel
     def f(self, x, *args):
