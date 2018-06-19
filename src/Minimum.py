@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-03 DWW
+      2018-06-19 DWW
 
   Acknowledgemdent:
       Module modestga is a contribution by Krzyzstof Arendt
@@ -31,8 +31,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D          # needed for "projection='3d'"
 
-from Base import Base
-from Forward import Forward
+from grayboxes.Base import Base
+from grayboxes.Forward import Forward
 try:
     import modestga as mg
 except ImportError:
@@ -497,12 +497,11 @@ class Minimum(Forward):
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    from plotArrays import plotSurface, plotIsoMap
-
     ALL = 0
 
-    from Model import rand, grid
-    from White import White
+    from grayboxes.Model import rand, grid
+    from grayboxes.White import White
+    from grayboxes.plotArrays import plotSurface, plotIsoMap
 
     # theoretical submodel
     def f(x, *args):
