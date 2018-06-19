@@ -25,9 +25,10 @@ import random
 from collections import OrderedDict
 import numpy as np
 from pandas import DataFrame
-from grayboxes.Base import Base
-form grayboxes.parallel import parallel
 
+from grayboxes.Base import Base
+from grayboxes.parallel import communicator, predict_scatter
+ 
 
 def grid(n, *ranges):
     """
