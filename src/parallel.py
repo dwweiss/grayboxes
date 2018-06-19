@@ -15,7 +15,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-21 DWW
+      2018-06-19 DWW
 """
 
 import numpy as np
