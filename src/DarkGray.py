@@ -17,13 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-23 DWW
+      2018-06-19 DWW
 """
 
 import numpy as np
 
-from Model import Model
-from Black import Black
+from grayboxes.Model import Model
+from grayboxes.Black import Black
 
 
 class DarkGray(Model):
@@ -118,7 +118,7 @@ if __name__ == '__main__':
 
     from io import StringIO
     import pandas as pd
-    from plotArrays import plotIsoMap, plotWireframe
+    from grayboxes.plotArrays import plotIsoMap, plotWireframe
 
     df = pd.DataFrame({'x0': [2, 3, 4.5, 5, 9],
                        'x1': [3, 4, 5, 6, 7],
