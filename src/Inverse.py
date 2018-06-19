@@ -17,11 +17,11 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-03 DWW
+      2018-06-19 DWW
 """
 
 import numpy as np
-from Minimum import Minimum
+from grayboxes.Minimum import Minimum
 
 
 class Inverse(Minimum):
@@ -81,12 +81,12 @@ class Inverse(Minimum):
 if __name__ == '__main__':
     ALL = 0
 
-    from plotArrays import plot_X_Y_Yref
-    import Model as md
+    from grayboxes.plotArrays import plot_X_Y_Yref
+    import grayboxes.Model as md
 
-    from White import White
-    from LightGray import LightGray
-    from Black import Black
+    from grayboxes.White import White
+    from grayboxes.LightGray import LightGray
+    from grayboxes.Black import Black
 
     def f(self, x, *args):
         c0, c1, c2 = args if len(args) > 0 else 1, 1, 1
