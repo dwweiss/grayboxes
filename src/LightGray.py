@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-03 DWW
+      2018-06-19 DWW
 
   Acknowledgemdent:
       Module modestga is a contribution by Krzyzstof Arendt
@@ -26,7 +26,7 @@
 import sys
 import numpy as np
 import scipy.optimize
-from Model import Model
+from grayboxes.Model import Model
 try:
     import modestga as mg
 except ImportError:
@@ -441,9 +441,9 @@ class LightGray(Model):
 if __name__ == '__main__':
     ALL = 0
 
-    from plotArrays import plot_X_Y_Yref
-    import Model as md
-    from White import White
+    from grayboxes.plotArrays import plot_X_Y_Yref
+    import grayboxes.Model as md
+    from grayboxes.White import White
 
     def f(self, x, *args, **kwargs):
         """
