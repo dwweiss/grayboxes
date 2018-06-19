@@ -36,7 +36,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
     python3 -V
     sudo apt-get install -y python3-pip
-    sudo -H pip3 install --upgrade pip 
+    pip3 install --upgrade --user pip 
     sudo apt-get -y install build-essential libssl-dev libffi-dev python3-dev
  
     sudo apt-get install python3-tk
