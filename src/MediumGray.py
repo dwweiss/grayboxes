@@ -17,12 +17,12 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-11 DWW
+      2018-06-19 DWW
 """
 
 import numpy as np
-import Model as md
-from Neural import Neural
+import grayboxes.Model as md
+from grayboxes.Neural import Neural
 
 
 class MediumGray(md.Model):
@@ -261,7 +261,8 @@ if __name__ == '__main__':
 
     from io import StringIO
     import pandas as pd
-    from Black import Black
+    from grayboxes.Black import Black
+    from grayboxes.plotArrays import plotIsoMap, plotWireframe
 
     df = pd.DataFrame({'x0': [2, 3, 4, 5],
                        'x1': [3, 4, 5, 6],
@@ -333,7 +334,7 @@ if __name__ == '__main__':
         y = model(X=X, Y=Y, neurons=[], x=X)
         print('*** x:', model.x, 'y:', model.y, y)
 
-        from plotArrays import plotIsoMap, plotWireframe
+        from grayboxes.plotArrays import plotIsoMap, plotWireframe
         plotIsoMap(X.T[0], X.T[1], Y.T[0] * 1e3, title=r'$A_{prc}\cdot 10^3$')
         plotIsoMap(X.T[0], X.T[1], y.T[0] * 1e3, title=r'$A_{blk}\cdot 10^3$')
         plotIsoMap(X.T[0], X.T[1], (Y.T[0] - y.T[0]) * 1e3,
