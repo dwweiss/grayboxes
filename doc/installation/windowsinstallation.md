@@ -1,4 +1,4 @@
-### Installation of downloaed python packages on windows
+### Installation of downloaded python packages on windows
 
 <!-- Version: 2018-06-21 DWW -->
 
