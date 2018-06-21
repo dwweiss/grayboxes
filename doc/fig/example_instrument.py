@@ -25,8 +25,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-from Black import Black
-from plotArrays import plotIsoMap, plotWireframe
+from grayboxes.black import Black
+from grayboxes.plotarrays import plotIsoMap, plotWireframe
 
 
 # Examples ####################################################################
