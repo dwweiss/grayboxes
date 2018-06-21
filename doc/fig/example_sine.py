@@ -17,17 +17,17 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-04-30 DWW
+      2018-06-21 DWW
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from White import White
-from LightGray import LightGray
-from MediumGray import MediumGray
-from DarkGray import DarkGray
-from Black import Black
+from grayboxes.white import White
+from grayboxes.lightgray import LightGray
+from grayboxes.mediumgray import MediumGray
+from grayboxes.darkgray import DarkGray
+from grayboxes.black import Black
 
 
 def F_true(x):
