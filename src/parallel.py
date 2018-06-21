@@ -15,7 +15,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-19 DWW
+      2018-06-21 DWW
 """
 
 import numpy as np
@@ -368,6 +368,7 @@ if __name__ == '__main__':
         comm = communicator()
         if comm is None:
             nProc = 4
+            nCore = 2
         else:
             nProc = comm.Get_size()
             nCore = psutil.cpu_count(logical=False)
