@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-13 DWW
+      2018-06-21 DWW
 
 Note on program arguments:
     - no arguments                 : program starts in default mode
@@ -53,7 +53,7 @@ except ImportError:
           str(version_info.major) + '.' + str(version_info.major) +
           '.' + str(version_info.micro) + "') or 'tkinter' not imported")
 try:
-    import parallel
+    from grayboxes.parallel import rank
 except ImportError:
     print("!!! Module 'parallel' not imported")
 
@@ -198,7 +198,7 @@ class Base(object):
                 or -1.0 if parallel and rank > 0
         """
         # skip model execution if parallelized with MPI and rank > 0
-        if parallel.rank():
+        if rank():
             return -1.0
 
         self.silent = kwargs.get('silent', self.silent)
@@ -646,7 +646,7 @@ class Base(object):
         Note:
             No seperator between print elements, comparable to print(x, sep='')
         """
-        silent = self.silent or parallel.rank()
+        silent = self.silent or rank()
 
         lf = self._logFile
         if lf is None:
