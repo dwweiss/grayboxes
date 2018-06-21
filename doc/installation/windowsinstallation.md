@@ -9,10 +9,10 @@ In the text below **USER** depicts the actual user name, **X** the disk partitio
     
           where /R c:\ python*.exe
    
-   Note this path (in the following **EXEPATH**) 
+   Note this path, e.g. _c:\ProgramData\Anaconda3_ (in the following **EXEPATH**) 
    
-3. Download package as _**PACKAGE**.zip_ file
-4. Unpack _**PACKAGE**.zip_
+3. Download package as **PACKAGE**.zip file
+4. Unpack **PACKAGE**.zip file
 5. Change in console to the directory containing the unzipped **PACKAGE** 
 6. Check if _setup.py_ does exist
 7. Install with 
