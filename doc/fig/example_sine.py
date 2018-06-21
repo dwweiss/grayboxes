@@ -70,8 +70,9 @@ if __name__ == '__main__':
               DarkGray(f), Black()
               ]
 
-    opt = {'neural': [2], 'regularization': 0.5,  'epochs': 500,
-           'goal': 1e-5, 'trainers': 'rprop bfgs', 'trials': 5}
+    opt = {'neurons': [2], 'regularization': 0.5,  'epochs': 500,
+           'goal': 1e-5, 'methods': 'rprop bfgs', 'trials': 5, 
+           'c0': np.ones(3)}
 
     results = {'noise': (X, Y), 'true': (x, y)}   # collection of results (x,y)
     for model in models:

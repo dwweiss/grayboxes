@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-05-08 DWW
+      2018-06-21 DWW
 """
 
 from io import StringIO
@@ -97,7 +97,7 @@ if __name__ == '__main__':
             print(' ==> autodefinition') if hid == 0 else print()
 
             y = model(X=X, Y=Y, x=X, goal=1e-5, trials=5, epochs=1000,
-                      neural=hid, trainers='rprop', silent=True)
+                      neurons=hid, methods='rprop', silent=True)
             # print('*** x:', model.x, 'y:', model.y, y)
 
             yDiff = round(y[:, 0].max() - y[:, 0].min(), 5)

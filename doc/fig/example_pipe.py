@@ -17,21 +17,20 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-03 DWW
+      2018-06-21 DWW
 """
 
 import math
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-
-import Model as md
-from White import White
-from LightGray import LightGray
-from MediumGray import MediumGray
-from DarkGray import DarkGray
-from Black import Black
-from plotArrays import plotIsoMap, plotIsolines, plotSurface
+from grayboxes.model import grid, noise, rand
+from grayboxes.white import White
+from grayboxes.lightgray import LightGray
+from grayboxes.mediumgray import MediumGray
+from grayboxes.darkgray import DarkGray
+from grayboxes.black import Black
+from grayboxes.plotarrays import plotIsoMap, plotIsolines, plotSurface
 
 from pressureDrop import dp_in_red_mid_exp_out
 
@@ -70,14 +69,14 @@ if __name__ == '__main__':
 
     # model selection
     models = [
-              # White(f),
+              White(f),
               LightGray(f),
               # MediumGray(f),
-              # DarkGray(f),
-              # Black()
+              DarkGray(f),
+              Black()
               ]
     for model in models:
-        model.silent = not True
+        model.silent = True
     figsize = (4, 3)                                    # excluding plotSurface
 
     # min and max number of hidden neurons for medium dark and black box models
@@ -89,11 +88,11 @@ if __name__ == '__main__':
     nX, nY, xTrnRng, yTrnRng = 16+1, 4+1, [2, 10], [40, 100]  # [/ / m/s mm2/s
     nx, ny, xTstRng, yTstRng = 128+1, 128+1, [0, 12], [40, 100]
 
-    X = md.grid((nX, nY), xTrnRng, yTrnRng)   # shape: (nX*nY, 2), [m/s, mm2/s]
-    x = md.grid((nx, ny), xTstRng, yTstRng)   # shape: (nx*ny, 2), [m/s, mm2/s]
+    X = grid((nX, nY), xTrnRng, yTrnRng)   # shape: (nX*nY, 2), [m/s, mm2/s]
+    x = grid((nx, ny), xTstRng, yTstRng)   # shape: (nx*ny, 2), [m/s, mm2/s]
     Y_exa = White(f)(x=X, silent=True)
     y_exa = White(f)(x=x, silent=True)
-    Y = md.noise(y=Y_exa, absolute=0, relative=relNoise, uniform=True)
+    Y = noise(y=Y_exa, absolute=0, relative=relNoise, uniform=True)
 
     if 1:
         lx0, lx1 = '$v$', r'$\nu_{kin}$'
@@ -133,9 +132,9 @@ if __name__ == '__main__':
             res = {'x': x, 'y': y, 'X': X, 'dY': model(x=X) - Y, 'neurons': 0}
         elif isinstance(model, (LightGray)):
             model._weights = None
-            y = model(X=X, Y=Y, x=x, C0=md.rand(trialsLgr, *(4*[[0, 2]])),
-                      methods=['BFGS', 'ga'],
-                      detailed=True, bounds=4*[(0, 2)])
+            y = model(X=X, Y=Y, x=x, C0=rand(trialsLgr, *(4*[[0, 2]])),
+                      trainers=['BFGS', 'differential_evolution'],
+                      detailed=True)
             res = {'x': x, 'y': y, 'X': X, 'dY': model(x=X) - Y, 'neurons': 0}
         else:
             model.silent = True
@@ -241,7 +240,7 @@ if __name__ == '__main__':
     plt.ylabel(r'$\Delta p$ [MPa]')
     plt.xlim(xTstRng[0], xTstRng[1])
 
-    x = md.grid((nx, ny), xTstRng, yTstRng)   # shape: (nx*ny, 2), [m/s, mm2/s]
+    x = grid((nx, ny), xTstRng, yTstRng)   # shape: (nx*ny, 2), [m/s, mm2/s]
     y = White(f)(x=x, silent=True)
     for pos in ['min', 'med', 'max']:
         b, e = curveIndices(nx, ny, pos)
