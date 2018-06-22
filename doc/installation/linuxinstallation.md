@@ -35,12 +35,16 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
     python3 -V
     sudo apt-get -y install -y python3-pip python-pip build-essential libssl-dev libffi-dev python3-dev python3-tk
     pip3 install --upgrade --user pip 
-    pip3 install --user mpi4py futures traitsui
+    mpicc -v   
+        # if mpicc not installed: 
+        #     sudo apt install lam4-dev libmpich-dev libopenmpi-dev mpicc
+    pip3 install --user mpi4py
+    pip3 install --user futures traitsui
 
 ##### Spyder (python development)
 
-    sudo apt-get install spyder3
     pip3 install --user rope
+    sudo apt-get install spyder3
 
 ##### Neural networks
 
@@ -54,7 +58,6 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### FiPy (finite volumes)
 
-    sudo apt-get install python-pip
     pip2 install --upgrade pip setuptools
     pip2 install --user fipy
 
