@@ -33,7 +33,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 ##### Python 3
 
     python3 -V
-    sudo apt-get -y install -y python3-pip build-essential libssl-dev libffi-dev python3-dev python3-tk
+    sudo apt-get -y install -y python3-pip python-pip build-essential libssl-dev libffi-dev python3-dev python3-tk
     pip3 install --upgrade --user pip 
     pip3 install --user mpi4py futures traitsui
 
