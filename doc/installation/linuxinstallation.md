@@ -19,13 +19,11 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 - Update Linux
 
-      sudo apt-get update
-      sudo apt-get -y upgrade
+      sudo apt-get update && sudo apt-get -y upgrade
 
 - Optional: Folder encryption
 
-      sudo add-apt-repository ppa:gencfsm && sudo apg-get update  
-      sudo apt-get install -y ecryptfs-utils gnome-encfs-manager
+      sudo add-apt-repository ppa:gencfsm && sudo apg-get update  && sudo apt-get install -y ecryptfs-utils gnome-encfs-manager
 
 - Optional: Monitor hardware
 
@@ -35,14 +33,9 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 ##### Python 3
 
     python3 -V
-    sudo apt-get install -y python3-pip
+    sudo apt-get -y install -y python3-pip build-essential libssl-dev libffi-dev python3-dev python3-tk
     pip3 install --upgrade --user pip 
-    sudo apt-get -y install build-essential libssl-dev libffi-dev python3-dev
- 
-    sudo apt-get install python3-tk
-    pip3 install --user mpi4py
-    pip3 install --user futures
-    pip3 install --user traitsui
+    pip3 install --user mpi4py futures traitsui
 
 ##### Spyder (python development)
 
@@ -57,8 +50,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### Fenics (finite elements)
 
-    sudo add-apt-repository ppa:fenics-packages/fenics && sudo apt-get update
-    sudo apt-get install fenics
+    sudo add-apt-repository ppa:fenics-packages/fenics && sudo apt-get update && sudo apt-get install fenics
 
 ##### FiPy (finite volumes)
 
