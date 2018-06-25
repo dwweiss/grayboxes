@@ -39,6 +39,9 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
         # if mpicc not installed: 
         #     sudo apt install lam4-dev libmpich-dev libopenmpi-dev
     pip3 install --user mpi4py
+        # if pip3 fails: 
+        #     sudo python3 -m pip uninstall pip && sudo apt install python3-pip --reinstall
+        #     pip3 install --user mpi4py
     pip3 install --user futures traitsui
 
 ##### Spyder (python development)
@@ -77,6 +80,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### Graphics
 
+    sudo apt-get install vtk6 python-vtk6
     pip3 install --user mayavi
 
 ##### Wiki
