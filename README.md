@@ -31,3 +31,5 @@ _grayboxes_ contributes to the creation and evaluation of hybrid models. A Pytho
 
 - Modules _lightgray_ and _minimum_ are dependent on package _modestga_ [[MGA18]](https://github.com/dwweiss/grayboxes/wiki/References#mga18)
 - Module _neural_ is dependent on package _neurolab_ [[NLB15]](https://github.com/dwweiss/grayboxes/wiki/References#nlb15)
+
+These depdendencies are automatically satisfied if installation with _setup.py_ was successful. 
