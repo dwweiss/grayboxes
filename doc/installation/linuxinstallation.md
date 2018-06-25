@@ -43,6 +43,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
         #     sudo python3 -m pip uninstall pip && sudo apt install python3-pip --reinstall
         #     pip3 install --user mpi4py
     pip3 install --user futures traitsui
+    pip3 install --user openpyxl
 
 ##### Spyder (python development)
 
