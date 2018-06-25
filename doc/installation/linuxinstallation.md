@@ -37,7 +37,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
     pip3 install --upgrade --user pip 
     mpicc -v   
         # if mpicc not installed: 
-        #     sudo apt install lam4-dev libmpich-dev libopenmpi-dev mpicc
+        #     sudo apt install lam4-dev libmpich-dev libopenmpi-dev
     pip3 install --user mpi4py
     pip3 install --user futures traitsui
 
