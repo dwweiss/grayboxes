@@ -9,7 +9,7 @@ _grayboxes_ contributes to the creation and evaluation of white box, gray box an
 
 ### Content
 
-    src
+    grayboxes
         Training, sensitivity analysis and prediction with white box, gray box and black box models
 
     tests
