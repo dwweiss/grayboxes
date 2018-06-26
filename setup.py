@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='grayboxes',
       version='0.1',
@@ -8,8 +8,7 @@ setup(name='grayboxes',
       author='Dietmar Wilhelm Weiss',
       license='GLGP 3.0',
       platforms=['Linux', 'Windows'],
-      packages=['grayboxes'],
-      package_dir={'grayboxes': 'src'},
+      packages=find_packages(),
       include_package_data=True,
       install_requires=['numpy', 'matplotlib', 'pandas', 'scipy', 'neurolab',
                         'modestga'],
