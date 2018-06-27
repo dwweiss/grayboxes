@@ -23,7 +23,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 - Optional: Folder encryption
 
-      sudo add-apt-repository ppa:gencfsm && sudo apg-get update  && sudo apt-get install -y ecryptfs-utils gnome-encfs-manager
+      sudo add-apt-repository ppa:gencfsm && sudo apt-get update  && sudo apt-get install -y ecryptfs-utils gnome-encfs-manager
 
 - Optional: Monitor hardware
 
@@ -34,6 +34,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
     python3 -V
     sudo apt-get -y install -y python3-pip python-pip build-essential libssl-dev libffi-dev python3-dev python3-tk
+    sudo python3 -m pip uninstall pip && sudo apt install python3-pip --reinstall
     pip3 install --upgrade --user pip 
     mpicc -v   
         # if mpicc not installed: 
