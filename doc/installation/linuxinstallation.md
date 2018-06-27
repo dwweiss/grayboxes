@@ -66,7 +66,8 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### Mesh generation
 
-    sudo apt-get install gmsh netgen
+    sudo apt-get install gmsh 
+    pip3 install --user netgen
     
 &nbsp; See: [Correction for netgen on Ubuntu 16.04 LTS](https://sourceforge.net/p/netgen-mesher/discussion/905307/thread/946ccfc2/), (in file _/usr/share/netgen/drawing.tcl_ change _-indirect true_ to _-indirect false_)
     
