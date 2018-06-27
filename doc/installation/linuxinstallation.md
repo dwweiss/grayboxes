@@ -47,8 +47,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### Spyder (python development)
 
-    pip3 install --user rope
-    sudo apt-get install spyder3
+    pip3 install --user rope && sudo apt-get install spyder3
 
 ##### Neural networks
 
@@ -81,8 +80,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### Graphics
 
-    sudo apt-get install vtk6 python-vtk6
-    pip3 install --user mayavi
+    sudo apt-get install vtk6 python-vtk6 && pip3 install --user mayavi
 
 ##### Wiki
 
