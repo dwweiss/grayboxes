@@ -38,7 +38,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
     <!-- pip3 install --upgrade --user pip --> 
     mpicc -v   
         # if mpicc not installed: 
-        #     sudo apt install lam4-dev libmpich-dev libopenmpi-dev
+        #     sudo apt install -y lam4-dev libmpich-dev libopenmpi-dev
     pip3 install --user mpi4py
         # if pip3 fails: 
         #     sudo python3 -m pip uninstall pip && sudo apt install python3-pip --reinstall
@@ -47,7 +47,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### Spyder (python development)
 
-    pip3 install --user rope && sudo apt-get install spyder3
+    pip3 install --user rope && sudo apt-get install -y spyder3
 
 ##### Neural networks
 
@@ -57,7 +57,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### Fenics (finite elements)
 
-    sudo add-apt-repository ppa:fenics-packages/fenics && sudo apt-get update && sudo apt-get install fenics
+    sudo add-apt-repository ppa:fenics-packages/fenics && sudo apt-get update && sudo apt-get install -y fenics
 
 ##### FiPy (finite volumes)
 
@@ -66,7 +66,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### Mesh generation
 
-    sudo apt-get install gmsh 
+    sudo apt-get install -y gmsh 
     pip3 install --user netgen
     
 &nbsp; See: [Correction for netgen on Ubuntu 16.04 LTS](https://sourceforge.net/p/netgen-mesher/discussion/905307/thread/946ccfc2/), (in file _/usr/share/netgen/drawing.tcl_ change _-indirect true_ to _-indirect false_)
