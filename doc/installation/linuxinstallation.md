@@ -94,3 +94,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
     sudo apt-get install texlive texlive-science texmaker
 
+##### Administration
+
+    sudo apt-get install fslint                   # find duplicate files
+
