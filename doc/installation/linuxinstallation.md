@@ -45,7 +45,8 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
         #     pip3 install --user mpi4py
     
     pip3 install --user futures traitsui openpyxl xlrd numba
-    sudo apt install -y python-qt4 qt4-designer
+    sudo apt install -y python-wxtools                    # loop in wx
+    sudo apt install -y python-qt4 qt4-designer           # only if GUI design as *.ui file
 
 ##### Spyder (python development)
 
