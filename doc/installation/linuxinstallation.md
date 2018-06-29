@@ -45,9 +45,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
         #     pip3 install --user mpi4py
     
     pip3 install --user futures traitsui openpyxl xlrd numba
-    sudo apt install -y python-wxtools                    # loop in wx
-    sudo apt install -y python-qt4 qt4-designer           # only if GUI design as *.ui file
-
+    
 ##### Spyder (python development)
 
     pip3 install --user rope && sudo apt-get install -y spyder3
@@ -86,6 +84,14 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
     sudo apt-get install vtk6 python-vtk6 && pip3 install --user mayavi
     sudo apt install -y mayavi2
+    
+    
+##### GUI
+
+    sudo apt install -y python-wxtools                    # loop in wx
+    
+    # Qt-designer as alternative to TraitsUi: 
+    sudo apt install -y python-qt4 qt4-designer           # only if GUI design as *.ui file
 
 ##### Wiki
 
