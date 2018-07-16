@@ -112,7 +112,7 @@ class LightGray(Model):
                                 'CG',
                                 # 'Newton-CG',              # requires Jacobian
                                 'TNC',
-                                # 'COBYLA',     # failed in grayBoxes test case
+                                # 'COBYLA',     # failed in grayboxes test case
                                 'SLSQP',
                                 # 'dogleg',                 # requires Jacobian
                                 # 'trust-ncg',              # requires Jacobian
