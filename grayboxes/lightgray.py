@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-07-16 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -37,8 +37,8 @@ class LightGray(Model):
     """
     Light gray box model y=f(x, c)
 
-    Extends the functionality of class Model by a train() method which fits
-    the theoretical submodel f(x) with constant fit parameters 'c'
+    Extends the functionality of class Model by a train() method by
+    tuning the theoretical submodel f(x) with a set of constant tuning parameters
 
     Notes:
         - c0 (int, 1D or 2D array_like of float) is seen as a mandatory
@@ -55,7 +55,7 @@ class LightGray(Model):
 
         def function2(x, *args):
             if x is None:
-                return [1, 1, 1, 1]                    # initial fit parameters
+                return [1, 1, 1, 1]                # initial tuning parameters
             c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
             return [c0 + c1 * (c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)]
 
@@ -81,13 +81,13 @@ class LightGray(Model):
         # before training, result of theoretical submodel f(x) is returned
         y = model(x=x)                           # predict with white box model
 
-        # train light gray with data (X, Y), c0 has 9 random initial fit params
+        # train light gray with data (X,Y), c0 has 9 random initial tuning pars
         model(X=X, Y=Y, c0=rand(9, [[-10, 10]] * 4))                    # train
 
         # after model is trained, it keeps its weights for further preddictions
         y = model(x=x)                      # predict with light gray box model
 
-        # alternatively: combined train and pred, single initial fit par set c0
+        # alternatively: combined train and pred, single initial tun par set c0
         y = model(X=X, Y=Y, c0=4, x=x)                      # train and predict
     """
 
@@ -456,7 +456,7 @@ if __name__ == '__main__':
         """
         Theoretical submodel for single data point
 
-        Aargs:
+        Args:
             x (1D array_like of float):
                 input
 
