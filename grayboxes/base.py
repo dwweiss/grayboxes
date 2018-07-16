@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 """
   Copyright (c) 2016- by Dietmar W Weiss
 
@@ -17,7 +20,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-22 DWW
+      2018-07-16 DWW
 
 Note on program arguments:
     - no arguments                 : program starts in default mode
