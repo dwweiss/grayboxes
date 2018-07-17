@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-07-17 DWW
 """
 
 import math
@@ -79,17 +79,17 @@ if __name__ == '__main__':
         model.silent = True
     figsize = (4, 3)                                    # excluding plotSurface
 
-    # min and max number of hidden neurons for medium dark and black box models
+    # min and max number of hidden neurons for medium gray, dark gray and black
     medNrnRng, drkNrnRng, blkNrnRng = (1, 1), (2, 8), (15, 25)
     relNoise = 10e-2
     trialsLgr = 2
 
     # shape & ranges of train (X,Y) & test data (x,y), shape:(nPoint,nInp/nOut)
-    nX, nY, xTrnRng, yTrnRng = 16+1, 4+1, [2, 10], [40, 100]  # [/ / m/s mm2/s
+    nX, nY, xTrnRng, yTrnRng = 16+1, 4+1, [2, 10], [40, 100]   # [/ / m/s mm2/s
     nx, ny, xTstRng, yTstRng = 128+1, 128+1, [0, 12], [40, 100]
 
-    X = grid((nX, nY), xTrnRng, yTrnRng)   # shape: (nX*nY, 2), [m/s, mm2/s]
-    x = grid((nx, ny), xTstRng, yTstRng)   # shape: (nx*ny, 2), [m/s, mm2/s]
+    X = grid((nX, nY), xTrnRng, yTrnRng)      # shape: (nX*nY, 2), [m/s, mm2/s]
+    x = grid((nx, ny), xTstRng, yTstRng)      # shape: (nx*ny, 2), [m/s, mm2/s]
     Y_exa = White(f)(x=X, silent=True)
     y_exa = White(f)(x=x, silent=True)
     Y = noise(y=Y_exa, absolute=0, relative=relNoise, uniform=True)
