@@ -939,7 +939,7 @@ if __name__ == '__main__':
 
     def fUser(self, x, *args, **kwargs):
         """
-        Light gray box model y=f(x,c) for single data point
+        Theoretical submodel y=f(x,c) for single data point
         """
         nTun = 3
         if x is None:
