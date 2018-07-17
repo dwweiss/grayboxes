@@ -270,6 +270,8 @@ def noise(y, absolute=0.0, relative=0.0, uniform=True):
 def frame2arr(df, keys0, keys1=None, keys2=None, keys3=None, keys4=None, 
               keys5=None, keys6=None, keys7=None):
     """
+    Extracts 1D arrays of float from the columns of a pandas DataFrame
+    
     Args:
         df (pandas.DataFrame of float):
             data object
@@ -282,8 +284,8 @@ def frame2arr(df, keys0, keys1=None, keys2=None, keys3=None, keys4=None,
 
     Returns:
         (tuple of 1D arrays of float):
-            column arrays. Size of tuple equals number of keys0..7 which
-            is not None
+            column arrays. Size of tuple equals the number of those 
+            keys0..7 which are not None
         or
         (None):
             if all(keys0..7 not in df)
