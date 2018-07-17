@@ -106,18 +106,18 @@ def grid(n, *ranges):
 
 def cross(n, *ranges):
     """
-    Sets initial (uniformly spaced) cross input, for instance for 2 input
-    with 5 nodes per axis: cross(5, [3, 7], [-4, -2])
+    Sets intial (uniformly spaced) cross input, for instance for 2 input
+    with 5 nodes per axis: cross(5, [3., 7.], [-4., -2.])
     
-                  -2
+                 -2.0
                    |
-                  -2.5
+                 -2.5
                    |
-      3-----4-----ref-----6-----7      ref = (5, -3)
+      3.0---4.0---ref---6.0---7.0      ref = (5.0, -3.0)
                    |
-                  -3.5
+                 -3.5
                    |
-                  -4
+                 -4.0
     Args:
         n (int):
             number of nodes per axis for which initial values are generated
@@ -157,17 +157,17 @@ def cross(n, *ranges):
 
 def rand(n, *ranges):
     """
-    Sets initial (uniformly distributed) random input, for instance for 2
-    input with 12 trials: rand(12, [1, 3], [-7, -5])
+    Sets intial (uniformly distributed) random input, for instance for 2
+    input with 12 trials: rand(12, [1.0, 3.0], [-7.0, -5.0])
 
-      -5 ---------------
-         |  x  x  x    |
-         |    x x      |
-         |   x     x   |
-         |  x    x     |
-         |    x  x  x  |
-      -7 ---------------
-         1             3
+      -5.0 ---------------
+           |  x  x  x    |
+           |    x x      |
+           |   x     x   |
+           |  x    x     |
+           |    x  x  x  |
+      -7.0 ---------------
+           1.0         3.0
           
     Args:
         n (int):
