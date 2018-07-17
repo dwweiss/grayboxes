@@ -31,7 +31,7 @@ from grayboxes.parallel import communicator, predict_scatter
 
 def grid(n, *ranges):
     """
-    Sets intial (uniformly spaced) grid input, for instance for 2 input
+    Sets initial (uniformly spaced) grid input, for instance for 2 input
     with 4 nodes per axis: grid(4, [3, 6], [-7, -5.5])
 
        -5.5  x-----x-----x-----x
@@ -106,7 +106,7 @@ def grid(n, *ranges):
 
 def cross(n, *ranges):
     """
-    Sets intial (uniformly spaced) cross input, for instance for 2 input
+    Sets initial (uniformly spaced) cross input, for instance for 2 input
     with 5 nodes per axis: cross(5, [3, 7], [-4, -2])
     
                   -2
@@ -157,7 +157,7 @@ def cross(n, *ranges):
 
 def rand(n, *ranges):
     """
-    Sets intial (uniformly distributed) random input, for instance for 2
+    Sets initial (uniformly distributed) random input, for instance for 2
     input with 12 trials: rand(12, [1, 3], [-7, -5])
 
       -5 ---------------
