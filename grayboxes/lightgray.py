@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-07-16 DWW
+      2018-06-21 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -37,12 +37,11 @@ class LightGray(Model):
     """
     Light gray box model y=f(x, c)
 
-    Extends the functionality of class Model by a train() method by
-    tuning the theoretical submodel f(x) with a set of constant tuning parameters
+    Extends the functionality of class Model by a train() method which fits
+    the theoretical submodel f(x) with constant tuning parameters 'c'
 
     Notes:
-        - c0 (int, 1D or 2D array_like of float) is seen as a mandatory
-          argument.
+        - c0 (int, 1D or 2D array_like of float) is a mandatory argument.
           Alternatively, self.f() can return this value if called as
           self.f(None). In this case an 'C0' argument is not necessary
 
@@ -55,7 +54,7 @@ class LightGray(Model):
 
         def function2(x, *args):
             if x is None:
-                return [1, 1, 1, 1]                # initial tuning parameters
+                return [1, 1, 1, 1]                    # initial fit parameters
             c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
             return [c0 + c1 * (c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)]
 
@@ -81,13 +80,13 @@ class LightGray(Model):
         # before training, result of theoretical submodel f(x) is returned
         y = model(x=x)                           # predict with white box model
 
-        # train light gray with data (X,Y), c0 has 9 random initial tuning pars
+        # train light gray with data (X, Y), c0 has 9 random initial fit params
         model(X=X, Y=Y, c0=rand(9, [[-10, 10]] * 4))                    # train
 
         # after model is trained, it keeps its weights for further preddictions
         y = model(x=x)                      # predict with light gray box model
 
-        # alternatively: combined train and pred, single initial tun par set c0
+        # alternatively: combined train and pred, single initial fit par set c0
         y = model(X=X, Y=Y, c0=4, x=x)                      # train and predict
     """
 
@@ -112,7 +111,7 @@ class LightGray(Model):
                                 'CG',
                                 # 'Newton-CG',              # requires Jacobian
                                 'TNC',
-                                # 'COBYLA',     # failed in grayboxes test case
+                                # 'COBYLA',     # failed in grayBoxes test case
                                 'SLSQP',
                                 # 'dogleg',                 # requires Jacobian
                                 # 'trust-ncg',              # requires Jacobian
@@ -439,7 +438,7 @@ class LightGray(Model):
             (2D array of float):
                 prediction output, shape: (nPoint, nOut)
         """
-        args = self._weights if self._weights is not None else args
+        args = self.weights if self.weights is not None else args
         return Model.predict(self, x, *args, **self.kwargsDel(kwargs, 'x'))
 
 
@@ -456,7 +455,7 @@ if __name__ == '__main__':
         """
         Theoretical submodel for single data point
 
-        Args:
+        Aargs:
             x (1D array_like of float):
                 input
 
