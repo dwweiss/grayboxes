@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-07-17 DWW
 """
 
 import inspect
@@ -32,15 +32,17 @@ from grayboxes.parallel import communicator, predict_scatter
 def grid(n, *ranges):
     """
     Sets intial (uniformly spaced) grid input, for instance for 2 input
-    with 4 nodes per axis: grid(4, [1, 3], [-7, -5])
+    with 4 nodes per axis: grid(4, [3, 6], [-7, -5.5])
 
-            x---x---x---x
-            |   |   |   |
-            x---x---x---x
-            |   |   |   |
-            x---x---x---x
-            |   |   |   |
-            x---x---x---x
+       -5.5  x-----x-----x-----x
+             |     |     |     |
+         -6  x-----x-----x-----x
+             |     |     |     |
+       -6.5  x-----x-----x-----x
+             |     |     |     |
+         -7  x-----x-----x-----x
+             3     4     5     6
+
     Args:
         n (int or 1D array_like of int):
             number of nodes per axis for which initial values are generated.
@@ -105,16 +107,17 @@ def grid(n, *ranges):
 def cross(n, *ranges):
     """
     Sets intial (uniformly spaced) cross input, for instance for 2 input
-    with 5 nodes per axis: cross(5, [1, 2], [-4, -3])
-                   x
+    with 5 nodes per axis: cross(5, [3, 7], [-4, -2])
+    
+                  -2
                    |
-                   x
+                  -2.5
                    |
-            x--x--ref--x--x
+      3-----4-----ref-----6-----7      ref = (5, -3)
                    |
-                   x
+                  -3.5
                    |
-                   x
+                  -4
     Args:
         n (int):
             number of nodes per axis for which initial values are generated
@@ -157,13 +160,15 @@ def rand(n, *ranges):
     Sets intial (uniformly distributed) random input, for instance for 2
     input with 12 trials: rand(12, [1, 3], [-7, -5])
 
-           -------------
-          |  x  x  x    |
-          |    x x      |
-          |   x     x   |
-          |  x    x     |
-          |    x  x  x  |
-           -------------
+      -5 ---------------
+         |  x  x  x    |
+         |    x x      |
+         |   x     x   |
+         |  x    x     |
+         |    x  x  x  |
+      -7 ---------------
+         1             3
+          
     Args:
         n (int):
             number of trials for which initial values are random generated
@@ -266,10 +271,9 @@ class Model(Base):
     """
     Parent class of White, LightGray, MediumGray, DarkGray and Black
 
-    - Array definition: input and output are 2D arrays. First index is data
-      point index
-    - If X or Y passed as 1D array_like, then they are transformed to:
-      self.X = np.atleast_2d(X).T and self.Y = np.atleast_2d(Y).T
+    - Input and output are 2D arrays. First index is data point index
+    - If X or Y is passed as 1D array_like, then they are transformed to:
+          self.X = np.atleast_2d(X).T and self.Y = np.atleast_2d(Y).T
 
     - Upper case 'X' is 2D training   input and 'Y' is 2D training   target
     - Lower case 'x' is 2D prediction input and 'y' is 2D prediction output
@@ -935,12 +939,12 @@ if __name__ == '__main__':
 
     def fUser(self, x, *args, **kwargs):
         """
-        theoretical submodel y=f(x,c) for single data point
+        Light gray box model y=f(x,c) for single data point
         """
-        nFit = 3
+        nTun = 3
         if x is None:
-            return nFit
-        c0, c1, c2 = args if len(args) > 0 else np.ones(nFit)
+            return np.ones(nTun)
+        c0, c1, c2 = args if len(args) > 0 else np.ones(nTun)
 
         y0 = c2 * x[0]**2 + c1 * x[1] + c0
         y1 = c2 * x[1]
