@@ -121,7 +121,7 @@ def cross(n, *ranges):
     Args:
         n (int):
             number of nodes per axis for which initial values are generated
-            n is corrected to an odd number if n is even
+            n is corrected to athe next odd number if n is even
 
         ranges (variable length argument list of pairs of float):
             list of (min, max) pairs
@@ -267,6 +267,57 @@ def noise(y, absolute=0.0, relative=0.0, uniform=True):
     return y
 
 
+def frame2arr(df, keys0, keys1=None, keys2=None, keys3=None, keys4=None, 
+              keys5=None, keys6=None, keys7=None):
+    """
+    Args:
+        df (pandas.DataFrame of float):
+            data object
+
+        keys0 (1D array_like of str):
+            keys for data selection
+
+        keys1..keys7 (str, optional):
+            keys for data selection
+
+    Returns:
+        (tuple of 1D arrays of float):
+            column arrays. Size of tuple equals number of keys0..7 which
+            is not None
+        or
+        (None):
+            if all(keys0..7 not in df)
+    """
+    keysList = [keys0, keys1, keys2, keys3, keys4, keys5, keys6, keys7]
+    keysList = [x for x in keysList if x is not None]
+    if not keysList:
+        return None
+
+    assert all(key in df for keys in keysList for key in keys), \
+        'unknown key in: ' + str(keysList) + ', valid keys: ' + df.columns
+
+    col = []
+    for keys in keysList:
+        col.append(np.asfarray(df.loc[:, keys]))
+    n = len(col)
+    if n == 1:
+        return col[0]
+    if n == 2:
+        return col[0], col[1]
+    if n == 3:
+        return col[0], col[1], col[2]
+    if n == 4:
+        return col[0], col[1], col[2], col[3]
+    if n == 5:
+        return col[0], col[1], col[2], col[3], col[4]
+    if n == 6:
+        return col[0], col[1], col[2], col[3], col[4], col[5]
+    if n == 7:
+        return col[0], col[1], col[2], col[3], col[4], col[5], col[6]
+    if n == 8:
+        return col[0], col[1], col[2], col[3], col[4], col[5], col[6], col[7]
+
+
 class Model(Base):
     """
     Parent class of White, LightGray, MediumGray, DarkGray and Black
@@ -294,7 +345,7 @@ class Model(Base):
                     if '-loc' in color.lower():
                         MediumGray() - local
                     else:
-                        MediumGray() - glocal
+                        MediumGray() - global
                 else:
                     DarkGray()
         else:
@@ -316,7 +367,7 @@ class Model(Base):
         self._X = None                   # input to training (2D array)
         self._Y = None                   # target for training (2D array)
         self._x = None                   # input to prediction (1D or 2D array)
-        self._y = None                   # output of pred.  (1D or 2D array)
+        self._y = None                   # output of prediction (1D or 2D arr.)
         self._xKeys = None               # x-keys for data sel.(1D list of str)
         self._yKeys = None               # y-keys for data sel.(1D list of str)
         self._best = self.initResults()  # initialize best result set
@@ -617,56 +668,6 @@ class Model(Base):
         """
         return self.XY2frame(self._x, self._y)
 
-    def frame2arrays(self, df, keys0, keys1=None, keys2=None, keys3=None,
-                     keys4=None, keys5=None, keys6=None, keys7=None):
-        """
-        Args:
-            df (pandas.DataFrame of float):
-                data object
-
-            keys0 (1D array_like of str):
-                keys for data selection
-
-            keys1..keys7 (1D array_like of str, optional):
-                keys for data selection
-
-        Returns:
-            (tuple of 1D arrays of float):
-                column arrays. Size of tuple equals number of keys0..7 which
-                is not None
-            or
-            (None):
-                if all(keys0..7 not in df)
-        """
-        keysList = [keys0, keys1, keys2, keys3, keys4, keys5, keys6, keys7]
-        keysList = [x for x in keysList if x is not None]
-        if not keysList:
-            return None
-
-        assert all(key in df for keys in keysList for key in keys), \
-            'unknown key in: ' + str(keysList) + ', valid keys: ' + df.columns
-
-        col = []
-        for keys in keysList:
-            col.append(np.asfarray(df.loc[:, keys]))
-        n = len(col)
-        if n == 1:
-            return col[0]
-        if n == 2:
-            return col[0], col[1]
-        if n == 3:
-            return col[0], col[1], col[2]
-        if n == 4:
-            return col[0], col[1], col[2], col[3]
-        if n == 5:
-            return col[0], col[1], col[2], col[3], col[4]
-        if n == 6:
-            return col[0], col[1], col[2], col[3], col[4], col[5]
-        if n == 7:
-            return col[0], col[1], col[2], col[3], col[4], col[5], col[6]
-        if n == 8:
-            return col[0], col[1], col[2], col[3], col[4], col[5], col[6], \
-                   col[7]
 
     @property
     def weights(self):
@@ -1016,11 +1017,11 @@ if __name__ == '__main__':
         df = model.XY2frame()
         print('6: df:', df)
 
-        y0, y1 = model.frame2arrays(df, ['y0'], ['y1'])
+        y0, y1 = frame2arr(df, ['y0'], ['y1'])
         print('7 y0:', y0, 'y1:', y1)
-        y01 = model.frame2arrays(df, ['y0', 'y1'])
+        y01 = frame2arr(df, ['y0', 'y1'])
         print('8 y01:', y01)
-        y12, x0 = model.frame2arrays(df, ['y0', 'y1'], ['x0'])
+        y12, x0 = frame2arr(df, ['y0', 'y1'], ['x0'])
         print('9 y12:', y12, 'x0', x0)
 
     if 0 or ALL:
