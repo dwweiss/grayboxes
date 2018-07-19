@@ -1,6 +1,6 @@
 ### Linux installation proposal
 
-<!-- Version: 2018-06-19 DWW -->
+<!-- Version: 2018-07-19 DWW -->
 
 In the text below **USER** depicts the actual user name and **X** the disk partition for the workspace
 
@@ -19,25 +19,25 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 - Update Linux
 
-      sudo apt-get update && sudo apt-get -y upgrade
+      sudo apt update && sudo apt -y upgrade
 
 - Optional: Folder encryption
 
-      sudo add-apt-repository ppa:gencfsm && sudo apt-get update  && sudo apt-get install -y ecryptfs-utils gnome-encfs-manager
+      sudo add-apt-repository ppa:gencfsm && sudo apt update && sudo apt -y install ecryptfs-utils gnome-encfs-manager
 
 - Optional: Monitor hardware
 
-      sudo apt-get install cpufreq-utils
-      sudo apt-get install conky
+      sudo apt install cpufreq-utils
+      sudo apt install conky
 
 ##### Python 3
 
     python3 -V
-    sudo apt-get -y install -y python3-pip python-pip build-essential libssl-dev libffi-dev python3-dev python3-tk
+    sudo apt -y install python3-pip python-pip build-essential libssl-dev libffi-dev python3-dev python3-tk
     
     mpicc -v   
         # if mpicc not installed: 
-        #     sudo apt install -y lam4-dev libmpich-dev libopenmpi-dev
+        #     sudo apt -y install lam4-dev libmpich-dev libopenmpi-dev
     
     pip3 install --user mpi4py
         # if pip3 fails: 
@@ -48,7 +48,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
     
 ##### Spyder (python development)
 
-    pip3 install --user rope && sudo apt-get install -y spyder3
+    pip3 install --user rope && sudo apt -y install spyder3
 
 ##### Neural networks
 
@@ -58,7 +58,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### Fenics (finite elements)
 
-    sudo add-apt-repository ppa:fenics-packages/fenics && sudo apt-get update && sudo apt-get install -y fenics
+    sudo add-apt-repository ppa:fenics-packages/fenics && sudo apt update && sudo apt -y install fenics
 
 ##### FiPy (finite volumes)
 
@@ -67,7 +67,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### Mesh generation
 
-    sudo apt-get install -y gmsh 
+    sudo apt -y install gmsh 
     pip3 install --user netgen
     
 &nbsp; See: [Correction for netgen on Ubuntu 16.04 LTS](https://sourceforge.net/p/netgen-mesher/discussion/905307/thread/946ccfc2/), (in file _/usr/share/netgen/drawing.tcl_ change _-indirect true_ to _-indirect false_)
@@ -82,26 +82,26 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 ##### Graphics
 
-    sudo apt-get install vtk6 python-vtk6 && pip3 install --user mayavi
-    sudo apt install -y mayavi2
+    sudo apt -y install vtk6 python-vtk6 && pip3 install --user mayavi
+    sudo apt -y install mayavi2
     
     
 ##### GUI
 
-    sudo apt install -y python-wxtools                    # loop in wx
+    sudo apt -y install python-wxtools                 # loop in wx
     
     # Qt-designer as alternative to TraitsUi: 
-    sudo apt install -y python-qt4 qt4-designer           # only if GUI design as *.ui file
+    sudo apt -y install python-qt4 qt4-designer        # only if GUI design as *.ui file
 
 ##### Wiki
 
-    sudo apt-get install retext
+    sudo apt -y install retext
 
 ##### Text processing
 
-    sudo apt-get install texlive texlive-science texmaker
+    sudo apt -y install texlive texlive-science texmaker
 
 ##### Administration
 
-    sudo apt-get install fslint                   # find duplicate files
-
+    sudo apt -y install fslint                          # find duplicate files
+    
