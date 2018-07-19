@@ -2,7 +2,7 @@
 
 <!-- Version: 2018-06-21 DWW -->
 
-In the text below **PACKAGE** the python package name and **EXEPATH** the location of _python*.exe_ 
+In the text below **PACKAGE** depicts the python package name and **EXEPATH** the location of _python*.exe_ 
 
 1. Open console
 2. Find location of _python*.exe_
