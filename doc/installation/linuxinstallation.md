@@ -30,11 +30,16 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
       sudo apt install cpufreq-utils
       sudo apt install conky
 
+- Basic tools
+
+    sudo apt -y install cmake unzip pkg-config git 
+    
 ##### Python 3
 
     python3 -V
     sudo apt -y install python3-pip python-pip build-essential libssl-dev libffi-dev python3-dev python3-tk
-    
+    sudo apt -y install libopenblas-dev liblapack-dev libhdf5-serial-dev python-h5py python-yaml
+
     mpicc -v   
         # if mpicc not installed: 
         #     sudo apt -y install lam4-dev libmpich-dev libopenmpi-dev
@@ -54,7 +59,8 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
     pip3 install --user neurolab
     pip3 install --user tensorflow tensorflow-gpu
-    pip3 install --user keras
+    pip3 install --user keras pydot-ng
+    sudo apt -y install graphviz
 
 ##### Fenics (finite elements)
 
