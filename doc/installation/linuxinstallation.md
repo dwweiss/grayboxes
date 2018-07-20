@@ -32,7 +32,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 - Basic tools
 
-    sudo apt -y install cmake unzip pkg-config git 
+      sudo apt -y install cmake unzip pkg-config git 
     
 ##### Python 3
 
@@ -94,7 +94,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
     
 ##### GUI
 
-    sudo apt -y install python-wxtools                 # loop in wx
+    sudo apt -y install python-wxtools python-traitsui               # loop in wx
     
     # Qt-designer as alternative to TraitsUi: 
     sudo apt -y install python-qt4 qt4-designer        # only if GUI design as *.ui file
