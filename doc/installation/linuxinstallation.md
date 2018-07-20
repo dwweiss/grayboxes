@@ -53,7 +53,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 ##### Neural networks
 
     pip3 install --user neurolab
-    pip3 install --user tensorflow
+    pip3 install --user tensorflow tensorflow-gpu
     pip3 install --user keras
 
 ##### Fenics (finite elements)
