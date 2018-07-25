@@ -121,4 +121,4 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
     sudo docker run hello-world
     
-   [Instructions](https://www.howtoforge.com/tutorial/how-to-create-docker-images-with-dockerfile/#step-installing-docker)
+   [Docker install instructions](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
