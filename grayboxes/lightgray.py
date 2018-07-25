@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-07-20 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -28,7 +28,7 @@ import numpy as np
 import scipy.optimize
 from grayboxes.model import Model
 try:
-    import modestga as mg
+    import modestga
 except ImportError:
     print('??? Package modestga not imported')
 
@@ -38,32 +38,32 @@ class LightGray(Model):
     Light gray box model y=f(x, c)
 
     Extends the functionality of class Model by a train() method which fits
-    the theoretical submodel f(x) with constant tuning parameters 'c'
+    the theoretical submodel f(x) with a set of constant tuning parameters
 
     Notes:
-        - c0 (int, 1D or 2D array_like of float) is a mandatory argument.
-          Alternatively, self.f() can return this value if called as
-          self.f(None). In this case an 'C0' argument is not necessary
+        - tun0 (int, 1D or 2D array_like of float) is principally a mandatory
+          argument. If tun0 is missing, self.f() can return this value when
+          called as self.f(x=None)
 
-        - The number of outputs y.shape[1] is limited to 1, see self._nMaxOut
+        - The number of outputs (y.shape[1]) is limited to 1, see self._nMaxOut
 
     Examples:
-        def function(x, *args):
-            c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
-            return [c0 + c1 * (c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)]
-
-        def function2(x, *args):
+        def function(x, *args, **kwargs):
             if x is None:
-                return [1, 1, 1, 1]                    # initial fit parameters
-            c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
-            return [c0 + c1 * (c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)]
+                return np.ones(4)
+            tun = args if len(args) == 4 else np.ones(4)
+            return [tun[0] + tun[1] * (tun[2] * np.sin(x[0]) +
+                    tun[3] * (x[1] - 1)**2)]
 
-        def method(self, x, *args):
-            c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
-            return [c0 + c1 * (c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)]
+        def method(self, x, *args, **kwargs):
+            if x is None:
+                return np.ones(4)
+            tun = args if len(args) == 4 else np.ones(4)
+            return [tun[0] + tun[1] * (tun[2] * np.sin(x[0]) +
+                    tun[3] * (x[1] - 1)**2)]
 
         ### compact form:
-        y = LightGray(function)(X=X, Y=Y, x=x, c0=4, methods='lm')
+        y = LightGray(function)(X=X, Y=Y, x=x, tun0=4, methods='lm')
 
         ### expanded form:
         # assign theoretical submodel as function or method ('self'-attribute)
@@ -80,21 +80,23 @@ class LightGray(Model):
         # before training, result of theoretical submodel f(x) is returned
         y = model(x=x)                           # predict with white box model
 
-        # train light gray with data (X, Y), c0 has 9 random initial fit params
-        model(X=X, Y=Y, c0=rand(9, [[-10, 10]] * 4))                    # train
+        # train light gray with data (X, Y), tun0 has 9 random init. tuning par
+        model(X=X, Y=Y, tun0=rand(9, [[-10, 10]] * 4))                  # train
 
         # after model is trained, it keeps its weights for further preddictions
         y = model(x=x)                      # predict with light gray box model
 
-        # alternatively: combined train and pred, single initial fit par set c0
-        y = model(X=X, Y=Y, c0=4, x=x)                      # train and predict
+        # alternatively: combined train and pred, single init. tun par set tun0
+        y = model(X=X, Y=Y, tun0=4, x=x)                    # train and predict
     """
 
     def __init__(self, f, identifier='LightGray'):
         """
         Args:
             f (method or function):
-                theoretical submodel f(self, x) or f(x) for single data point
+                theoretical submodel f(self, x, *args, **kwargs) or
+                f(x, *args, **kwargs) for single data point
+                x is common parameter set and args is tuning parameter set
 
             identifier (str, optional):
                 object identifier
@@ -126,7 +128,8 @@ class LightGray(Model):
         self.scipyEquationMinimizers = ['least_squares',  # Levenberg-Marquardt
                                         'leastsq',
                                         ]
-        self.geneticMinimizers = ['ga'] if 'modestga' in sys.modules else []
+        self.geneticMinimizers = ['genetic', 'ga'] if 'modestga' \
+            in sys.modules else []
 
         self.validMethods = self.scipyMinimizers + self.scipyRootFinders + \
             self.scipyEquationMinimizers + self.geneticMinimizers
@@ -143,10 +146,10 @@ class LightGray(Model):
                               **self.kwargsDel(kwargs, 'x')) -
                 self.Y).ravel()
 
-    def minimizeLeastSquares(self, method, c0, **kwargs):
+    def minimizeLeastSquares(self, method, tun0, **kwargs):
         """
-        Minimizes least squares: sum(self.f(self.X)-self.Y)^2)/X.size
-            for SINGLE initial fit param set
+        Minimizes least squares: sum(self.f(self.X) - self.Y)^2) / X.size
+            for a SINGLE initial tuning parameter set
         Updates self.ready and self.weights according to success of optimizer
 
         Args:
@@ -155,8 +158,8 @@ class LightGray(Model):
                 [recommendation: 'BFGS' or 'L-BFGS-B' if ill-conditioned
                                  'Nelder-Mead' or 'Powell' if noisy data]
 
-            c0 (1D array_like of float):
-                initial guess of fit parameter set
+            tun0 (1D array_like of float):
+                initial guess of tuning parameter set
 
             kwargs (dict, optional):
                 keyword arguments:
@@ -180,7 +183,7 @@ class LightGray(Model):
                 nItMax = kwargs.get('nItMax', 100)
 
                 res = scipy.optimize.basinhopping(
-                    func=self.meanSquareErrror, x0=c0, niter=nItMax,
+                    func=self.meanSquareErrror, x0=tun0, niter=nItMax,
                     T=1.0,
                     stepsize=0.5, minimizer_kwargs=None,
                     take_step=None, accept_test=None, callback=None,
@@ -196,7 +199,7 @@ class LightGray(Model):
                 nItMax = kwargs.get('nItMax', None)
 
                 res = scipy.optimize.differential_evolution(
-                    func=self.meanSquareErrror, bounds=[[-10, 10]]*c0.size,
+                    func=self.meanSquareErrror, bounds=[[-10, 10]]*tun0.size,
                     strategy='best1bin', maxiter=nItMax, popsize=15,
                     tol=0.01, mutation=(0.5, 1), recombination=0.7,
                     seed=None, disp=False, polish=True,
@@ -220,7 +223,8 @@ class LightGray(Model):
                         kw['options']['xatol'] = kwargs.get('goal', 1e-4)
                 try:
                     res = scipy.optimize.minimize(
-                        fun=self.meanSquareErrror, x0=c0, method=method, **kw)
+                        fun=self.meanSquareErrror, x0=tun0, method=method,
+                        **kw)
                     if res.success:
                         results['weights'] = np.atleast_1d(res.x)
                         results['iterations'] = res.nit \
@@ -237,8 +241,8 @@ class LightGray(Model):
 
             if method.startswith('lm'):
                 res = scipy.optimize.root(
-                    fun=self.difference, x0=c0, args=(), method='lm', jac=None,
-                    tol=None, callback=None,
+                    fun=self.difference, x0=tun0, args=(), method='lm',
+                    jac=None, tol=None, callback=None,
                     options={  # 'func': None,mesg:_root_leastsq() got multiple
                              #                       values for argument 'func'
                              'col_deriv': 0, 'xtol': 1.49012e-08,
@@ -256,7 +260,7 @@ class LightGray(Model):
         elif method in self.scipyEquationMinimizers:
             if method.startswith('leastsq'):
                 x, cov_x, infodict, mesg, ier = scipy.optimize.leastsq(
-                    self.difference, c0, full_output=True)
+                    self.difference, tun0, full_output=True)
                 if ier in [1, 2, 3, 4]:
                     results['weights'] = np.atleast_1d(x)
                     results['iterations'] = -1
@@ -265,7 +269,7 @@ class LightGray(Model):
                     self.write('\n??? ', method, ': ', mesg)
 
             elif method == 'least_squares':
-                res = scipy.optimize.least_squares(self.difference, c0)
+                res = scipy.optimize.least_squares(self.difference, tun0)
                 if res.success:
                     results['weights'] = np.atleast_1d(res.x)
                     results['iterations'] = -1
@@ -274,22 +278,20 @@ class LightGray(Model):
                     self.write('\n??? ', method, ': ', res.message)
 
         elif method in self.geneticMinimizers:
-            if 'modestga' in sys.modules and method == 'ga':
-                assert method != 'ga' or 'modestga' in sys.modules
-
+            if 'modestga' in sys.modules and method in ('genetic', 'ga'):
                 validKeys = ['tol', 'options', 'bounds']
                 # see scipy's minimize
                 kw = {k: kwargs[k] for k in validKeys if k in kwargs}
                 if 'bounds' not in kw:
                     self.write('\n!!! bounds is missing ==> ', None)
-                    kw['bounds'] = [[0, 2]]*np.atleast_2d(c0).shape[1]
+                    kw['bounds'] = [[0, 2]]*np.atleast_2d(tun0).shape[1]
                     self.write(kw['bounds'])
-                res = mg.minimize(fun=self.meanSquareErrror, x0=c0,
-                                  # TODO method=method,
-                                  **kw)
+                res = modestga.minimize(fun=self.meanSquareErrror, x0=tun0,
+                                        # TODO method=method,
+                                        **kw)
                 if True:  # TODO res.success:
                     results['weights'] = np.atleast_1d(res.x)
-                    results['iterations'] = -1  # res.nit
+                    results['iterations'] = -1  # TODO res.nit
                     results['evaluations'] = res.nfev
                 else:
                     self.write('\n??? ', method, ': ', res.message)
@@ -305,7 +307,7 @@ class LightGray(Model):
         """
         Trains model, stores X and Y as self.X and self.Y, and stores result
         of best training trial as self.best.
-        Fitted coefficients are stored as self._weights
+        The tuning parameter set is stored as self._weights
 
         Args:
             X (2D or 1D array_like of float):
@@ -314,10 +316,10 @@ class LightGray(Model):
             Y (2D or 1D array_like of float):
                 training target, shape: (nPoint, nOut) or shape: (nPoint,)
 
-            c0 (2D or 1D array_like of float, optional):
+            tun0 (2D or 1D array_like of float, optional):
                 sequence of initial guess of the tuning parameter sets,
                 If missing, then initial values will be all 1
-                c0.shape[1] is the number of fit parameters
+                tun0.shape[1] is the number of tuning parameters
                 [IS PASSED IN KWARGS to be compatible to parallel.py]
 
             kwargs (dict, optional):
@@ -338,19 +340,19 @@ class LightGray(Model):
                 results, see Model.train()
 
         Note:
-            If argument 'c0' is not given, self.f(None) must return an 1D
-            array_like of the initial tuning parameter sets
+            If argument 'tun0' is not given, self.f(None) must return an 1D
+            array_like of float providing the initial tuning parameter set
         """
         self.X = X if X is not None and Y is not None else self.X
         self.Y = Y if X is not None and Y is not None else self.Y
 
-        # get series of initial fit par sets from 'c0'  or self.f(None)
-        C0 = self.kwargsGet(kwargs, ('c0', 'C0'), None)
-        if C0 is None:
-            C0 = self.f(None)
-            print('\n!!! c0 is None, from f(x=None) ==> c0:', C0)
-        assert not isinstance(C0, int), str(C0)
-        C0 = np.atleast_2d(C0)                          # shape: (nTrial, nTun)
+        # get series of initial tuning param sets from 'tun0'  or self.f(None)
+        tun0seq = self.kwargsGet(kwargs, ('tun0', 'c0', 'C0'), None)
+        if tun0seq is None:
+            tun0seq = self.f(None)
+            print('\n!!! tun0 is None, from f(x=None) ==> tun0:', tun0seq)
+        assert not isinstance(tun0seq, int), str(tun0seq)
+        tun0seq = np.atleast_2d(tun0seq)                # shape: (nTrial, nTun)
 
         # get methods from kwargs
         methods = self.kwargsGet(kwargs, ('methods', 'method'))
@@ -365,26 +367,27 @@ class LightGray(Model):
         methods = np.atleast_1d(methods)
 
         # set detailed print (only if not silent)
+        self.silent = kwargs.get('silent', self.silent)
         printDetails = kwargs.get('detailed', False)
 
         # loops over all methods
-        self.write('    fit (', None)
+        self.write('    tune (', None)
         self.best = self.initResults()
         for method in methods:
             self.write(method, ', ' if method != methods[-1] else '', None)
 
-            # tries all initial fit parameter sets if not global method
-            if method in ('basinhopping', 'differential_evolution', 'ga'):
-                C0 = [C0[0]]
+            # tries all initial tuning parameter sets if not global method
+            if method in ('basinhopping', 'differential_evolution', 'genetic'):
+                tun0seq = [tun0seq[0]]
 
-            for iTrial, c0 in enumerate(C0):
+            for iTrial, tun0 in enumerate(tun0seq):
                 if printDetails:
                     if iTrial == 0:
                         self.write()
-                    self.write('        c0: ', str(np.round(c0, 2)), None)
+                    self.write('        tun0: ', str(np.round(tun0, 2)), None)
 
                 results = self.minimizeLeastSquares(
-                    method, c0, **self.kwargsDel(kwargs, ('method', 'c0')))
+                    method, tun0, **self.kwargsDel(kwargs, ('method', 'tun0')))
 
                 if results['weights'] is not None:
                     self.weights = results['weights']     # for Model.predict()
@@ -405,7 +408,8 @@ class LightGray(Model):
         self.ready = self.weights is not None
 
         self.write('), w: ', None)
-        self.write(str(np.round(self.weights, 4)))
+        if self.weights is not None:
+            self.write(str(np.round(self.weights, 4)))
         self.write('    best method: ', "'", self.best['method'], "'", None)
         self.write(', ', None)
         for key in ['L2', 'abs']:
@@ -429,7 +433,7 @@ class LightGray(Model):
                 prediction input, shape: (nPoint, nInp) or shape: (nInp)
 
             args(list arguments, optional):
-                constant fit parameters if self._weights is None
+                tuning parameter set if self._weights is None
 
             kwargs (dict, optional):
                 keyword arguments
@@ -445,7 +449,7 @@ class LightGray(Model):
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    ALL = 0
+    ALL = 1
 
     from grayboxes.plotarrays import plot_X_Y_Yref
     from grayboxes.model import Model, grid, noise, rand
@@ -457,23 +461,27 @@ if __name__ == '__main__':
 
         Aargs:
             x (1D array_like of float):
-                input
+                common input
 
             args (argument list, optional):
-                fit parameters as positional arguments
+                tuning parameters as positional arguments
 
             kwargs (dict, optional):
-                keyword arguments {str: float or int or str}
+                keyword arguments {str: float/int/str}
         """
-        p = args if len(args) > 0 else np.ones(4)
-        y0 = p[0] + p[1] * np.sin(p[2] * x[0]) + p[3] * (x[1] - 1.5)**2
+        if x is None:
+            return np.ones(4)
+        tun = args if len(args) == 4 else np.ones(4)
+
+        y0 = tun[0] + tun[1] * np.sin(tun[2] * x[0]) + tun[3] * (x[1] - 1.5)**2
         return [y0]
 
     def f2(self, x, *args, **kwargs):
         if x is None:
             return np.ones(4)
-        p = args if len(args) > 0 else np.ones(4)
-        y0 = p[0] + p[1] * np.sin(p[2] * x[0]) + p[3] * (x[1] - 1.5)**2
+        tun = args if len(args) > 0 else np.ones(4)
+
+        y0 = tun[0] + tun[1] * np.sin(tun[2] * x[0]) + tun[3] * (x[1] - 1.5)**2
         return [y0]
 
     s = 'Creates exact output y_exa(X), add noise, target is Y(X)'
@@ -494,25 +502,25 @@ if __name__ == '__main__':
                 # 'Nelder-Mead',
                 # 'differential_evolution',
                 # 'basinhopping',
-                'ga',
+                'genetic',
                 ]
 
     if 1 or ALL:
-        s = 'Fits model, compare: y(X) vs y_exa(X)'
+        s = 'Tunes model, compare: y(X) vs y_exa(X)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         # train with 9 random initial tuning parameter sets, each of size 4
         model = LightGray(f2)
-        c0 = rand(9, *(4 * [[0, 2]]))
+        tun0 = rand(9, *(4 * [[0, 2]]))
 
-        for _c0 in [c0, None]:
-            print('+++ c0:', _c0, '*'*40)
+        for _tun0 in [tun0, None]:
+            print('+++ tun0:', _tun0, '*'*40)
 
-            y = model(X=X, Y=Y, c0=_c0, x=X, methods=methods, detailed=True,
-                      nItMax=5000, bounds=4*[(0, 2)])
+            y = model(X=X, Y=Y, tun0=_tun0, x=X, methods=methods,
+                      detailed=True, nItMax=5000, bounds=4*[(0, 2)])
 
             y = LightGray(f2)(X=X, Y=Y, x=X, methods=methods, nItMax=5000,
-                              c0=_c0, silent=not True, detailed=True)
+                              tun0=_tun0, silent=not True, detailed=True)
 
             plot_X_Y_Yref(X, y, y_exa, ['X', 'y', 'y_{exa}'])
             if 1:
@@ -530,7 +538,7 @@ if __name__ == '__main__':
 
         # train with single initial tuning parameter set, nTun from f2(None)
         if 0:
-            y = LightGray(f2)(X=X, Y=Y, x=X, c0=np.ones(4),
+            y = LightGray(f2)(X=X, Y=Y, x=X, tun0=np.ones(4),
                               silent=not True, methods=methods)
 
         y = LightGray(f2)(X=X, Y=Y, x=X,

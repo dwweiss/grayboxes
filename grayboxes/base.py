@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 """
   Copyright (c) 2016- by Dietmar W Weiss
 
@@ -20,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-07-16 DWW
+      2018-07-25 DWW
 
 Note on program arguments:
     - no arguments                 : program starts in default mode
@@ -156,6 +153,16 @@ class Base(object):
     """
 
     def __init__(self, identifier='Base', argv=None):
+        """
+        Initializes object
+
+        Args:
+            identifier (string, optional):
+                unique identifier of object
+
+                argv (positional arguments, optional):
+                    program arguments
+        """
         self._identifier = str(identifier)
         self.argv = argv
         self.program = self.__class__.__name__
@@ -481,23 +488,11 @@ class Base(object):
         # if not self.silent: print("+++ data.setter: assign new 'data'")
         self._data = other
 
-    def setFollower(self, other):
-        if other:
-            if not isinstance(other, (list, tuple)):
-                other._leader = self
-                if other not in self._followers:
-                    self._followers.append(other)
-            else:
-                for o in other:
-                    o._leader = self
-                    if o not in self._followers:
-                        self._followers.append(o)
-        return other
-
-    def getFollower(self, identifier):
+    def __getitem__(self, identifier):
         """
-        Search for node with given 'identifier'. Search starts downwards from
-        root
+        Indexing, e.g.: b = Base(); b.setFollower(['f1', 'f2']); f = b['f1']
+
+        Search for node with 'identifier'. Search starts downwards from root
 
         Args:
             identifier (str):
@@ -505,7 +500,21 @@ class Base(object):
 
         Returns:
             (binding):
-                node with given identifier
+                node with given identifier or None if node not found
+        """
+        return self.getFollower(identifier)
+
+    def getFollower(self, identifier):
+        """
+        Search for node with 'identifier'. Search starts downwards from root
+
+        Args:
+            identifier (str):
+                identifier of searched node
+
+        Returns:
+            (binding):
+                node with given identifier or None if node not found
         """
         return self.getFollowerDownwards(identifier, fromNode=None)
 
@@ -518,13 +527,13 @@ class Base(object):
             identifier (str):
                 identifier of wanted node
 
-            fromNode (binding):
+            fromNode (binding, optional):
                 start node for downward search. If 'fromNode' is None, search
                 starts from root
 
         Returns:
             (binding to tree node)
-                node with given identifier
+                node with given identifier or None if node not found
         """
         if self.identifier == identifier:
             return self
@@ -545,6 +554,30 @@ class Base(object):
                     return node
         return None
 
+    def setFollower(self, other):
+        """
+        Adds other node
+
+        Args:
+            other (Base):
+                binding to other node
+
+        Returns:
+            (binding):
+                other node
+        """
+        if other:
+            if not isinstance(other, (list, tuple)):
+                other._leader = self
+                if other not in self._followers:
+                    self._followers.append(other)
+            else:
+                for obj in other:
+                    obj._leader = self
+                    if obj not in self._followers:
+                        self._followers.append(obj)
+        return other
+
     def isFollower(self, other):
         return other._leader == self and other in self._followers
 
@@ -554,9 +587,9 @@ class Base(object):
                 if other not in self._followers:
                     self._followers.append(other)
             else:
-                for o in other:
-                    if o not in self._followers:
-                        self._followers.append(o)
+                for obj in other:
+                    if obj not in self._followers:
+                        self._followers.append(obj)
         return other
 
     def isCooperator(self, other):
@@ -592,8 +625,8 @@ class Base(object):
 
     def kwargsGet(self, kwargs, keys, default=None):
         """
-        Returns value of kwargs for first matching key, otherwise  return
-        'default' value
+        Returns value of kwargs for first matching key
+        or 'default' if none of the keys is valid
 
         Args:
             kwargs (dict):
@@ -933,11 +966,17 @@ if __name__ == '__main__':
         # links between two objects
         f13.x = 6.789
         print('f13.x:', f13.x)
-        f1.link = foo.getFollower('follower 1->3')
+        f1.link = foo['follower 1->3']
         f1.link.x = 4.56
-        print('f1.link.id:', f1.link.identifier)
+        print('f1.link.id f1_b_link.id:', f1.link.identifier)
         print('f13.id:', f13.identifier)
         print('f13.x:', f13.x)
+
+        f1_b_link = foo.getFollower('follower 1->3')
+        print('f1.link.id:', f1.link.identifier)
+        print('f1_b.link.id:', f1_b_link.identifier)
+        assert f1.link.identifier == f1_b_link.identifier
+        print('-'*20)
 
         # assigns a private logfile to follower f11
         f11.logFile = 'f11log'
