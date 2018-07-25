@@ -111,3 +111,8 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
     sudo apt -y install fslint                          # find duplicate files
     
+##### Docker
+
+    sudo apt install docker.io
+    
+   [See](https://www.howtoforge.com/tutorial/how-to-create-docker-images-with-dockerfile/#step-installing-docker)
