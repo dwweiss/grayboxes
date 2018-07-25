@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-07-19 DWW
 
   Acknowledgements:
       Neurolab is a contribution by E. Zuev (pypi.python.org/pypi/neurolab)
@@ -426,15 +426,16 @@ class Neural(object):
         """
         if X is not None and Y is not None:
             self.setArrays(X, Y)
-        assert self._X is not None and self._Y is not None
+        assert self._X is not None and self._Y is not None, \
+            str(self.X) + ' ' + str(self.Y)
 
         alpha          = kwargs.get('alpha',          2.0)
         epochs         = kwargs.get('epochs',         1000)
         errorf         = kwargs.get('errorf',         nl.error.MSE())
         goal           = kwargs.get('goal',           1e-5)
-        methods        = kwargs.get('methods', None)
+        methods        = kwargs.get('methods',        None)
         if methods is None:
-            methods    = kwargs.get('method', 'bfgs rprop')
+            methods    = kwargs.get('method',         'bfgs rprop')
         neurons        = kwargs.get('neurons',        None)
         outputf        = kwargs.get('outputf',        nl.trans.TanSig())
         plot           = kwargs.get('plot',           1)
@@ -518,7 +519,7 @@ class Neural(object):
             methodEpochs = None
             methodL2norm = None
 
-            if method in ('genetic', 'derivative'):
+            if method in ('genetic', 'derivative', 'genetic'):
                 assert 0
                 # f ...
                 net = nl.net.newff(nl.tool.minmax(self._X), size)
@@ -531,7 +532,7 @@ class Neural(object):
                 net.trainf, net.errorf = trainf, errorf
 
             for jTrial in range(trials):
-                if method.startswith(('gen', 'deriv')):
+                if method in ('genetic', 'derivative', 'genetic'):
                     net.init()
                     trialErrors = net.train(self._X, self._Y, f=self.f,
                                             epochs=epochs, goal=goal, rr=rr,

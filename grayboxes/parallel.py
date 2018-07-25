@@ -15,7 +15,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-07-20 DWW
 """
 
 import numpy as np
@@ -36,7 +36,7 @@ if os.name == 'posix':
 """
 Note:
     Execute python script parallel:
-        mpiexec -n 4 python3 foo.py     # ==> 4 processe
+        mpiexec -n 4 python3 foo.py     # ==> 4 processes
 
 References:
     Example for Spawn():
@@ -107,7 +107,7 @@ def predict_scatter(f, x, *args, **kwargs):
             keyword arguments
 
             silent (bool):
-            If silent is True then supress printing
+                If silent is True then supress printing
 
     Returns:
         y (2D array of float):
@@ -129,7 +129,7 @@ def predict_scatter(f, x, *args, **kwargs):
     nCore = psutil.cpu_count(logical=False)
 
     if not silent:
-        print('+++ predictParallel(), rank: ', rank(),
+        print('+++ predict_scatter(), rank: ', rank(),
               ' (nProc: ', nProc, ', nCore: ', nCore, ')', sep='')
 
     # splits single 2D input array to groups of 2D inputs (to array of 2D arr.)
@@ -229,7 +229,7 @@ def split(x2D, nProc):
 
     Args:
         x (2D or 1D array_like of float):
-            input array, shape: (nProc, nInp) or (nInp)
+            input array, shape: (nProc, nInp) or (nInp,)
 
         nProc (int):
             number of x-segments to be sent to multiple processes
@@ -237,6 +237,7 @@ def split(x2D, nProc):
     Returns:
         (3D array of float):
             array of 2D arrays, shape: (nProc, nPointPerProc, nInp)
+            or np.atleast_3d(np.inf) if x2D is None
     """
     if x2D is None:
         return np.atleast_3d(np.inf)
@@ -252,7 +253,7 @@ def split(x2D, nProc):
 def merge(y3D):
     """
     - Merges output from predictions of all processes to single 2D output array
-    - Excludes output points with first element equaling 'np.inf'
+    - Excludes output points with first element equaling np.inf
 
     Args:
         y3D (3D array of float):
@@ -278,20 +279,21 @@ def merge(y3D):
     return np.array(y2D)
 
 
-def x3D2str(data, indent='    '):
+def x3d_to_str(data, indent='    '):
     """
     Creates string matrix with of MPI input or output
 
     Args:
         data (3D array_like of float):
-            input or output array, shape=(nProc, nPointPerProc, nInp)
+            input or output array, shape: (nProc, nPointPerProc, nInp)
 
         indent (str or int):
-            indent in string description as string or indent * ' '
+            indent in string representation if type of indent is string
+            or number of spaces used as indent
 
     Returns:
         (str):
-            string representation of segment of process and of filled up values
+           string representation of segments of processes & of filled up values
     """
     assert data is not None
 
@@ -413,7 +415,7 @@ if __name__ == '__main__':
         s = 'Split input into sequence of input groups for multiple cores'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
         xAll = split(x, nProc)
-        print(x3D2str(xAll))
+        print(x3d_to_str(xAll))
         if nPoint <= 20:
             print('xAll:', xAll.tolist())
 
@@ -428,7 +430,7 @@ if __name__ == '__main__':
                     yProc.append(yPoint)
                 yAll.append(yProc)
             yAll = np.array(yAll)
-            print(x3D2str(yAll))
+            print(x3d_to_str(yAll))
             if nPoint <= 20:
                 print('yAll:', yAll.tolist(), '\n')
 
