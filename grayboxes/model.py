@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-07-17 DWW
+      2018-07-18 DWW
 """
 
 import inspect
@@ -32,7 +32,8 @@ from grayboxes.parallel import communicator, predict_scatter
 def grid(n, *ranges):
     """
     Sets initial (uniformly spaced) grid input, for instance for 2 input
-    with 4 nodes per axis: grid(4, [3, 6], [-7, -5.5])
+    with 4 nodes per axis: grid(4, [3., 6.], [-7., -5.5])
+
 
        -5.5  x-----x-----x-----x
              |     |     |     |
@@ -108,7 +109,7 @@ def cross(n, *ranges):
     """
     Sets intial (uniformly spaced) cross input, for instance for 2 input
     with 5 nodes per axis: cross(5, [3., 7.], [-4., -2.])
-    
+
                  -2.0
                    |
                  -2.5
@@ -158,7 +159,7 @@ def cross(n, *ranges):
 def rand(n, *ranges):
     """
     Sets intial (uniformly distributed) random input, for instance for 2
-    input with 12 trials: rand(12, [1.0, 3.0], [-7.0, -5.0])
+    input with 12 trials: rand(12, [1., 3.], [-7., -5.])
 
       -5.0 ---------------
            |  x  x  x    |
@@ -168,7 +169,7 @@ def rand(n, *ranges):
            |    x  x  x  |
       -7.0 ---------------
            1.0         3.0
-          
+
     Args:
         n (int):
             number of trials for which initial values are random generated
@@ -240,7 +241,7 @@ def noise(y, absolute=0.0, relative=0.0, uniform=True):
 
     Returns:
         (array of float):
-            copy of 'y' plus noise if y is not None
+            copy of y plus noise if y is not None
         or
         (None):
             if y is None
@@ -267,25 +268,25 @@ def noise(y, absolute=0.0, relative=0.0, uniform=True):
     return y
 
 
-def frame2arr(df, keys0, keys1=None, keys2=None, keys3=None, keys4=None, 
+def frame2arr(df, keys0, keys1=None, keys2=None, keys3=None, keys4=None,
               keys5=None, keys6=None, keys7=None):
     """
-    Extracts 1D arrays of float from the columns of a pandas DataFrame
-    
+    Extracts 1D arrays of float from columns of a pandas DataFrame
+
     Args:
         df (pandas.DataFrame of float):
             data object
 
-        keys0 (1D array_like of str):
-            keys for data selection
+        keys0 (str of list of str):
+            key(s) of column 0 for data selection
 
-        keys1..keys7 (str, optional):
-            keys for data selection
+        keys1..keys7 (str or list of str, optional):
+            key(s) of columns 1..7 for data selection
 
     Returns:
         (tuple of 1D arrays of float):
-            column arrays. Size of tuple equals the number of those 
-            keys0..7 which are not None
+            column arrays of shape: (nPoints, len(key?)). Size of tuple equals
+            number of keys 'keys0, key1,  .., keys7' which are not None
         or
         (None):
             if all(keys0..7 not in df)
@@ -328,9 +329,9 @@ class Model(Base):
     - If X or Y is passed as 1D array_like, then they are transformed to:
           self.X = np.atleast_2d(X).T and self.Y = np.atleast_2d(Y).T
 
-    - Upper case 'X' is 2D training   input and 'Y' is 2D training   target
+    - Upper case 'X' is 2D   training input and 'Y' is 2D   training target
     - Lower case 'x' is 2D prediction input and 'y' is 2D prediction output
-    - XY = (X, Y, xKeys, yKeys) is combination of X and Y with array keys
+    - XY = (X, Y, xKeys, yKeys) is combination of X and Y, optional with keys
 
     Decision tree
     -------------
@@ -341,13 +342,13 @@ class Model(Base):
             if XY is None:
                 White()
             else:
-                if color.startswith('light'):
+                if model_color.startswith('light'):
                     LightGray()
-                elif color.startswith('medium'):
-                    if '-loc' in color.lower():
-                        MediumGray() - local
+                elif model_color.startswith('medium'):
+                    if '-loc' in model_color:
+                        MediumGray() - local tuning pars for empirical submodel
                     else:
-                        MediumGray() - global
+                        MediumGray() - global training
                 else:
                     DarkGray()
         else:
@@ -358,7 +359,8 @@ class Model(Base):
         """
         Args:
             f (method or function):
-                theoretical submodel f(self, x) or f(x) for single data point
+                theoretical submodel f(self, x, *args, **kwargs) or
+                f(x, *args, **kwargs) for single data point
 
             identifier (str, optional):
                 object identifier
@@ -380,10 +382,10 @@ class Model(Base):
         Sets default values to results dict
 
         Args:
-            keys (str or 1D array_like of str):
+            keys (str or list of str):
                 list of keys to be updated or added
 
-            values (float or int or str, or 1D array_like of float & int& str):
+            values (float/int/str, or 1D array_like of float/int/str):
                 list of values to be updated or added
 
         Returns:
@@ -404,7 +406,8 @@ class Model(Base):
         """
         Returns:
             (method or function):
-                theoretical submodel f(self, x) or f(x) for single data point
+                theoretical submodel f(self, x, *args, **kwargs) or
+                f(x, *args, **kwargs) for single data point
         """
         return self._f
 
@@ -416,7 +419,8 @@ class Model(Base):
 
         Args:
             value (method or function or str):
-                theoretical submodel f(self, x) or f(x) for single data point
+                theoretical submodel f(self, x, *args, **kwargs) or
+                f(x, *args, **kwargs) for single data point
         """
         if not isinstance(value, str):
             f = value
@@ -434,7 +438,7 @@ class Model(Base):
 
         Args:
             x (1D array_like of float):
-                input, shape: (nInp)
+                input, shape: (nInp,)
 
             args (argument list, optional):
                 positional arguments
@@ -445,14 +449,11 @@ class Model(Base):
                 c0, c1, ... (float, optional):
                     coefficients
 
-            kwargs (dict, optional):
-                keyword arguments:
-
         Returns:
             (1D array_like of float):
-                output, shape: (nOut)
+                output, shape: (nOut,)
         """
-        # minimum at f(a,a**2)=f(1,1)=0
+        # minimum at f(a, a**2) = f(1, 1) = 0
         a, b = args if len(args) > 0 else (1, 100)
         y0 = (a - x[0])**2 + b * (x[1] - x[0]**2)**2
         return [y0]
@@ -471,7 +472,7 @@ class Model(Base):
         """
         Args:
             value (2D or 1D array_like of float):
-                X array of training input, shape: (nPoint, nInp) or (nPoint)
+                X array of training input, shape: (nPoint, nInp) or (nPoint,)
         """
         if value is None:
             self._X = None
@@ -495,7 +496,7 @@ class Model(Base):
         """
         Args:
             value (2D or 1D array_like of float):
-                Y array of training target, shape: (nPoint, nOut) or (nPoint)
+                Y array of training target, shape: (nPoint, nOut) or (nPoint,)
         """
         if value is None:
             self._Y = None
@@ -552,10 +553,10 @@ class Model(Base):
         """
         Returns:
             X (2D or 1D array_like of float):
-                training input, shape: (nPoint, nInp) or shape: (nPoint)
+                training input, shape: (nPoint, nInp) or shape: (nPoint,)
 
             Y (2D or 1D array_like of float):
-                training target, shape: (nPoint, nOut) or shape: (nPoint)
+                training target, shape: (nPoint, nOut) or shape: (nPoint,)
 
             xKeys (1D list of str):
                 list of column keys for data selection
@@ -575,10 +576,10 @@ class Model(Base):
         Args:
             value (4-tuple of two arrays of float and two arrays of str):
                 X (2D or 1D array_like of float):
-                    training input, shape: (nPoint, nInp) or shape: (nPoint)
+                    training input, shape: (nPoint, nInp) or shape: (nPoint,)
 
                 Y (2D or 1D array_like of float):
-                    training target, shape: (nPoint, nOut) or shape: (nPoint)
+                    training target, shape: (nPoint, nOut) or shape: (nPoint,)
 
                 xKeys (1D array_like of str, optional):
                     list of column keys for data selection
@@ -620,11 +621,11 @@ class Model(Base):
         """
         Args:
             X (2D or 1D array_like of float, optional):
-                training input, shape: (nPoint, nInp) or shape: (nPoint)
+                training input, shape: (nPoint, nInp) or shape: (nPoint,)
                 default: self.X
 
             Y (2D or 1D array_like of float, optional):
-                training target, shape: (nPoint, nOut) or shape: (nPoint)
+                training target, shape: (nPoint, nOut) or shape: (nPoint,)
                 default: self.Y
 
         Returns:
@@ -670,7 +671,6 @@ class Model(Base):
         """
         return self.XY2frame(self._x, self._y)
 
-
     @property
     def weights(self):
         """
@@ -699,10 +699,10 @@ class Model(Base):
 
         Args:
             X (2D or 1D array_like of float):
-                training input, shape: (nPoint, nInp) or shape: (nPoint)
+                training input, shape: (nPoint, nInp) or shape: (nPoint,)
 
             Y (2D or 1D array_like of float):
-                training target, shape: (nPoint, nOut) or shape: (nPoint)
+                training target, shape: (nPoint, nOut) or shape: (nPoint,)
 
             kwargs (dict, optional):
                 keyword arguments
@@ -807,7 +807,7 @@ class Model(Base):
                     if True then print of norm is suppressed
                     default: False
         Returns:
-            (dict: {str: float or str or int})
+            (dict: {str: float/str/int})
                 result of evaluation
                     'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
                     'abs'   (float): max{|net(x) - Y|} of best training
@@ -852,12 +852,12 @@ class Model(Base):
                     'XY' supersede 'X' and 'Y'
 
                 X (2D or 1D array_like of float, optional):
-                    training input, shape: (nPoint, nInp) or shape: (nPoint)
+                    training input, shape: (nPoint, nInp) or shape: (nPoint,)
                     'XY' supersede 'X' and 'Y'
                     default: self.X
 
                 Y (2D or 1D array_like of float, optional):
-                    training target, shape: (nPoint, nOut) or shape: (nPoint)
+                    training target, shape: (nPoint, nOut) or shape: (nPoint,)
                     'XY' supersede 'X' and 'Y'
                     default: self.Y
 
@@ -940,20 +940,20 @@ if __name__ == '__main__':
     from grayboxes.lightgray import LightGray
     from grayboxes.plotarrays import plotIsoMap, plotSurface, plotIsolines
 
-    def fUser(self, x, *args, **kwargs):
+    def f(self, x, *args, **kwargs):
         """
-        Theoretical submodel y=f(x,c) for single data point
+        Theoretical submodel y=f(x_com, x_tun) for single data point
         """
         nTun = 3
         if x is None:
-            return np.ones(nTun)
-        c0, c1, c2 = args if len(args) > 0 else np.ones(nTun)
+            return np.ones(nTun)              # get number of tuning parameters
+        tun = args if len(args) == nTun else np.ones(nTun)
 
-        y0 = c2 * x[0]**2 + c1 * x[1] + c0
-        y1 = c2 * x[1]
+        y0 = tun[0] + tun[2] * x[0]**2 + tun[1] * x[1]
+        y1 = tun[0] * x[1]
         return [y0, y1]
 
-    if 1 or ALL:
+    if 0 or ALL:
         x = grid(100, [0.9, 1.1], [0.9, 1.1])
         y_exa = White('demo')(x=x)
         y = noise(y_exa, relative=20e-2)
@@ -967,7 +967,7 @@ if __name__ == '__main__':
 
     if 0 or ALL:
         x = grid(4, [0, 12], [0, 10])
-        y_exa = White(fUser)(x=x)
+        y_exa = White(f)(x=x)
         y = noise(y_exa, relative=20e-2)
 
         plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
@@ -983,7 +983,7 @@ if __name__ == '__main__':
         X = grid(5, [-1, 2], [3, 4])
         print('X:', X)
 
-        Y_exa = White(fUser)(x=X)
+        Y_exa = White(f)(x=X)
         plotIsoMap(X[:, 0], X[:, 1], Y_exa[:, 0], title='$Y_{exa,0}$')
         plotIsoMap(X[:, 0], X[:, 1], Y_exa[:, 1], title='$Y_{exa,1}$')
         print('Y_exa:', Y_exa)
@@ -999,7 +999,7 @@ if __name__ == '__main__':
         print('dY:', dY)
 
     if 0 or ALL:
-        model = Model(fUser)
+        model = Model(f)
         y = model.f([2, 3], 2, 0, 1)
         print('y:', y)
 
@@ -1026,24 +1026,29 @@ if __name__ == '__main__':
         y12, x0 = frame2arr(df, ['y0', 'y1'], ['x0'])
         print('9 y12:', y12, 'x0', x0)
 
-    if 0 or ALL:
-        model = LightGray(fUser)
+    if 1 or ALL:
+        model = LightGray(f)
         nPoint = 20
         X = rand(nPoint, [0, 10], [0, 10])
-        Y = noise(White(fUser)(x=X), absolute=0.1)
+        Y = noise(White(f)(x=X), absolute=0.1)
 
         x = rand(nPoint, [0, 10], [0, 10])
-        y_exa = White(fUser)(x=x)
+        y_exa = White(f)(x=x)
         y = model(X=X, Y=Y, x=x)
 
-        plt.scatter(X[:, 0], Y[:, 0], marker='o', label='$Y_0(X_0)$ train')
+        plt.title('Target, exact solution and prediction')
+        plt.scatter(X[:, 0], Y[:, 0], marker='o', label='$Y_0(X_0)$ target')
         plt.scatter(x[:, 0], y_exa[:, 0], marker='s', label='$y_{exa,0}(x_0)$')
-        plt.scatter(model.x[:, 0], y[:, 0], marker='v', label='$y_0(x_0)$')
+        plt.scatter(x[:, 0], y[:, 0], marker='v', label='$y_0(x_0)$')
         plt.legend()
+        plt.grid()
         plt.show()
-        plt.scatter(model.x[:, 0], y[:, 0] - y_exa[:, 0], marker='s',
+
+        plt.title('Absolute error')
+        plt.scatter(x[:, 0], y[:, 0] - y_exa[:, 0], marker='s',
                     label='$y_0 - y_{exa,0}$')
-        plt.scatter(model.x[:, 0], y[:, 1] - y_exa[:, 1], marker='s',
+        plt.scatter(x[:, 0], y[:, 1] - y_exa[:, 1], marker='s',
                     label='$y_1 - y_{exa,1}$')
         plt.legend()
+        plt.grid()
         plt.show()
