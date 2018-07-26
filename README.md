@@ -1,6 +1,8 @@
 # grayboxes
 
-_grayboxes_ contributes to the creation and evaluation of white box, gray box and black box models. See package [coloredlids](https://github.com/dwweiss/coloredlids/wiki) supporting the implementation of distributed and complex white box models of heat transfer, fluid flow and structural mechanics.
+_grayboxes_ contributes to the creation and evaluation of white box, gray box and black box models. 
+
+See package [coloredlids](https://github.com/dwweiss/coloredlids/wiki) supporting the implementation of distributed and complex white box models of heat transfer, fluid flow and structural mechanics.
 
 
 
