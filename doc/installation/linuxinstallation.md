@@ -111,6 +111,10 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
     sudo apt -y install fslint                          # find duplicate files
     
+##### Binary data  
+  
+    pip3 install --user h5py 
+    
 ##### Docker
 
     sudo apt remove docker docker-engine docker.io
