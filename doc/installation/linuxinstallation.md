@@ -123,6 +123,8 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
     sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
     sudo apt install docker-ce
 
+<!--
     sudo docker run hello-world
-    
+-->
+
    [Docker install instructions](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
