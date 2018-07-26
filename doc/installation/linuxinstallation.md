@@ -1,6 +1,6 @@
 ### Linux installation proposal
 
-<!-- Version: 2018-07-19 DWW -->
+<!-- Version: 2018-07-26 DWW -->
 
 In the text below **USER** depicts the actual user name and **X** the disk partition for the workspace
 
@@ -91,7 +91,6 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
     sudo apt -y install vtk6 python-vtk6 && pip3 install --user mayavi
     sudo apt -y install mayavi2
     
-    
 ##### GUI
 
     sudo apt -y install python-wxtools python-traitsui               # loop in wx
@@ -122,9 +121,4 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
     sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
     sudo apt install docker-ce
-
-<!--
-    sudo docker run hello-world
--->
-
-   [Docker install instructions](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+    
