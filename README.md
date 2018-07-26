@@ -30,4 +30,4 @@ _grayboxes_ contributes to the creation and evaluation of white box, gray box an
 - Modules _lightgray_ and _minimum_ are dependent on package _modestga_ [[MGA18]](https://github.com/dwweiss/grayboxes/wiki/References#mga18)
 - Module _neural_ is dependent on package _neurolab_ [[NLB15]](https://github.com/dwweiss/grayboxes/wiki/References#nlb15)
 
-These depdendencies are satisfied if _grayboxes_ is installed with: _python3 setup.py install --user_  
+These dependencies are automatically satisfied if _grayboxes_ is installed with: _python3 setup.py install --user_  
