@@ -30,7 +30,7 @@ Models created with _coloredlids_ are compatible to the above listed operations 
 
     grayboxes
         Training of gray box models, sensitivity analysis
-        Optimiation and inverse problem solution with white box, gray box and black box models
+        Optimization and inverse problem solution with white box, gray box and black box models
 
     tests
         Selected test cases
