@@ -8,7 +8,7 @@ _grayboxes_ contributes to the creation and evaluation of white box, gray box an
 
 - are compatible to the operations of the _grayboxes_ library:
 
-     - Minimization
+     - Minimization/maximization
      - Inverse problem solution
      - Sensitivity analysis 
 
@@ -29,8 +29,8 @@ Models created with _coloredlids_ are compatible to the above listed operations 
 ### Content
 
     grayboxes
-        Training of graybox models, sensitivity analysis,  
-        Minimization, inverse problem solution with white box, gray box and black box models
+        Training of gray box models, sensitivity analysis
+        Optimiation and inverse problem solution with white box, gray box and black box models
 
     tests
         Selected test cases
