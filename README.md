@@ -2,7 +2,7 @@
 
 _grayboxes_ contributes to the creation and evaluation of white box, gray box and black box models of physical and chemical transport phenomena. Gray box models 
 
-- are hybrids of data-driven and theory-driven submodels of the process investigated
+- are hybrids of data-driven (black) and theory-driven (white) submodels of the process investigated
 
 - can have adjustable degrees of blackness (the blacker, the more data driven) 
 
@@ -18,11 +18,11 @@ _grayboxes_ contributes to the creation and evaluation of white box, gray box an
 <p align="center"><img src="https://github.com/dwweiss/grayboxes/blob/master/doc/fig/boxTypeWithTheoretical.png"></p>
 
 
-The theoretical submodels can be of different size and complexity. Package [coloredlids](https://github.com/dwweiss/coloredlids/wiki) supports the implementation of distributed white box models. 
+The theoretical submodels can be of different size and complexity. Package [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) supports the implementation of distributed white box models. 
 
 <br><p align="center"><img src="https://github.com/dwweiss/coloredlids/blob/master/doc/fig/colored_boxes_top.png"></p>
 
-Models created with _coloredlids_ are compatible to the above listed operations of the _grayboxes_ library.
+Models created with [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) are compatible to the above listed operations of the _grayboxes_ library.
 
 <br>
 
