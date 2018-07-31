@@ -6,7 +6,7 @@ _grayboxes_ contributes to the creation and evaluation of white box, gray box an
 
 - can have adjustable degrees of blackness (the blacker, the more data driven) 
 
-- are compatible to the [operations](6.-Operations-on-model) of the _grayboxes_ library:
+- are compatible to the [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model) of the _grayboxes_ library:
 
      - Minimization/maximization
      - Inverse problem solution
@@ -14,13 +14,13 @@ _grayboxes_ contributes to the creation and evaluation of white box, gray box an
 
 [[Link to grayboxes Wiki]](https://github.com/dwweiss/grayboxes/wiki)
 
-<br>
+
 <p align="center"><img src="https://github.com/dwweiss/grayboxes/blob/master/doc/fig/boxTypeWithTheoretical.png"></p>
 
 
 The theoretical submodels can be of different size and complexity. Package [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) supports the implementation of distributed white box models. 
 
-<br><p align="center"><img src="https://github.com/dwweiss/coloredlids/blob/master/doc/fig/colored_boxes_top.png"></p>
+<p align="center"><img src="https://github.com/dwweiss/coloredlids/blob/master/doc/fig/colored_boxes_top.png"></p>
 
 Models created with [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) are compatible to all model operations of the _grayboxes_ library.
 
