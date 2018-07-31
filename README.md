@@ -1,19 +1,26 @@
 # grayboxes
 
-_grayboxes_ contributes to the creation and evaluation of white box, gray box and black box models. 
+_grayboxes_ contributes to the creation and evaluation of white box, gray box and black box models of physical and chemical transport phenomena. 
 
-See package [coloredlids](https://github.com/dwweiss/coloredlids/wiki) supporting the implementation of distributed and complex white box models of heat transfer, fluid flow and structural mechanics.
+- The models are usually based on theoretical (white box) submodels of the process investigated. 
+- Besides model construction, _grayboxes_ provides tools for typical operations on model such as:
+     - Minimization
+     - Inverse problem solution
+     - Sensitivity analysis 
+
+Such submodels can be of different size and complexity. Package [coloredlids](https://github.com/dwweiss/coloredlids/wiki) supports the implementation of distributed white box models compatible to the model operations of the _grayboxes_ library.
 
 
 
-[[Link to grayboxes Wiki]](https://github.com/dwweiss/grayboxes/wiki/1.-Introduction)
+[[Link to grayboxes Wiki]](https://github.com/dwweiss/grayboxes/wiki)
 
 <br>
 
 ### Content
 
     grayboxes
-        Training, sensitivity analysis and prediction with white box, gray box and black box models
+        Training of graybox models, sensitivity analysis,  
+        Minimization, inverse problem solution with white box, gray box and black box models
 
     tests
         Selected test cases
