@@ -6,7 +6,7 @@ _grayboxes_ contributes to the creation and evaluation of white box, gray box an
 
 - can have adjustable degrees of blackness (the blacker, the more data driven) 
 
-- are compatible to the operations of the _grayboxes_ library:
+- are compatible to the [operations](6.-Operations-on-model) of the _grayboxes_ library:
 
      - Minimization/maximization
      - Inverse problem solution
