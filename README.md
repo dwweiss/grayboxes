@@ -22,7 +22,7 @@ The theoretical submodels can be of different size and complexity. Package [_col
 
 <br><p align="center"><img src="https://github.com/dwweiss/coloredlids/blob/master/doc/fig/colored_boxes_top.png"></p>
 
-Models created with [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) are compatible to the above listed operations of the _grayboxes_ library.
+Models created with [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) are compatible to all model operations of the _grayboxes_ library.
 
 <br>
 
