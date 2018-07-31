@@ -4,7 +4,7 @@ _grayboxes_ contributes to the creation and evaluation of white box, gray box an
 
 - are hybrids of data-driven (black) and theory-driven (white) submodels of the process investigated
 
-- can have adjustable degrees of blackness (the blacker, the more data driven) 
+- can have adjustable [degrees of blackness](https://github.com/dwweiss/grayboxes/wiki/5.-Model-evaluation#52-degree-of-model-blackness) (the blacker, the more data driven) 
 
 - are compatible to the [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model) of the _grayboxes_ library:
 
