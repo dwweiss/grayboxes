@@ -8,9 +8,16 @@ _grayboxes_ contributes to the creation and evaluation of [white](https://github
 
 - are compatible to the [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model) of the _grayboxes_ library:
 
+
+     - Minimization / maximization     
+     - Inverse problem solution
+     - Sensitivity analysis 
+
+<!--
      - [Minimization](https://github.com/dwweiss/grayboxes/tree/master/grayboxes/minimum.py)/[maximization](https://github.com/dwweiss/grayboxes/tree/master/grayboxes/maximum.py)
      - [Inverse](https://github.com/dwweiss/grayboxes/tree/master/grayboxes/inverse.py) problem solution
      - [Sensitivity](https://github.com/dwweiss/grayboxes/tree/master/grayboxes/sensitivity.py) analysis 
+-->
 
 <!-- [[Link to grayboxes Wiki]](https://github.com/dwweiss/grayboxes/wiki) -->
 
