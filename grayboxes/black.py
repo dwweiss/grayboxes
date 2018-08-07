@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-07-27 DWW
 """
 
 import numpy as np
@@ -32,6 +32,7 @@ class Black(Model):
 
         - Neural network is employed if argument 'neurons' is passed by kwargs
           Best neural network of all trials is saved as 'self._empirical._net'
+
         - Splines are employed if the argument 'splines' is passed by kwargs
 
     Example:
@@ -75,10 +76,10 @@ class Black(Model):
 
         Args:
             X (2D or 1D array_like of float):
-                training input, shape: (nPoint, nInp) or shape: (nPoint)
+                training input, shape: (nPoint, nInp) or shape: (nPoint,)
 
             Y (2D or 1D array_like of float):
-                training target, shape: (nPoint, nOut) or shape: (nPoint)
+                training target, shape: (nPoint, nOut) or shape: (nPoint,)
 
             kwargs (dict, optional):
                 keyword arguments:
@@ -86,7 +87,7 @@ class Black(Model):
                 neurons (int or 1D array_like of int):
                     number of neurons in the hidden layers of neural network
 
-                splines (1D array_like of float:
+                splines (1D array_like of float):
                     not specified yet
 
                 ... additional training options of network, see Neural.train()
@@ -105,7 +106,6 @@ class Black(Model):
         assert self.X.shape[0] == self.Y.shape[0], \
             str(self.X.shape) + str(self.Y.shape)
         assert self.X.shape[0] > 2, str(self.X.shape)
-        assert self.Y.shape[0] > 2, str(self.Y.shape)
 
         neurons = kwargs.get('neurons', None)
         splines = kwargs.get('splines', None) if neurons is None else None
@@ -122,14 +122,19 @@ class Black(Model):
             self.ready = self._empirical.ready
 
         elif splines is not None:
-            # ...
+            assert self.f is None
+
+            # TODO ...
+
             self.best = None
             self.ready = False
             assert 0, 'splines not implemented'
 
         else:
+            assert self.f is None
             self.best = None
             self.ready = False
+            self._empirical = None
             assert 0, 'unknown empirical method'
 
         return self.best
@@ -140,7 +145,7 @@ class Black(Model):
 
         Args:
             x (2D or 1D array_like of float):
-                prediction input, shape: (nPoint, nInp) or shape: (nInp)
+                prediction input, shape: (nPoint, nInp) or shape: (nInp,)
 
             kwargs (dict, optional):
                 keyword arguments
@@ -149,7 +154,8 @@ class Black(Model):
             (2D array of float):
                 prediction output, shape: (nPoint, nOut)
         """
-        assert self.ready
+        assert self.ready, str(self.ready)
+        assert self._empirical is not None
 
         self.x = x
         self.y = self._empirical.predict(self.x, **kwargs)

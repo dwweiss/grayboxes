@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-07-20 DWW
+      2018-07-27 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -35,10 +35,10 @@ except ImportError:
 
 class LightGray(Model):
     """
-    Light gray box model y=f(x, c)
+    Light gray box model y=f(x_com, x_tun)
 
     Extends the functionality of class Model by a train() method which fits
-    the theoretical submodel f(x) with a set of constant tuning parameters
+    the theoretical submodel f(x) with a set of tuning parameters x_tun
 
     Notes:
         - tun0 (int, 1D or 2D array_like of float) is principally a mandatory
@@ -289,9 +289,9 @@ class LightGray(Model):
                 res = modestga.minimize(fun=self.meanSquareErrror, x0=tun0,
                                         # TODO method=method,
                                         **kw)
-                if True:  # TODO res.success:
+                if True:         # TODO replace 'if true' with 'if res.success'
                     results['weights'] = np.atleast_1d(res.x)
-                    results['iterations'] = -1  # TODO res.nit
+                    results['iterations'] = -1                   # TODO res.nit
                     results['evaluations'] = res.nfev
                 else:
                     self.write('\n??? ', method, ': ', res.message)
@@ -495,15 +495,15 @@ if __name__ == '__main__':
     plot_X_Y_Yref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
 
     methods = [
-                # 'all',
-                # 'L-BFGS-B',
-                'BFGS',
-                'Powell',
-                # 'Nelder-Mead',
-                # 'differential_evolution',
-                # 'basinhopping',
-                'genetic',
-                ]
+               # 'all',
+               # 'L-BFGS-B',
+               'BFGS',
+               'Powell',
+               # 'Nelder-Mead',
+               # 'differential_evolution',
+               # 'basinhopping',
+               'genetic',
+               ]
 
     if 1 or ALL:
         s = 'Tunes model, compare: y(X) vs y_exa(X)'

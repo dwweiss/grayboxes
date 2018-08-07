@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-07-27 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -124,8 +124,8 @@ class Minimum(Forward):
     @property
     def y(self):
         """
-        1) Target to class Inverse before optimization
-        2) Best output at optimum after optimization
+        1) Gets target to class Inverse before optimization
+        2) Gets best output at optimum after optimization
 
         Returns:
             (1D array of float):
