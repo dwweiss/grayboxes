@@ -17,15 +17,17 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-08-08 DWW
 """
 
+from collections import OrderedDict
 import numpy as np
 import matplotlib.pyplot as plt
 
+from grayboxes.model import Model
 from grayboxes.white import White
 from grayboxes.lightgray import LightGray
-from grayboxes.mediumgray import MediumGray
+from grayboxes.mediumgray2 import MediumGray
 from grayboxes.darkgray import DarkGray
 from grayboxes.black import Black
 
@@ -37,12 +39,13 @@ def F_true(x):
     return np.sin(2 * x[0]) + x[0] + 1
 
 
-def F_noise(x, noise=0.2):
+def F_noise(x, noise_rel=0.0, noise_abs=0.25):
     """
-    Training data are conventional true value plus noise Y(X, Z)
+    Training data is true value plus noise Y(X, Z)
     """
     y = F_true(x)
-    return y * (1 + np.random.normal(-noise, noise, size=y.shape))
+    return y * (1 + np.random.normal(loc=0, scale=noise_rel, size=y.shape)) + \
+        np.random.normal(loc=0, scale=noise_abs, size=y.shape)
 
 
 def f(x, c0=1, c1=1, c2=0.5, c3=0, c4=0, c5=0, c6=0, c7=0):
@@ -62,68 +65,98 @@ if __name__ == '__main__':
     nTrn, xTrnRng = 20, [-0.5 * np.pi, 1 * np.pi]              # training input
     X = np.atleast_2d(np.linspace(xTrnRng[0], xTrnRng[1], nTrn)).T
     Y = np.atleast_2d([np.atleast_1d(F_noise(_x)) for _x in X])
+
     x = np.atleast_2d(np.linspace(xTstRng[0], xTstRng[1], nTst)).T
-    y = np.atleast_2d([np.atleast_1d(F_true(_x)) for _x in x])
+    y_tru = np.atleast_2d([np.atleast_1d(F_true(_x)) for _x in x])
+    Y_tru = np.atleast_2d([np.atleast_1d(F_true(_x)) for _x in X])
 
-    models = [White(f), LightGray(f),
-              # MediumGray(f),
-              DarkGray(f), Black()
-              ]
+    models = [White(f), LightGray(f), MediumGray(f), DarkGray(f), Black()]
 
-    opt = {'neurons': [2], 'regularization': 0.5,  'epochs': 500,
-           'goal': 1e-5, 'methods': 'rprop bfgs', 'trials': 5, 
-           'c0': np.ones(3)}
+    opt = {'neurons': [4], 'regularization': 0.5,  'epochs': 1000,
+           'goal': 1e-5, 'methods': ['rprop', 'bfgs'], 'trials': 3,
+           'c0': np.ones(3), 'local': 1, 'shuffle': True}
 
-    results = {'noise': (X, Y), 'true': (x, y)}   # collection of results (x,y)
+    results = OrderedDict()
     for model in models:
         print('+++ model:', model.identifier)
-        y = model(X=X, Y=Y, x=x, **opt)
-        results[model.identifier] = (x, y)
+        _y = model(X=X, Y=Y, x=x, **opt)
+        results[model] = (x, _y)
+    results['train'] = (X, Y)
+    results['true'] = (x, y_tru)
 
-    plt.title('Sine curve with wrong white box')
+    plt.title('Results with wrong white box')
     plt.xlabel('$x\, /\, \pi$')
     plt.ylabel('$y$')
-    plt.axvline(x=xTrnRng[0]/np.pi, ls='--', lw=1.5, c='tab:gray')
-    plt.axvline(x=xTrnRng[1]/np.pi, ls='--', lw=1.5, c='tab:gray',
-                label=r'$\Delta x_{train}$')
-
-    for modelType in list(results.keys()):
-        (_x, _y) = results[modelType]
-        ls = '-' if modelType not in ('true', 'noise') else ':'
-        plt.plot(_x[:, 0]/np.pi, _y[:, 0], label=modelType, ls=ls)
-    plt.legend(bbox_to_anchor=(1.1, 1.05), loc='upper left')
-    plt.ylim(-5, 10)
-    plt.grid()
-    plt.show()
-
-    plt.title('Difference to noisy data (train data)')
-    plt.xlabel('$x\, /\, \pi$')
-    plt.ylabel(r'$y_{true} - y$')
-    plt.axvline(x=xTrnRng[0]/np.pi, ls='--', lw=1.5, c='tab:gray')
-    plt.axvline(x=xTrnRng[1]/np.pi, ls='--', lw=1.5, c='tab:gray',
-                label=r'$\Delta x_{train}$')
-    for key, xy in results.items():
+    for model, xy in results.items():
+        if isinstance(model, Model):
+            key = model.identifier
+        else:
+            key = model
         if key != 'noise':
-            dy = xy[1] - F_noise(x=xy[0])
-            ls = '-' if not key.lower().startswith(('white', 'black')) else ':'
-            plt.plot(xy[0][:, 0]/np.pi, dy[:, 0], label=key, ls=ls)
-    plt.legend(bbox_to_anchor=(1.1, 1.05), loc='upper left')
-    plt.ylim(-2, 6)
-    plt.grid()
-    plt.show()
-
-    plt.title('Difference to true data')
-    plt.xlabel('$x\, /\, \pi$')
-    plt.ylabel(r'$y_{true} - y$')
+            ls = '-'
+            if key in ('train'):
+                ls = '--'
+            if key in ('true'):
+                ls = ':'
+            plt.plot(xy[0][:, 0]/np.pi, xy[1][:, 0], label=key, ls=ls)
     plt.axvline(x=xTrnRng[0]/np.pi, ls='--', lw=1.5, c='tab:gray')
     plt.axvline(x=xTrnRng[1]/np.pi, ls='--', lw=1.5, c='tab:gray',
                 label=r'$\Delta x_{train}$')
-    for key, xy in results.items():
-        if key != 'true':
-            dy = xy[1] - F_true(x=xy[0])
-            ls = '-' if not key.lower().startswith(('white', 'black')) else ':'
-            plt.plot(xy[0][:, 0]/np.pi, dy[:, 0], label=key, ls=ls)
     plt.legend(bbox_to_anchor=(1.1, 1.05), loc='upper left')
-    plt.ylim(-2, 6)
+    plt.xlim([x/np.pi for x in xTstRng])
+    plt.ylim(-2, 5)
     plt.grid()
     plt.show()
+
+    plt.title('Difference to train data (noisy)')
+    plt.xlabel('$x\, /\, \pi$')
+    plt.ylabel(r'$y - y_{nse}$')
+
+    for model, xy in results.items():
+        if isinstance(model, Model):
+            key = model.identifier
+        else:
+            key = model
+        if key not in ('true', 'train'):
+            _y = model(x=X)
+            print('117 _y Y', _y.shape, Y.shape)
+
+            dy = _y[:, 0] - Y[:, 0]
+            ls = '-' if key not in ('true', 'noise') else ':'
+            plt.plot(X/np.pi, dy, label=key, ls=ls)
+    plt.axvline(x=xTrnRng[0]/np.pi, ls='--', lw=1.5, c='tab:gray')
+    plt.axvline(x=xTrnRng[1]/np.pi, ls='--', lw=1.5, c='tab:gray',
+                label=r'$\Delta x_{trn}$')
+    plt.legend(bbox_to_anchor=(1.1, 1.05), loc='upper left')
+    plt.xlim([x/np.pi for x in xTstRng])
+    plt.ylim(-2, 2)
+    plt.grid()
+    plt.show()
+
+    for ylim in [(-3, 3), (-2, 2)]:
+        plt.title('Difference to true data')
+        plt.xlabel('$x\, /\, \pi$')
+        plt.ylabel(r'$y - y_{tru}$')
+        for model, xy in results.items():
+            if isinstance(model, Model):
+                key = model.identifier
+            else:
+                key = model
+            if key != 'true':
+                ls = '-'
+                if key in ('train'):
+                    ls = '--'
+                    dy = xy[1] - Y_tru
+                else:
+                    dy = xy[1] - y_tru
+                if key in ('true'):
+                    ls = ':'
+                plt.plot(xy[0][:, 0]/np.pi, dy[:, 0], label=key, ls=ls)
+        plt.axvline(x=xTrnRng[0]/np.pi, ls='--', lw=1.5, c='tab:gray')
+        plt.axvline(x=xTrnRng[1]/np.pi, ls='--', lw=1.5, c='tab:gray',
+                    label=r'$\Delta x_{trn}$')
+        plt.legend(bbox_to_anchor=(1.1, 1.05), loc='upper left')
+        plt.xlim([x/np.pi for x in xTstRng])
+        plt.ylim(ylim)
+        plt.grid()
+        plt.show()
