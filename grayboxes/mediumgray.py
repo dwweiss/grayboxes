@@ -17,55 +17,44 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-08-08 DWW
 """
 
 import numpy as np
 from grayboxes.model import Model
+from grayboxes.lightgray import LightGray
+from grayboxes.black import Black
 from grayboxes.neural import Neural
 
 
 class MediumGray(Model):
     """
-    Medium gray box model comprising white box and black box submodels
+    Medium gray box model comprising light gray box and black box submodels
 
-    It is assumed that self.xTun, ..., self.yMod are imported from a DataFrame
-
-    The identifier of the training method is a string starting ending with a
-    dash followed by a postfix, e.g '-local1':
-        - local  calibration if self.method contains substring '-l')
-        - global calibration otherwise
-    If the last character is a number identifying the training method
-
-    Note:
-        Degree of model blackness: $0 \le \beta_{blk} \le 1$
+    Training input self.X (process input) is union of common and unique input:
+        X = X_com + X_unq
     """
 
     def __init__(self, f, identifier='MediumGray'):
         """
         Args:
             f (method or function):
-                theoretical submodel f(self, x) or f(x) for single data point
+                theoretical submodel f(self, x, *args, **kwargs) or
+                f(x, *args, **kwargs) for single data point
+
+                - argument 'x' to function f() corresponds to test input x_prc
+                - model input is x_prc as the union of the common part of 'x'
+                  and x_unq
+                - in f() the subset x_unq of is unused
 
             identifier (str, optional):
                 object identifier
         """
         super().__init__(identifier=identifier, f=f)
 
-        self.method = '-l1'
-
-        # submodel
-        self._black = Neural()
-
-        # list of keys for selecting columns of data frame
-        self.xTunKeys, self.xComKeys, self.xUnqKeys = None, None, None
-        self.xModKeys, self.xPrcKeys = None, None
-        self.yModKeys, self.yPrcKeys, self.yComKeys = None, None, None
-
-        # 2D arrays of inputs and outputs
-        self.xTun, self.xCom, self.xUnq = None, None, None
-        self.xMod, self.xPrc = None, None
-        self.yMod, self.yPrc, self.yCom = None, None, None
+        self._local = None
+        self._lightGray = LightGray(f=f)
+        self._black = Black()
 
     @property
     def silent(self):
@@ -74,79 +63,9 @@ class MediumGray(Model):
     @silent.setter
     def silent(self, value):
         self._silent = value
-        self._black._silent = value
-
-    def setArrays(self, df, xModKeys, xPrcKeys, yModKeys, yPrcKeys):
-        """
-        - Extracts common input and common output keys
-        - Extracts 2D arrays self.xTun ... self.yPrc from 'df'
-
-        Args:
-            df (DataFrame):
-                data frame with model input/output and process input/output
-
-            xModKeys (1D array_like of str):
-                list of model input keys
-
-            xPrcKeys (1D array_like of str):
-                list of process input keys
-
-            yModKeys (1D array_like of str):
-                list of model output keys
-
-            yPrcKeys (1D array_like of str):
-                list of process output keys
-        """
-        self.xModKeys = list(xModKeys) if xModKeys else None
-        self.xPrcKeys = list(xPrcKeys) if xPrcKeys else None
-        self.yModKeys = list(yModKeys) if yModKeys else None
-        self.yPrcKeys = list(yPrcKeys) if yPrcKeys else None
-
-        if xModKeys is None or xPrcKeys is None:
-            self.xComKeys = None
-        else:
-            self.xComKeys = list(set(xModKeys).intersection(self.xPrcKeys))
-            self.xTunKeys = list(set(xModKeys).difference(self.xComKeys))
-            self.xUnqKeys = list(set(xPrcKeys).difference(self.xComKeys))
-        if yModKeys is None or yPrcKeys is None:
-            self.yComKeys = None
-        else:
-            self.yComKeys = list(set(yModKeys).intersection(self.yPrcKeys))
-
-        assert self.xComKeys, str(self.xComKeys)
-        assert self.yComKeys, str(self.yComKeys)
-        assert not set(self.yModKeys).isdisjoint(self.yPrcKeys), \
-            str(self.yModKeys) + str(self.yPrcKeys)
-
-        self.xTun, self.xCom, self.xUnq, self.xMod, self.xPrc, \
-            self.yMod, self.yCom, self.yPrc = \
-            self.frame2arrays(df, self.xTunKeys, self.xComKeys, self.xUnqKeys,
-                              self.xModKeys, self.xPrcKeys,
-                              self.yModKeys, self.yComKeys, self.yPrcKeys)
-        if 0:
-            print('xy mod:', self.xModKeys, self.yModKeys)
-            print('xy prc:', self.xPrcKeys, self.yPrcKeys)
-            print('x tun com unq', self.xTunKeys, self.xComKeys, self.xUnqKeys)
-            print('y com:', self.yComKeys, self.yCom.shape)
-            print('xy mod:', self.xModKeys, self.yModKeys)
-            print('xy prc:', self.xPrcKeys, self.yPrcKeys)
-            print('x tun com unq', self.xTunKeys, self.xComKeys, self.xUnqKeys)
-
-    def trainLocal(self, **kwargs):
-        """
-        Trains medium gray box with local estimate of xTun = net(xProc, w_loc)
-        with w_loc = train(X_proc, X_tun)
-
-        Args:
-            kwargs (dict, optional):
-                keyword arguments:
-
-                ... network options
-
-        Returns:
-            see Model.train()
-        """
-        return None
+        self._lightGray._silent = value
+        if self._black is not None:
+            self._black._silent = value
 
     def train(self, X, Y, **kwargs):
         """
@@ -154,73 +73,127 @@ class MediumGray(Model):
         best training trial as self.best
 
         Args:
-            X (2D or 1D array_like of float, optional):
-                training input X_prc, shape: (nPoint, nInp) or shape: (nPoint)
+            X (2D or 1D array_like of float):
+                training input X_prc, shape: (nPoint, nInp) or shape: (nPoint,)
 
-            Y (2D or 1D array_like of float, optional):
-                training target Y_com, shape: (nPoint, nOut) or shape: (nPoint)
+            Y (2D or 1D array_like of float):
+                training target Y_com, shape: (nPoint, nOut) or shape:(nPoint,)
 
             kwargs (dict, optional):
                 keyword arguments:
 
-                method (str):
-                    training method ('-loc'/'-glob' and '1'/'2')
+                bounds (2-tuple of float or 2-tuple of 1D array_like of float):
+                    list of pairs (xMin, xMax) limiting tuning parameters
 
-                ... network options
+                local (int or None):
+                    size of subset sizes if local training type of medium gray
+                        box model
+                    if 'local' is None, FalsE or 0, a single global network is
+                        trained without local tuning and data collection
+
+                methods (str or list of str):
+                    optimizer method of
+                        - scipy.optimizer.minimize or
+                        - genetic algorithm
+                    see LightGray.validMethods
+                    default: 'BFGS'
+
+                shuffle (bool):
+                    if 'local' is geater 1 and 'shuffled' is True, then x- and
+                    y-datasets are shuffled before split to local datasets
+                    default: True
+
+                tun0 (2D or 1D array_like of float):
+                    sequence of initial guess of the tuning parameter set,
+                    If missing, then initial values will be all 1.0
+                    tun0.shape[1] is the number of tuning parameters if 2D arr.
+                    see LightGray.train()
+
+                ... network options, see class Neural
 
         Returns:
             see Model.train()
 
         Example:
             Method f(self, x) or function f(x) is assigned to self.f, example:
-                def f(self, x, *args):
-                 c0, c1, c2 = args if len(args)m > 0 else 1, 1, 1
-                    y0 = c0 * x[0]*x[0] + c1 * x[1]
-                    y1 = x[1] * c3
+
+                def f(self, x, *args, **kwargs):
+                    tun = args if len(args) >= 3 else np.ones(3)
+
+                    y0 = tun[0] * x[0]*x[0] + tun[1] * x[1]
+                    y1 = x[1] * tun[2]
                     return [y0, y1]
 
+                # training data
                 X = [[..], [..], ..]
                 Y = [[..], [..], ..]
+
+                # test data
                 x = [[..], [..], ..]
 
                 # expanded form:
-                mod = MediumGray(f=f)
-                mod.train(X, Y, method='-loc1', neurons=[])
-                y = mod.predict(x)
+                model = MediumGray(f=f)
+                model.train(X, Y, methods='ga', neurons=[])
+                y = model.predict(x)
 
                 # compact form:
-                y = MediumGray(f=f)(X=X, Y=Y, x=x, method='-loc1', neurons=[])
+                y = MediumGray(f)(X=X, Y=Y, x=x, methods='ga', neurons=[])
         """
-        self.X = X if X is not None else self.xPrc
-        self.Y = Y if Y is not None else self.yPrc
+        self.X = X if X is not None else self.X
+        self.Y = Y if Y is not None else self.Y
 
-        opt = self.kwargsDel(kwargs, ['X', 'Y'])
-        self.method = kwargs.get('method', '-loc1')
+        opt = self.kwargsDel(kwargs, ['X', 'Y', 'local'])
+        self.silent = kwargs.get('silent', self.silent)
+        self._local = kwargs.get('local', None)
+        neurons = kwargs.get('neurons', [])
 
-        if '-l' in self.method:
-            if self.method.endswith('1'):
-                self.write("+++ Trains medium gray with '-loc1'")
+        if self._local:
+            self.write('+++ Medium gray (local tun: ' + str(self._local) + ')')
 
-                self.trainLocal(self.X, self.Y, f=self.f, **opt)
-                self.ready = True
+            shuffle = kwargs.get('shuffle', self._local > 1)
+            methods = kwargs.get('methods', ['bfgs', 'rprop'])
+            nPoint = self.X.shape[0]
+            nSub = nPoint // np.clip(self._local, 1, nPoint)
+
+            xyRnd2d = np.c_[self.X, self.Y]
+            if shuffle:
+                np.random.shuffle(xyRnd2d)
+            xyAll3d = np.array_split(xyRnd2d, nSub)          # list of 2d array
+
+            xTunAll2d = []
+            nInp = self.X.shape[1]
+            for xy in xyAll3d:
+                XY = np.hsplit(xy, [nInp])
+                X, Y = XY[0], XY[1]
+                self._lightGray.Y = None
+                res = self._lightGray.train(X=X, Y=Y, **opt)
+                xTun1d = res['weights']
+                if xTun1d is not None:
+                    for i in range(xy.shape[0]):
+                        xTunAll2d.append(xTun1d)
+
+            if len(xyAll3d) > 1:
+                self.write('            (generalization)')
+                res = self._black.train(X=xyRnd2d[:, :nInp], Y=xTunAll2d,
+                                        neurons=neurons, methods=methods)
+                self.weights = None
             else:
-                assert 0, str(self.method)
+                self.weights = xTunAll2d[0]        # local==X.shape[0]: const w
+
+            # TODO remove next line after test
+            self.__weightsForPresentation = xTunAll2d   # only for presentation
+
         else:
-            self._black.f = self.f
+            self.write('+++ Medium gray (global training)')
 
-            if self.method.endswith('1'):
-                self.write("+++ Trains medium gray with '-glob1'")
+            methods = kwargs.get('methods', ['genetic', 'derivative'])
 
-                self._black.train(self.X, self.Y, method='genetic', **opt)
-                self.ready = True
-            elif self.method.endswith('2'):
-                self.write("+++ Trains medium gray with '-glob2'")
+            if self._black is not None:
+                del self._black
+            self._black = Neural(f=self.f)
+            self._black.train(self.X, self.Y, neurons=neurons, methods=methods)
 
-                self._black.train(self.X, self.Y, method='derivative', **opt)
-                self.ready = True
-            else:
-                assert 0, str(self.method)
-
+        self.ready = True
         self.best = self.error(self.X, self.Y, **opt)
         return self.best
 
@@ -230,7 +203,7 @@ class MediumGray(Model):
 
         Args:
             x (2D or 1D array_like of float):
-                prediction input, shape: (nPoint, nInp) or shape: (nInp)
+                prediction input, shape: (nPoint, nInp) or shape: (nInp,)
 
             kwargs (dict, optional):
                 keyword arguments
@@ -240,16 +213,22 @@ class MediumGray(Model):
                 prediction output, shape: (nPoint, nOut)
         """
         assert self._black is not None and self._black.ready
-        kw = self.kwargsDel(kwargs, 'x')
-
+        opt = self.kwargsDel(kwargs, 'x')
         self.x = x
 
-        if '-l' in self.method:
-            xTun = self._black.predict(x=self.x, **kw)
-            xMod = np.c_[self.xCom, xTun]
-            self.y = Model.predict(self, x=xMod, **kw)
+        if self._local is not None:
+            if self.weights is None:
+                yAll = []
+                for xPrc in self.x:
+                    if xPrc[0] is not None:
+                        xTun = self._black.predict(x=xPrc, **opt)[0]
+                        yAll.append(Model.predict(self, xPrc, *xTun, **opt)[0])
+                self.y = yAll
+            else:
+                # local==X.shape[0]: const w
+                self.y = Model.predict(self, self.x, *self.weights, **opt)
         else:
-            self.y = self._black.predict(x=x, **kw)
+            self.y = self._black.predict(x=x, **opt)
 
         return self.y
 
@@ -257,88 +236,99 @@ class MediumGray(Model):
 # Examples ####################################################################
 
 if __name__ == '__main__':
-    ALL = 1
+    ALL = 0
 
-    from io import StringIO
-    import pandas as pd
-    from grayboxes.black import Black
-    from grayboxes.plotarrays import plotIsoMap, plotWireframe
+    from grayboxes.plotarrays import plot_X_Y_Yref
+    from grayboxes.model import Model, grid, noise, rand
+    from grayboxes.white import White
+    import matplotlib.pyplot as plt
 
-    df = pd.DataFrame({'x0': [2, 3, 4, 5],
-                       'x1': [3, 4, 5, 6],
-                       'x2': [4, 5, 6, 7],
-                       'x3': [5, 6, 7, 8],
-                       'x4': [6, 7, 8, 9],
-                       'y0': [7, 8, 9, 10],
-                       'y1': [8, 9, 10, 11],
-                       'y2': [9, 10, 11, 12],
-                       })
+    nTun = 3
 
-    # anonymised data of an observation: A = mDotInd - mDot = F(mDot, p)
-    # E in [%], mDot and mDotInd normalized with min/max of both arrays
-    raw = StringIO("""mDot,p,E,A,mDotInd
-        0.003393,  0.000,    NaN,  0.000154,  0.003547
-        0.597247,  0.054, -0.785, -0.004662,  0.592586
-        0.858215,  0.054, -0.334, -0.002855,  0.855360
-        0.901367,  0.262, -0.621, -0.005576,  0.895790
-        0.893147,  0.516, -0.857, -0.007625,  0.885522 ## outlier (regular)
-        0.884928,  0.771, -0.879, -0.007749,  0.877179
-        0.849995,  0.931, -0.865, -0.007323,  0.842672
-        0.003393,  0.000,    NaN, -0.003391,  0.000002
-        0.862324,  0.054, -0.687, -0.005901,  0.856423
-        0.525327,  0.250, -0.962, -0.005021,  0.520306 ## outlier (extra)
-        1.000000,  0.260, -0.616, -0.006139,  0.993861
-        0.003393,  0.056,    NaN,  0.000616,  0.004009
-        0.765746,  0.056, -0.249, -0.001898,  0.763848
-        0.003393,  0.261,    NaN, -0.000411,  0.002982
-        0.843831,  0.261, -0.471, -0.003958,  0.839872 ## outlier for 2D
-        0.003393,  0.000,    NaN, -0.003156,  0.000236
-        0.003393,  0.000,    NaN, -0.003386,  0.000006
-        0.003393,  0.100,    NaN, -0.002885,  0.000508
-        0.003393,  0.100,    NaN, -0.003319,  0.000074
-        0.003393,  0.250,    NaN, -0.003393,  0.000000
-        0.003393,  0.270,    NaN, -0.002817,  0.000575
-        0.003393,  0.260,    NaN, -0.002860,  0.000532
-        0.003393,  0.260,    NaN, -0.002922,  0.000471
-        0.003393,  0.500,    NaN, -0.002774,  0.000619
-        0.003393,  0.770,    NaN, -0.002710,  0.000682
-        0.003393,  1.000,    NaN, -0.002770,  0.000623
-        0.003393,  1.000,    NaN, -0.002688,  0.000705
-        0.003393,  1.000,    NaN, -0.002686,  0.000707
-    """)
+    def f(self, x, *args, **kwargs):
+        """
+        Theoretical submodel for single data point
+
+        Aargs:
+            x (1D array_like of float):
+                common input
+
+            args (argument list, optional):
+                tuning parameters as positional arguments
+
+            kwargs (dict, optional):
+                keyword arguments {str: float/int/str}
+        """
+        if x is None:
+            return np.ones(nTun)
+        tun = args if len(args) >= nTun else np.ones(nTun)
+
+        y0 = tun[0] + tun[1] * np.sin(tun[2] * x[0]) + tun[1] * (x[1] - 1.5)**2
+        return [y0]
+
+    s = 'Creates exact output y_exa(X) and adds noise. Target is Y(X)'
+    print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+
+    noise_abs = 0.1
+    noise_rel = 5e-2
+    X = grid(10, [-1., 2.], [0., 3.])
+    y_exa = White(f)(x=X, silent=True)
+    Y = noise(y_exa, absolute=noise_abs, relative=noise_rel)
+    if 0:
+        plot_X_Y_Yref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
+
+    methods = [
+                # 'all',
+                # 'L-BFGS-B',
+                'BFGS',
+                # 'Powell',
+                # 'Nelder-Mead',
+                # 'differential_evolution',
+                # 'basinhopping',
+                # 'ga',
+                ]
 
     if 1 or ALL:
-        s = 'Medium gray box model'
+        s = 'Tunes model, compare: y(X) vs y_exa(X)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        model = MediumGray(f='demo')
+        # train with n1 random initial tuning parameter help, each of size n2
+        local, n1, n2 = 10, 1, 3
+        mgr, lgr = MediumGray(f), LightGray(f)
+        mgr.silent, lgr.silent = True, True
+        tun0 = rand(n1, *(n2 * [[0., 2.]]))
 
-        model.setArrays(df, xModKeys=['x0', 'x2', 'x3'], xPrcKeys=['x0', 'x4'],
-                        yModKeys=['y0'], yPrcKeys=['y0'])
-        model(X=None, Y=None, silent=True, neurons=[], method='-l1')
-        y = model(x=model.X)
-        print('*'*20)
-        print('*** x:', model.x, 'y:', y)
+        L2 = np.inf
+        yMgr, tunMgr = None, None
+        for local in range(1, 3):
+            for neurons in range(2, 4):
+                y = mgr(X=X, Y=Y, x=X, methods=methods, tun0=tun0, nItMax=5000,
+                        bounds=nTun*[(-1., 3.)], neurons=[neurons], trials=3,
+                        local=local)
+                print('L2(neurons:', str(neurons)+'): ', mgr.best['L2'],
+                      end='')
+                if L2 > mgr.best['L2']:
+                    L2 = mgr.best['L2']
+                    print('  *** better', end='')
+                    yMgr, tunMgr = y, mgr.weights
+                print()
+        assert yMgr is not None
 
-    if 0 or ALL:
-        s = 'Medium gray box model, measured Y(X) = E(mDot, p)'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+        yLgr = lgr(X=X, Y=Y, x=X, methods=methods, nItMax=5000, tun0=tun0)
+        print('lgr.w:', lgr.weights)
 
-        df = pd.read_csv(raw, sep=',', comment='#')
-        df.rename(columns=df.iloc[0])
-        df = df.apply(pd.to_numeric, errors='coerce')
-        X = np.asfarray(df.loc[:, ['mDot', 'p']])
-        Y = np.asfarray(df.loc[:, ['A']])
+        if mgr.weights is None:
+            xTun = mgr._black.predict(x=X)
+            for i in range(xTun.shape[1]):
+                plt.plot(xTun[:, i], ls='-',
+                         label='$x^{loc}_{tun,'+str(i)+'}$')
+        for i in range(len(lgr.weights)):
+            plt.axhline(lgr.weights[i], ls='--',
+                        label='$x^{lgr}_{tun,'+str(i)+'}$')
+        # plt.ylim(max(0, 1.05*min(lgr.weights)),
+        #          min(2, 0.95*max(lgr.weights)))
+        plt.legend(bbox_to_anchor=(1.1, 1.05))
+        plt.show()
 
-        model = Black()
-        y = model(X=X, Y=Y, neurons=[], x=X)
-        print('*** x:', model.x, 'y:', model.y, y)
-
-        plotIsoMap(X.T[0], X.T[1], Y.T[0] * 1e3, title=r'$A_{prc}\cdot 10^3$')
-        plotIsoMap(X.T[0], X.T[1], y.T[0] * 1e3, title=r'$A_{blk}\cdot 10^3$')
-        plotIsoMap(X.T[0], X.T[1], (Y.T[0] - y.T[0]) * 1e3,
-                   title=r'$(A_{prc} - A_{blk})\cdot 10^3$')
-        plotWireframe(X.T[0], X.T[1], Y.T[0]*1e3, title=r'$A_{prc}\cdot 10^3$')
-        plotWireframe(X.T[0], X.T[1], y.T[0]*1e3, title=r'$A_{blk}\cdot 10^3$')
-        plotWireframe(X.T[0], X.T[1], (Y.T[0] - y.T[0]) * 1e3,
-                      title=r'$(A_{prc} - A_{blk})\cdot 10^3$')
+        plot_X_Y_Yref(X, yLgr, y_exa, ['X', 'y_{lgr}', 'y_{exa}'])
+        plot_X_Y_Yref(X, yMgr, y_exa, ['X', 'y_{mgr}', 'y_{exa}'])
