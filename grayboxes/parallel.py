@@ -15,8 +15,10 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-07-20 DWW
+      2018-08-09 DWW
 """
+
+__all__ = ['mpi', 'communicator', 'rank', 'predict_scatter', 'split', 'merge']
 
 import numpy as np
 import psutil
