@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-08-10 DWW
 """
 
 import numpy as np
@@ -148,7 +148,7 @@ class Forward(Base):
             kwargs (dict, optional):
                 keyword arguments passed to super.task()
 
-        Return:
+        Returns:
             x, y (2-tuple of 2D arrays of float):
                 input and output of model prediction,
                 x.shape: (nPoint, nInp) and y.shape: (nPoint, nOut)
