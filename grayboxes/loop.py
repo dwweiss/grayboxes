@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-08-10 DWW
 """
 
 from time import time
@@ -123,7 +123,7 @@ class Loop(Base):
             kwargs (dict, optional):
                 keyword arguments passed to task()
 
-        Return:
+        Returns:
             (float):
                 residuum from range 0.0..1.0 indicating error of task
         """
