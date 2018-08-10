@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-10 DWW
+      2018-06-21 DWW
 """
 
 from time import time
@@ -102,7 +102,7 @@ class Loop(Base):
             self.dt = dt
             self.theta = theta
 
-    def initialCondition(self):
+    def initialCondition(self) -> bool:
         for x in self.followers:
             x.initialCondition()
 

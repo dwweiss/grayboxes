@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-09 DWW
+      2018-08-08 DWW
 
   Acknowledgements:
       Neurolab is a contribution by E. Zuev (pypi.python.org/pypi/neurolab)
@@ -477,7 +477,7 @@ class Neural(object):
                     methods = 'cg gd gdx gdm gda rprop bfgs genetic'
                 methods = methods.split()
             methods = list(OrderedDict.fromkeys(methods))          # redundancy
-        self._methods = methods
+        self._methods = [x.lower() for x in methods]
 
         if errorf is None:
             errorf = nl.error.MSE()
@@ -499,8 +499,8 @@ class Neural(object):
         size.append(self._Y.shape[1])
         assert size[-1] == self._Y.shape[1]
 
-        trainfDict = {'genetic':    nl.train.train_bfgs,   # TODO
-                      'derivative': nl.train.train_bfgs,
+        trainfDict = {'genetic':    nl.train.train_bfgs,   # TODO .
+                      'derivative': nl.train.train_bfgs,   # TODO .
                       'bfgs':       nl.train.train_bfgs,
                       'cg':         nl.train.train_cg,
                       'gd':         nl.train.train_gd,
@@ -725,7 +725,7 @@ if __name__ == '__main__':
     def sL2(y, Y):
         return str(np.round(L2(y, Y), 4))
 
-    if 1 or ALL:
+    if 0 or ALL:
         s = 'Example 1 __call__()'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
@@ -779,7 +779,7 @@ if __name__ == '__main__':
         plt.ylabel('y(x)')
         plt.show()
 
-    if 0 or ALL:
+    if 1 or ALL:
         s = 'Example 1 compact form'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 

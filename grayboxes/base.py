@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-07-25 DWW
+      2018-08-08 DWW
 
 Note on program arguments:
     - no arguments                 : program starts in default mode
@@ -40,6 +40,7 @@ from hashlib import sha224
 from re import sub
 from sys import version_info, exit, stdout, argv, modules
 from tempfile import gettempdir
+from pathlib import Path
 from time import time
 import numpy as np
 try:
@@ -385,10 +386,7 @@ class Base(object):
         if not value:
             self._path = gettempdir()
         else:
-            self._path = str(value)
-        self._path = self._path.replace('\\', '/')
-        if self._path[-1] != '/':
-            self._path += '/'
+            self._path = Path(str(value))
 
     @property
     def extension(self):
@@ -436,11 +434,11 @@ class Base(object):
             print('file:', file)
             file += '.log'
             try:
-                self._logFile = open(self.path + file, 'w')
+                self._logFile = open(self.path / file, 'w')
                 self.write('+++ log: ', "'", file, "'")
             except IOError:
                 self._logFile = None
-                print("??? self._logFile: '" + self.path + str(file) +
+                print("??? self._logFile: '" + self.path / str(file) +
                       "' not open for writing")
 
     @property
@@ -946,7 +944,7 @@ if __name__ == '__main__':
         foo.gui = False
 
         # assigns path to files
-        foo.path = 'c:/Temp/'
+        foo.path = 'c:/Temp'
 
         # creates objects
         f1 = Foo('follower 1')
