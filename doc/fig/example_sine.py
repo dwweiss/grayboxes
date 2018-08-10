@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-08 DWW
+      2018-08-10 DWW
 """
 
 from collections import OrderedDict
@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 from grayboxes.model import Model
 from grayboxes.white import White
 from grayboxes.lightgray import LightGray
-from grayboxes.mediumgray2 import MediumGray
+from grayboxes.mediumgray import MediumGray
 from grayboxes.darkgray import DarkGray
 from grayboxes.black import Black
 
@@ -36,6 +36,9 @@ def F_true(x):
     """
     True value of Y(X)
     """
+    
+    s = str()
+    
     return np.sin(2 * x[0]) + x[0] + 1
 
 
@@ -73,7 +76,7 @@ if __name__ == '__main__':
     models = [White(f), LightGray(f), MediumGray(f), DarkGray(f), Black()]
 
     opt = {'neurons': [4], 'regularization': 0.5,  'epochs': 1000,
-           'goal': 1e-5, 'methods': ['rprop', 'bfgs'], 'trials': 3,
+           'goal': 1e-5, 'methods': ['rprop', 'BFGS'], 'trials': 3,
            'c0': np.ones(3), 'local': 1, 'shuffle': True}
 
     results = OrderedDict()
@@ -83,6 +86,26 @@ if __name__ == '__main__':
         results[model] = (x, _y)
     results['train'] = (X, Y)
     results['true'] = (x, y_tru)
+
+    plt.title('Wrong white box')
+    plt.xlabel('$x\, /\, \pi$')
+    plt.ylabel('$y$')
+    for model, xy in results.items():
+        if isinstance(model, Model):
+            key = model.identifier
+        else:
+            key = model
+        if isinstance(model, White) or (isinstance(key, str) and
+                                        key in ('true')):
+            plt.plot(xy[0][:, 0]/np.pi, xy[1][:, 0], label=key, ls='-')
+    plt.axvline(x=xTrnRng[0]/np.pi, ls='--', lw=1.5, c='tab:gray')
+    plt.axvline(x=xTrnRng[1]/np.pi, ls='--', lw=1.5, c='tab:gray',
+                label=r'$\Delta x_{train}$')
+    plt.legend(bbox_to_anchor=(1.1, 1.05), loc='upper left')
+    plt.xlim([x/np.pi for x in xTstRng])
+    plt.ylim(-2, 5)
+    plt.grid()
+    plt.show()
 
     plt.title('Results with wrong white box')
     plt.xlabel('$x\, /\, \pi$')
