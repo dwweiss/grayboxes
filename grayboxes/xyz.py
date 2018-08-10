@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2017-11-21 DWW
+      2018-08-10 DWW
 """
 
 __all__ = ['xyz', 'xyzt']
@@ -220,10 +220,6 @@ class xyz(object):
 
     def __str__(self):
         return '(' + str(self.x) + ' ' + str(self.y) + ' ' + str(self.z) + ')'
-#    def __str__(self):
-#        s = str(OrderedDict(sorted(self.__dict__.items(),
-#                            key=lambda t: t[0])))[len('OrderedDict('):]
-#        return s.replace("('", "'").replace("',", "':").replace(")", "")
 
 
 class xyzt(xyz):
