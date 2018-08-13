@@ -2,7 +2,7 @@
 
 _grayboxes_ contributes to the creation and evaluation of [white](https://github.com/dwweiss/grayboxes/wiki/2.-White-box-model) box, [gray](https://github.com/dwweiss/grayboxes/wiki/3.-Gray-box-model) box and [black](https://github.com/dwweiss/grayboxes/wiki/4.-Black-box-model) box models of physical and chemical transport phenomena. Gray box models 
 
-- are hybrids of data-driven (black) and theory-driven (white) submodels
+- are hybrids of theory-driven (white) and data-driven (black) and submodels
 
 - can have adjustable [degrees of blackness](https://github.com/dwweiss/grayboxes/wiki/5.-Model-evaluation#52-degree-of-model-blackness) (the blacker, the more data driven) 
 
