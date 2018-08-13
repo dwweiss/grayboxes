@@ -25,7 +25,7 @@ _grayboxes_ contributes to the creation and evaluation of [white](https://github
 <p align="center"><img src="https://github.com/dwweiss/grayboxes/blob/master/doc/fig/boxTypeWithTheoretical.png"></p>
 -->
 
-<p align="center"><img src="https://github.com/dwweiss/grayboxes/blob/master/doc/fig/operationsOnBoxTypeModels_mediumGrayComposition.png"></p>
+<p align="center"><img src="https://github.com/dwweiss/grayboxes/blob/master/doc/fig/operationsOnBoxTypeModels_mediumGray_observation.png"></p>
 
 
 The theoretical submodels can be of different size and complexity. Package [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) supports the implementation of distributed white box models. Models based on [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) are compatible to the model [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model) of the _grayboxes_ library.
