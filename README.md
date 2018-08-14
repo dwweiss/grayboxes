@@ -8,22 +8,17 @@ _grayboxes_ contributes to the creation and evaluation of [white](https://github
 
 - are compatible to the [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model#61-operations) of the _grayboxes_ library:
 
-
      - Minimization / maximization     
      - Inverse problem solution
      - Sensitivity analysis 
 
-The theoretical submodels can be of different size and complexity. Package [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) supports the implementation of distributed white box models. Models based on [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) are compatible to the model [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model) of the _grayboxes_ library.
+Package [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) supports the implementation of distributed theoretical submodels. Models based on the [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) package are compatible to the model [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model) of the _grayboxes_ library.
 
 <!-- [[Link to grayboxes Wiki]](https://github.com/dwweiss/grayboxes/wiki) -->
 
 <br>
-<p align="center"><img src="https://github.com/dwweiss/grayboxes/blob/master/doc/fig/operationsOnBoxTypeModels_mediumGray_observation.png"></p>
-<br>
-
-
-
-<br>
+<p align="center"><img src="https://github.com/dwweiss/grayboxes/blob/master/doc/fig/operationsOnBoxTypeModels_mediumGray_observation.png">
+</p>
 
 ### Content
 
@@ -37,7 +32,6 @@ The theoretical submodels can be of different size and complexity. Package [_col
     doc
         Figures and manuals used in wiki
         
-
 ### Installation
 
     git clone https://github.com/dwweiss/grayboxes.git
