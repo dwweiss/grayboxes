@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-07-27 DWW
+      2018-08-16 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -292,7 +292,7 @@ class LightGray(Model):
                 if True:         # TODO replace 'if true' with 'if res.success'
                     results['weights'] = np.atleast_1d(res.x)
                     results['iterations'] = -1                   # TODO res.nit
-                    results['evaluations'] = res.nfev
+                    results['evaluations'] = -1                 # TODO res.nfev
                 else:
                     self.write('\n??? ', method, ': ', res.message)
         else:
@@ -444,102 +444,3 @@ class LightGray(Model):
         """
         args = self.weights if self.weights is not None else args
         return Model.predict(self, x, *args, **self.kwargsDel(kwargs, 'x'))
-
-
-# Examples ####################################################################
-
-if __name__ == '__main__':
-    ALL = 1
-
-    from grayboxes.plotarrays import plot_X_Y_Yref
-    from grayboxes.model import Model, grid, noise, rand
-    from grayboxes.white import White
-
-    def f(self, x, *args, **kwargs):
-        """
-        Theoretical submodel for single data point
-
-        Aargs:
-            x (1D array_like of float):
-                common input
-
-            args (argument list, optional):
-                tuning parameters as positional arguments
-
-            kwargs (dict, optional):
-                keyword arguments {str: float/int/str}
-        """
-        if x is None:
-            return np.ones(4)
-        tun = args if len(args) == 4 else np.ones(4)
-
-        y0 = tun[0] + tun[1] * np.sin(tun[2] * x[0]) + tun[3] * (x[1] - 1.5)**2
-        return [y0]
-
-    def f2(self, x, *args, **kwargs):
-        if x is None:
-            return np.ones(4)
-        tun = args if len(args) > 0 else np.ones(4)
-
-        y0 = tun[0] + tun[1] * np.sin(tun[2] * x[0]) + tun[3] * (x[1] - 1.5)**2
-        return [y0]
-
-    s = 'Creates exact output y_exa(X), add noise, target is Y(X)'
-    print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-    noise_abs = 0.25
-    noise_rel = 10e-2
-    X = grid(8, [-1, 8], [0, 3])
-    y_exa = White(f)(x=X, silent=True)
-    Y = noise(y_exa, absolute=noise_abs, relative=noise_rel)
-    plot_X_Y_Yref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
-
-    methods = [
-               # 'all',
-               # 'L-BFGS-B',
-               'BFGS',
-               'Powell',
-               # 'Nelder-Mead',
-               # 'differential_evolution',
-               # 'basinhopping',
-               'genetic',
-               ]
-
-    if 1 or ALL:
-        s = 'Tunes model, compare: y(X) vs y_exa(X)'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-        # train with 9 random initial tuning parameter sets, each of size 4
-        model = LightGray(f2)
-        tun0 = rand(9, *(4 * [[0, 2]]))
-
-        for _tun0 in [tun0, None]:
-            print('+++ tun0:', _tun0, '*'*40)
-
-            y = model(X=X, Y=Y, tun0=_tun0, x=X, methods=methods,
-                      detailed=True, nItMax=5000, bounds=4*[(0, 2)])
-
-            y = LightGray(f2)(X=X, Y=Y, x=X, methods=methods, nItMax=5000,
-                              tun0=_tun0, silent=not True, detailed=True)
-
-            plot_X_Y_Yref(X, y, y_exa, ['X', 'y', 'y_{exa}'])
-            if 1:
-                print('best:', model.best)
-                df = model.xy2frame()
-                print('=== df:\n', df)
-
-    if 0 or ALL:
-        def f2(self, x, *args, **kwargs):
-            if x is None:
-                return np.ones(4)
-            p = args if len(args) > 0 else np.ones(4)
-            y0 = p[0] + p[1] * np.sin(p[2] * x[0]) + p[3] * (x[1] - 1.5)**2
-            return [y0]
-
-        # train with single initial tuning parameter set, nTun from f2(None)
-        if 0:
-            y = LightGray(f2)(X=X, Y=Y, x=X, tun0=np.ones(4),
-                              silent=not True, methods=methods)
-
-        y = LightGray(f2)(X=X, Y=Y, x=X,
-                          silent=not True, methods='all')

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-08-17 DWW
 """
 
 import numpy as np
@@ -175,55 +175,3 @@ class Forward(Base):
 
     def plot(self):
         pass
-
-
-# Examples ####################################################################
-
-if __name__ == '__main__':
-    ALL = 1
-
-    from grayboxes.plotarrays import plotIsoMap
-    from grayboxes.model import grid, cross, rand
-    from grayboxes.lightgray import LightGray
-    from grayboxes.mediumgray import MediumGray
-    from grayboxes.darkgray import DarkGray
-    from grayboxes.black import Black
-
-    # function without access to 'self' attributes
-    def function(x, *args):
-        print('0')
-        return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
-
-    # method with access to 'self' attributes
-    def method(self, x, *args):
-        print('1')
-        return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
-
-    if 1 or ALL:
-        s = 'Forward() with demo function build-in into Model'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-        x, y = Forward(White(function))(x=grid(3, [0, 1], [0, 1]))
-        plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
-
-    if 0 or ALL:
-        s = 'Forward() with demo function build-in into Model'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-        x, y = Forward(White('demo'))(x=cross(5, [1, 2], [3, 4]))
-        plotIsoMap(x[:, 0], x[:, 1], y[:, 0], scatter=True)
-
-    if 0 or ALL:
-        s = "Forward, assign external function (without self-argument) to f"
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-        op = Forward(White(function))
-        _, y = op(x=rand(12, [2, 3], [3, 4]))
-        print('x:', op.model.x, '\ny1:', op.model.y)
-
-    if 0 or ALL:
-        s = "Forward, assign method (with 'self'-argument) to f"
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-        op = Forward(White(function))
-        _, y = op(x=[[2, 3], [3, 4], [4, 5], [5, 6], [6, 7]])
-        print('x:', op.model.x, '\ny1:', op.model.y)

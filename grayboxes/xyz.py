@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-15 DWW
+      2018-08-16 DWW
 """
 
 __all__ = ['xyz', 'xyzt']
@@ -34,10 +34,10 @@ class xyz(object):
     def __init__(self, x=0., y=0., z=0., point=None):
         """
         Args:
-            x, y, z (float, optional):
+            x, y, z (float, optional, default=0):
                 coordinates of point in 3D space [m]
 
-            point (xyz or xyzt, optional):
+            point (xyz or xyzt, optional, default=None):
                 'point' will be assigned to this object if 'point' is not None
         """
         if isinstance(point, xyz):
@@ -129,11 +129,14 @@ class xyz(object):
             XX, YY (float):
                 2D coordinates
 
-            XX0, YY0 (float, optional):
+            XX, YY (float):
+                2D coordinates
+
+            XX0, YY0 (float, optional, default=0):
                 2D coordinates of center of rotation
 
         Returns:
-            (float, float):
+            (2-tuple of float):
                 transformed 2D coordinates
         """
         xx = XX0 + (XX - XX0) * cos(phiRad) - (YY - YY0) * sin(phiRad)
@@ -230,13 +233,13 @@ class xyzt(xyz):
     def __init__(self, x=0., y=0., z=0., t=0., point=None):
         """
         Args:
-            x, y, z (float, optional):
+            x, y, z (float, optional, default=0):
                 coordinates of point in 3D space [m, m, m]
 
-            t (float, optional):
+            t (float, optional, default=0):
                 time [s]
 
-            point (xyz or xyzt, optional):
+            point (xyz or xyzt, optional, default=None):
                 'point' will be assigned to this object if 'point' is not None
         """
         if isinstance(point, xyzt):
@@ -260,6 +263,7 @@ class xyzt(xyz):
         Args:
             i (int):
                 index of component (0:x, 1:y, 2:z, 3:t)
+
         Returns:
             (float):
                 value of component

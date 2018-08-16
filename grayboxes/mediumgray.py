@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-08 DWW
+      2018-08-16 DWW
 """
 
 import numpy as np
@@ -231,104 +231,3 @@ class MediumGray(Model):
             self.y = self._black.predict(x=x, **opt)
 
         return self.y
-
-
-# Examples ####################################################################
-
-if __name__ == '__main__':
-    ALL = 0
-
-    from grayboxes.plotarrays import plot_X_Y_Yref
-    from grayboxes.model import Model, grid, noise, rand
-    from grayboxes.white import White
-    import matplotlib.pyplot as plt
-
-    nTun = 3
-
-    def f(self, x, *args, **kwargs):
-        """
-        Theoretical submodel for single data point
-
-        Aargs:
-            x (1D array_like of float):
-                common input
-
-            args (argument list, optional):
-                tuning parameters as positional arguments
-
-            kwargs (dict, optional):
-                keyword arguments {str: float/int/str}
-        """
-        if x is None:
-            return np.ones(nTun)
-        tun = args if len(args) >= nTun else np.ones(nTun)
-
-        y0 = tun[0] + tun[1] * np.sin(tun[2] * x[0]) + tun[1] * (x[1] - 1.5)**2
-        return [y0]
-
-    s = 'Creates exact output y_exa(X) and adds noise. Target is Y(X)'
-    print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-    noise_abs = 0.1
-    noise_rel = 5e-2
-    X = grid(10, [-1., 2.], [0., 3.])
-    y_exa = White(f)(x=X, silent=True)
-    Y = noise(y_exa, absolute=noise_abs, relative=noise_rel)
-    if 0:
-        plot_X_Y_Yref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
-
-    methods = [
-                # 'all',
-                # 'L-BFGS-B',
-                'BFGS',
-                # 'Powell',
-                # 'Nelder-Mead',
-                # 'differential_evolution',
-                # 'basinhopping',
-                # 'ga',
-                ]
-
-    if 1 or ALL:
-        s = 'Tunes model, compare: y(X) vs y_exa(X)'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-        # train with n1 random initial tuning parameter help, each of size n2
-        local, n1, n2 = 10, 1, 3
-        mgr, lgr = MediumGray(f), LightGray(f)
-        mgr.silent, lgr.silent = True, True
-        tun0 = rand(n1, *(n2 * [[0., 2.]]))
-
-        L2 = np.inf
-        yMgr, tunMgr = None, None
-        for local in range(1, 3):
-            for neurons in range(2, 4):
-                y = mgr(X=X, Y=Y, x=X, methods=methods, tun0=tun0, nItMax=5000,
-                        bounds=nTun*[(-1., 3.)], neurons=[neurons], trials=3,
-                        local=local)
-                print('L2(neurons:', str(neurons)+'): ', mgr.best['L2'],
-                      end='')
-                if L2 > mgr.best['L2']:
-                    L2 = mgr.best['L2']
-                    print('  *** better', end='')
-                    yMgr, tunMgr = y, mgr.weights
-                print()
-        assert yMgr is not None
-
-        yLgr = lgr(X=X, Y=Y, x=X, methods=methods, nItMax=5000, tun0=tun0)
-        print('lgr.w:', lgr.weights)
-
-        if mgr.weights is None:
-            xTun = mgr._black.predict(x=X)
-            for i in range(xTun.shape[1]):
-                plt.plot(xTun[:, i], ls='-',
-                         label='$x^{loc}_{tun,'+str(i)+'}$')
-        for i in range(len(lgr.weights)):
-            plt.axhline(lgr.weights[i], ls='--',
-                        label='$x^{lgr}_{tun,'+str(i)+'}$')
-        # plt.ylim(max(0, 1.05*min(lgr.weights)),
-        #          min(2, 0.95*max(lgr.weights)))
-        plt.legend(bbox_to_anchor=(1.1, 1.05))
-        plt.show()
-
-        plot_X_Y_Yref(X, yLgr, y_exa, ['X', 'y_{lgr}', 'y_{exa}'])
-        plot_X_Y_Yref(X, yMgr, y_exa, ['X', 'y_{mgr}', 'y_{exa}'])

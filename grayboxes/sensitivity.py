@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-08-16 DWW
 """
 
 import numpy as np
@@ -188,36 +188,3 @@ class Sensitivity(Forward):
         plotBarArrays(yArrays=self.dy_dx.T, legendPosition=(1.1, 1.03),
                       title=r'Gradient $d y_k \ / \ d x_j$', grid=True,
                       figsize=(6, 4))
-
-
-# Examples ####################################################################
-
-if __name__ == '__main__':
-    ALL = 1
-
-    from grayboxes.model import Model, cross
-    from grayboxes.white import White
-
-    def f(self, x, *args, **kwargs):
-        return np.sin(x[0]) + (x[1] - 1)**2
-
-    if 0 or ALL:
-        s = 'Sensitivity with method f(self, x)'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-        xRef, dy_dx = Sensitivity(White(f))(x=cross(3, [2, 3], [3, 4]))
-        if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
-            dy_dx = dy_dx.tolist()
-        print('dy_dx:', dy_dx)
-        print('x_ref:', xRef)
-
-    if 1 or ALL:
-        s = 'Sensitivity with demo function'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-        op = Sensitivity(White('demo'))
-        xRef, dy_dx = op(x=cross(3, [2, 3], [3, 4], [4, 5]))
-        if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
-            dy_dx = dy_dx.tolist()
-        print('dy_dx:', dy_dx)
-        print('x_ref:', xRef)

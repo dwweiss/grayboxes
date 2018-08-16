@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-08-16 DWW
 """
 
 from grayboxes.minimum import Minimum
@@ -45,27 +45,3 @@ class Maximum(Minimum):
                 optimization objective to be maximized
         """
         return (-1) * Minimum.objective(self, x, **kwargs)
-
-
-# Examples ####################################################################
-
-if __name__ == '__main__':
-    ALL = 1
-
-    import numpy as np
-    from grayboxes.model import rand
-    from grayboxes.white import White
-
-    # user defined method with theoretical submodel
-    def f(self, x, *args):
-        c0, c1, c2 = args if len(args) > 0 else 1, 1, 1
-        return -(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)
-
-    if 0 or ALL:
-        s = 'Maximum, assigns series of initial x'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-        op = Maximum(White(f))
-        x, y = op(x=rand(10, [-5, 5], [-7, 7]), optimizer='nelder-mead')
-        op.plot()
-        print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)

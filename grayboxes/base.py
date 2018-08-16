@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-15 DWW
+      2018-08-16 DWW
 
 Note on program arguments:
     - no arguments                 : program starts in default mode
@@ -28,9 +28,6 @@ Note on program arguments:
     - two arguments '-s -g'        : graphic mode, no console output
     - one argument '-g'            : graphic mode with information to console
 
-
-Examples:
-    see code below line with: "if __name__ == '__main__':"
 """
 
 from io import IOBase

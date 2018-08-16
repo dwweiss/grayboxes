@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-21 DWW
+      2018-08-16 DWW
 """
 
 from time import time
@@ -189,78 +189,3 @@ class Loop(Base):
             self.execTimeStart = time()
         self.write('=== Post-processing')
         return res
-
-
-# Examples ####################################################################
-
-if __name__ == '__main__':
-    ALL = 1
-
-    import matplotlib.pyplot as plt
-
-    class HeatConduction(Loop):
-        def __init__(self, identifier='test'):
-            super().__init__(identifier)
-            self.x = None
-            self.u = None
-            self.uPrev = None
-            self.a = None
-            self.source = 0.0
-            plt.clf()
-
-        def initialCondition(self):
-            super().initialCondition()
-            self.x = np.linspace(0., 1., num=20)
-            self.u = np.sin(self.x * np.pi * 2)
-            self.u[0], self.u[-1] = (0., 0.)
-            self.uPrev = np.copy(self.u)
-            self.a = np.linspace(1, 1, num=len(self.x))
-            plt.plot(self.x, self.u, linestyle='--', label='initial')
-
-        def updateTransient(self):
-            super().updateTransient()
-            self.uPrev, self.u = self.u, self.uPrev
-
-        def updateNonlinear(self):
-            super().updateNonlinear()
-            self.a = 1 + 0 * self.u
-
-        def task(self):
-            super().task()
-
-            n = self.x.size - 1
-            for i in range(1, n):
-                d2udx2 = (self.uPrev[i+1] - 2 * self.uPrev[i] +
-                          self.uPrev[i-1]) / (self.x[1] - self.x[0])**2
-                rhs = self.a[i] * d2udx2 + self.source
-                self.u[i] = self.uPrev[i] + self.dt * rhs
-
-            plt.plot(self.x, self.u, label=str(round(self.t, 4)))
-            return 0.0
-
-        def post(self):
-            super().post()
-
-            plt.legend(bbox_to_anchor=(1.1, 1.02), loc='upper left')
-            plt.grid()
-            plt.show()
-
-    foo = HeatConduction()
-    foo.setFollower([Base('follower 1'), Base('follower 2')])
-    foo.silent = False
-
-    if 0 or ALL:
-        foo.setTransient(tEnd=0, n=8)
-        foo.setNonLinear(nItMax=5, nItMin=3, epsilon=0.0)
-
-        print('foo.isTransient:', foo.isTransient())
-        print('foo.isNonLinear:', foo.isNonLinear())
-        foo()
-
-    if 0 or ALL:
-        foo.setTransient(tEnd=0.1, n=8)
-        foo.setNonLinear(nItMax=0, nItMin=0, epsilon=0.0)
-
-        print('foo.isTransient:', foo.isTransient())
-        print('foo.isNonLinear:', foo.isNonLinear())
-        foo()
