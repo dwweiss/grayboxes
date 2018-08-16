@@ -27,7 +27,7 @@ Package [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) supports th
         Optimization and inverse problem solution with white box, gray box and black box models
 
     tests
-        Selected test cases
+        Module tests
 
     doc
         Figures and manuals used in wiki
@@ -42,4 +42,4 @@ Package [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) supports th
 - Modules _lightgray_ and _minimum_ are dependent on package _modestga_ [[MGA18]](https://github.com/dwweiss/grayboxes/wiki/References#mga18)
 - Module _neural_ is dependent on package _neurolab_ [[NLB15]](https://github.com/dwweiss/grayboxes/wiki/References#nlb15)
 
-These dependencies are automatically satisfied if _grayboxes_ is installed with the commands in section _Installation_  
+These dependencies are satisfied if _grayboxes_ is installed with the commands in section _Installation_  
