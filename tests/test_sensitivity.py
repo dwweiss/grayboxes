@@ -17,15 +17,22 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-15 DWW
+      2018-08-16 DWW
 """
 
 import unittest	
 import sys
 import os
+import numpy as np
 
 sys.path.append(os.path.abspath('..'))
-from grayboxes.xyz import xyz, xyzt
+from grayboxes.sensitivity import Sensitivity
+from grayboxes.model import cross
+from grayboxes.white import White
+
+
+def f(self, x, *args, **kwargs):
+    return np.sin(x[0]) + (x[1] - 1)**2
 
 
 class TestUM(unittest.TestCase):
@@ -35,41 +42,33 @@ class TestUM(unittest.TestCase):
     def tearDown(self):
         pass
  
-    def test1(self):
-        P0 = xyz(2.2, -1)
-        print('P0:', P0)
-        P1 = xyz(x=1, z=4)
-        print('P1:', P1)
-        P2 = xyz(point=P1)
-        print('P2:', P2)
-        P3 = xyz(point=[])                        # invalid
-        print('P3:', P3)
+        self.assertTrue(True)
 
-        print('P0.at(1)=P0.y:', P0.at(1))
-        print('P0, P1:', P0, P1)
-        print('P0 + 1:', P0 + 1)
-        print('P0 + P1:', P0 + P1)
-        print('P0 - 1:', P0 - 1)
-        print('P0 - P1:', P0 - P1)
-        print('P0 * 2:', P0 * 2)
-        print('P0 * (1/2.):', P0 * (1/2.))
-        print('P0 * P1:', P0 * P1)
+    def test1(self):
+        s = 'Sensitivity with method f(self, x)'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+
+        xRef, dy_dx = Sensitivity(White(f))(x=cross(3, [2, 3], [3, 4]))
+        if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
+            dy_dx = dy_dx.tolist()
+        print('dy_dx:', dy_dx)
+        print('x_ref:', xRef)
 
         self.assertTrue(True)
 
     def test2(self):
-        P1 = xyz(x=1, z=4)
-        P4 = xyzt(2.2, -1, t=7)
-        P5 = xyzt(point=P1)
-        P6 = xyzt(point=P4)
-        P7 = xyzt(point={'a': 1, 'b': 2})         # invalid
-        print('P4:', P4)
-        print('P5:', P5)
-        print('P6:', P6)
-        print('P7:', P7)
+        s = 'Sensitivity with demo function'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        self.assertTrue(P5 == P1)
-        self.assertFalse(P5 != P1)
+        op = Sensitivity(White('demo'))
+        xRef, dy_dx = op(x=cross(3, [2, 3], [3, 4], [4, 5]))
+        if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
+            dy_dx = dy_dx.tolist()
+        print('dy_dx:', dy_dx)
+        print('x_ref:', xRef)
+
+        self.assertTrue(True)
+
 
 if __name__ == '__main__':
     unittest.main()

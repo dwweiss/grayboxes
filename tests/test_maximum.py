@@ -17,15 +17,24 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-15 DWW
+      2018-08-16 DWW
 """
 
 import unittest	
 import sys
 import os
+import numpy as np
 
 sys.path.append(os.path.abspath('..'))
-from grayboxes.xyz import xyz, xyzt
+from grayboxes.maximum import Maximum
+from grayboxes.model import rand
+from grayboxes.white import White
+
+
+# user defined method with theoretical submodel
+def f(self, x, *args):
+    c0, c1, c2 = args if len(args) > 0 else 1, 1, 1
+    return -(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)
 
 
 class TestUM(unittest.TestCase):
@@ -36,40 +45,16 @@ class TestUM(unittest.TestCase):
         pass
  
     def test1(self):
-        P0 = xyz(2.2, -1)
-        print('P0:', P0)
-        P1 = xyz(x=1, z=4)
-        print('P1:', P1)
-        P2 = xyz(point=P1)
-        print('P2:', P2)
-        P3 = xyz(point=[])                        # invalid
-        print('P3:', P3)
+        s = 'Maximum, assigns series of initial x'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        print('P0.at(1)=P0.y:', P0.at(1))
-        print('P0, P1:', P0, P1)
-        print('P0 + 1:', P0 + 1)
-        print('P0 + P1:', P0 + P1)
-        print('P0 - 1:', P0 - 1)
-        print('P0 - P1:', P0 - P1)
-        print('P0 * 2:', P0 * 2)
-        print('P0 * (1/2.):', P0 * (1/2.))
-        print('P0 * P1:', P0 * P1)
+        op = Maximum(White(f))
+        x, y = op(x=rand(10, [-5, 5], [-7, 7]), optimizer='nelder-mead')
+        op.plot()
+        print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)
 
         self.assertTrue(True)
 
-    def test2(self):
-        P1 = xyz(x=1, z=4)
-        P4 = xyzt(2.2, -1, t=7)
-        P5 = xyzt(point=P1)
-        P6 = xyzt(point=P4)
-        P7 = xyzt(point={'a': 1, 'b': 2})         # invalid
-        print('P4:', P4)
-        print('P5:', P5)
-        print('P6:', P6)
-        print('P7:', P7)
-
-        self.assertTrue(P5 == P1)
-        self.assertFalse(P5 != P1)
 
 if __name__ == '__main__':
     unittest.main()
