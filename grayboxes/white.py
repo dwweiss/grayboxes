@@ -17,13 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
-from grayboxes.model import Model
+from grayboxes.boxmodel import BoxModel
 
 
-class White(Model):
+class White(BoxModel):
     """
     White box model y=f(x)
     """

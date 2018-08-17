@@ -25,7 +25,7 @@ from grayboxes.minimum import Minimum
 
 class Maximum(Minimum):
     """
-    Maximizes objective()
+    Maximizes objective function
     """
 
     def objective(self, x, **kwargs):

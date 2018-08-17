@@ -19,7 +19,7 @@
   Version:
       2018-08-16 DWW
 
-Note on program arguments:
+  Note on program arguments:
     - no arguments                 : program starts in default mode
     - two arguments: 'path inputFile'
                                    : command line mode with password protection
@@ -590,10 +590,10 @@ class Base(object):
     def isCooperator(self, other):
         return other._leader != self and other in self._followers
 
-    def cleanString(self, s):
+    def cleanString(self, s: str) -> str:
         return sub('[ \t\n\v\f\r]', '', s)
 
-    def reverseString(self, s):
+    def reverseString(self, s: str) -> str:
         rs = list(s)
         rs.reverse()
         return ''.join(rs)

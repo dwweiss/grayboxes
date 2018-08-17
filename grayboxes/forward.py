@@ -22,7 +22,7 @@
 
 import numpy as np
 from grayboxes.base import Base
-from grayboxes.model import Model
+from grayboxes.boxmodel import BoxModel
 from grayboxes.white import White
 
 
@@ -61,7 +61,7 @@ class Forward(Base):
     def __init__(self, model, identifier='Forward'):
         """
         Args:
-            model (Model_like):
+            model (BoxModel_like):
                 box type model
 
             identifier (str, optional):
@@ -74,7 +74,7 @@ class Forward(Base):
     def model(self):
         """
         Returns:
-            (Model_like):
+            (BoxModel_like):
                 box type model
         """
         return self._model
@@ -85,12 +85,12 @@ class Forward(Base):
         Sets box type model and assigns Forward's logFile
 
         Args:
-            value (Model_like):
+            value (BoxModel_like):
                 box type model
         """
         self._model = value
         if self._model is not None:
-            assert issubclass(type(value), Model), \
+            assert issubclass(type(value), BoxModel), \
                 'invalid model type: ' + str(type(value))
             self._model.logFile = self.logFile
 

@@ -103,11 +103,12 @@ class Neural(object):
               L2_norm = best['L2']  # or: net.best['L2']
 
     Major methods and attributes (return type in the comment):
-        - y = Neural()(X=None, Y=None, x=None, **kwargs) #y.shape:(nPoint,nOut)
-        - best = self.train(X, Y,**kwargs)                      # see self.best
-        - y = self.predict(x, **kwargs)               # y.shape: (nPoint, nOut)
-        - self.ready                                                     # bool
-        - self.best                                  # dict{str: float/str/int}
+        - y = Neural()(X=None, Y=None, x=None, **kwargs) 
+                                                  #y.shape:(nPoint,nOut)
+        - best = self.train(X, Y,**kwargs)               # see self.best
+        - y = self.predict(x, **kwargs)        # y.shape: (nPoint, nOut)
+        - self.ready                                              # bool
+        - self.best                           # dict{str: float/str/int}
         - self.plot()
 
     References:
@@ -115,8 +116,8 @@ class Neural(object):
               'rprop': resilient backpropagation (NO REGULARIZATION)
                        wikipedia: 'Rprop'
               'bfgs':  Broyden–Fletcher–Goldfarb–Shanno algorithm,
-                       see: scipy.optimize.fmin_bfgs()
-                       wikipedia: 'Broyden-Fletcher-Goldfarb-Shanno_algorithm'
+                       see: scipy.optimize.fmin_bfgs() and wikipedia: 
+                           'Broyden-Fletcher-Goldfarb-Shanno_algorithm'
         - http://neupy.com/docs/tutorials.html#tutorials
     """
 
@@ -160,17 +161,14 @@ class Neural(object):
         - Predicts y for input x if x is not None and self.ready is True
 
         Args:
-            X (2D or 1D array_like of float, optional):
+            X (2D or 1D array_like of float, optional, default: self.X):
                 training input, shape: (nPoint, nInp) or shape: (nPoint,)
-                default: self.X
-
-            Y (2D or 1D array_like of float, optional):
+                
+            Y (2D or 1D array_like of float, optional, default: self.Y):
                 training target, shape: (nPoint, nOut) or shape: (nPoint,)
-                default: self.Y
 
-            x (2D or 1D array_like of float, optional):
+            x (2D or 1D array_like of float, optional, default: self.x):
                 prediction input, shape: (nPoint, nInp) or shape: (nInp,)
-                default: self.x
 
             kwargs (dict, optional):
                 keyword arguments, see: train() and predict()
@@ -181,11 +179,11 @@ class Neural(object):
             or
             (dict {str: float/str/int}):
                 result of best training trial if X and Y are not None
-                    'method'  (str): best method
-                    'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
-                    'abs'   (float): max{|net(x) - Y|} of best training
-                    'iAbs'    (int): index of Y where absolute error is maximum
-                    'epochs'  (int): number of epochs of best training
+                    'method' (str): best method
+                    'L2'   (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
+                    'abs'  (float): max{|net(x) - Y|} of best training
+                    'iAbs'   (int): index of Y where absolute error is maximum
+                    'epochs' (int): number of epochs of best training
             or
             (None):
                 if (X, Y and x are None) or not self.ready

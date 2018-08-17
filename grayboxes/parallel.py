@@ -5,17 +5,19 @@
   under the terms of the GNU Lesser General Public License as
   published by the Free Software Foundation; either version 3.0 of
   the License, or (at your option) any later version.
+
   This software is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   Lesser General Public License for more details.
+
   You should have received a copy of the GNU Lesser General Public
   License along with this software; if not, write to the Free
   Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
 __all__ = ['mpi', 'communicator', 'rank', 'predict_scatter', 'split', 'merge']
@@ -36,17 +38,20 @@ if os.name == 'posix':
 
 
 """
-Note:
-    Execute python script parallel:
-        mpiexec -n 4 python3 foo.py     # ==> 4 processes
+    Tools for splitting & merging data sets, and execution of task on 
+    multiple cores employing MPI (message passing interface)
 
-References:
-    Example for Spawn():
-        https://gist.github.com/donkirkby/eec37a7cf25f89c6f259
-
-    Example of MpiPoolExecutor
-        http://mpi4py.scipy.org/docs/usrman/mpi4py.futures.html
-        http://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html
+    Note:
+        Execute python script parallel:
+            mpiexec -n 4 python3 foo.py     # ==> 4 processes
+    
+    References:
+        Example for Spawn():
+            https://gist.github.com/donkirkby/eec37a7cf25f89c6f259
+    
+        Example of MpiPoolExecutor
+            http://mpi4py.scipy.org/docs/usrman/mpi4py.futures.html
+            http://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html
 """
 
 
@@ -79,7 +84,7 @@ def communicator():
 
 def rank():
     """
-    Gets process rank from communicator of message passing interface (MPI)
+    Gets process rank from communicator of MPI
 
     Returns:
         (int or None):
@@ -93,7 +98,8 @@ def rank():
 
 def predict_scatter(f, x, *args, **kwargs):
     """
-    Parallelizes prediction of model y = f(x) employing scatter() and gather()
+    Parallelizes prediction of model y = f(x) employing scatter() and 
+    gather()
 
     Args:
         f (function):
@@ -134,7 +140,7 @@ def predict_scatter(f, x, *args, **kwargs):
         print('+++ predict_scatter(), rank: ', rank(),
               ' (nProc: ', nProc, ', nCore: ', nCore, ')', sep='')
 
-    # splits single 2D input array to groups of 2D inputs (to array of 2D arr.)
+    # splits single 2D input array to a list of 2D sub-arrays
     if rank() == 0:
         xAll = split(x, nProc)
     else:
@@ -202,7 +208,8 @@ def predict_scatter(f, x, *args, **kwargs):
 #    if not silent:
 #        print('+++ predict_subprocess(), nCore:', nCore)
 #
-#    # splits 2D input to 3D input, distributes 2D segments to multiple cores
+#    # splits 2D input array to list of 2D sub-arrays, 
+#    # distributes 2D segments to multiple cores
 #    xAll = split(x, nProc)
 #    print('xAll:', xAll.shape)
 #
@@ -239,7 +246,8 @@ def split(x2D, nProc):
     Returns:
         (3D array of float):
             array of 2D arrays, shape: (nProc, nPointPerProc, nInp)
-            or np.atleast_3d(np.inf) if x2D is None
+            or 
+            np.atleast_3d(np.inf) if x2D is None
     """
     if x2D is None:
         return np.atleast_3d(np.inf)
@@ -264,7 +272,8 @@ def merge(y3D):
     Returns:
         (2D array of float):
             array of output, shape: (nPoint, nOut)
-            or np.atleast_2d(np.inf) if y3D is None
+            or 
+            np.atleast_2d(np.inf) if y3D is None
     """
     if y3D is None:
         return np.atleast_2d(np.inf)
@@ -295,7 +304,8 @@ def x3d_to_str(data, indent='    '):
 
     Returns:
         (str):
-           string representation of segments of processes & of filled up values
+           string representation of segments of processes and  of filled 
+           up values
     """
     assert data is not None
 

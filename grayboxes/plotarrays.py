@@ -17,8 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
 __all__ = ['plot1', 'plotCurves', 'plotSurface', 'plotWireframe',
@@ -34,7 +33,7 @@ from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as AA
 
 
-def isIrregularMesh(x, y, z):
+def isIrregularMesh(x, y, z) -> bool:
     """
     Checks if all three arrays are 1D and of the same length
 

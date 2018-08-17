@@ -17,15 +17,15 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
 import numpy as np
 from grayboxes.black import Black
-from grayboxes.model import Model
+from grayboxes.boxmodel import BoxModel
 
 
-class DarkGray(Model):
+class DarkGray(BoxModel):
     """
     Dark gray box model
 
@@ -73,20 +73,20 @@ class DarkGray(Model):
 
     def train(self, X, Y, **kwargs):
         """
-        see Model.train()
+        see BoxModel.train()
         """
         if X is None or Y is None:
             return None
 
         self.X, self.Y = X, Y
-        y = Model.predict(self, self.X, **self.kwargsDel(kwargs, 'x'))
+        y = BoxModel.predict(self, self.X, **self.kwargsDel(kwargs, 'x'))
         self.best = self._black.train(np.c_[self.X, y], y-self.Y, **kwargs)
 
         return self.best
 
     def predict(self, x, **kwargs):
         """
-        Executes Model, stores input x as self.x and output as self.y
+        Executes box model, stores input x as self.x and output as self.y
 
         Args:
             x (2D or 1D array_like of float):
@@ -104,7 +104,7 @@ class DarkGray(Model):
         assert self._black is not None and self._black.ready
 
         self.x = x
-        self._y = Model.predict(self, x, **kwargs)
+        self._y = BoxModel.predict(self, x, **kwargs)
         self._y -= self._black.predict(np.c_[x, self._y], **kwargs)
 
         return self.y

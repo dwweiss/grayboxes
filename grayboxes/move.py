@@ -29,30 +29,30 @@ from grayboxes.xyz import xyz, xyzt
 
 class Move(Loop):
     """
-    Moves an object along a trajectory and provides its velocity, position and
-    rotation in 3D space as a function of time.
+    Moves an object along a trajectory and provides its velocity, 
+    position and rotation in 3D space as a function of time.
 
     The object travels along a given trajectory defined by:
         a) polygons defined by way-points (x,y,z) and constant speed or
         b) polygons defined by way-points (x,y,z,t) for every time step
 
-    Velocity, position at a given time are defined by an array of waypoints.
-    The initial position of the object corresponds to the position of the first
-    way-point. The initial velocity is zero.
+    Velocity, position at a given time are defined by an array of 
+    waypoints. The initial position of the object corresponds to the 
+    position of the first way-point. The initial velocity is zero.
 
-    When the last way-point is reached, the position of the object becomes
-    static and its velocity is zero. When a object is positioned between two
-    waypoints, it moves with constant velocity between them. To keep an object
-    at a certain position, two waypoints with the same position but different
-    times should be defined.
+    When the last way-point is reached, the position of the object 
+    becomes static and its velocity is zero. When a object is positioned 
+    between two waypoints, it moves with constant velocity between them. 
+    To keep an object at a certain position, two waypoints with the same 
+    position but different times should be defined.
     """
 
     def __init__(self, identifier='Move'):
         super().__init__(identifier=identifier)
 
-        self._wayPoints = None          # array of wayPoints [m, m, m, s]
+        self._wayPoints = None          # array of wayPoints [m,m,m,s]
         self._rotations = None          # rotations in 3D space [rad]
-        self._position = xyz()          # object position in 3D space [m]
+        self._position = xyz()          # object position in 3D [m]
         self._velocity = xyz()          # velocity in 3D space [m/s]
         self._rotation = xyz()          # rotation in 3D space [rad]
         self._iLastWayPoint = 0         # index of last passed way point
@@ -67,8 +67,8 @@ class Move(Loop):
                 way points in 3D space [m, m, m] or [m, m, m, s]
 
             rot (array_like of xyz):
-                rotation of waypoints in 3D space [rad], size can be 0, 1, or
-                length of wayPoints
+                rotation of waypoints in 3D space [rad], size can be 0, 
+                1, or length of wayPoints
 
             speed (float, optional):
                 constant magnitude of object velocity [m/s]
@@ -128,7 +128,8 @@ class Move(Loop):
 
         Returns:
             (int):
-                Waypoint index ahead of current position. Index is greater 0
+                Waypoint index ahead of current object position. 
+                Index is greater 0
         """
         if t is None:
             t = self.t
@@ -214,9 +215,9 @@ class Move(Loop):
                 time [s]
 
         Returns:
-            Value of self._position if t is None and if self._position is not
-            None. Otherwise the actual position is calculated as function of
-            time [m, m, m]
+            Value of self._position if t is None and if self._position 
+            is not None. Otherwise the actual position is calculated as 
+            function of time [m, m, m]
 
         Note:
             The calculated position is NOT stored as 'self._position'
@@ -247,9 +248,9 @@ class Move(Loop):
                 time [s]
 
         Returns:
-            Value of self._rotations if t is None and if self._rotations is not
-            None. Otherwise the actual rotation is calculated as function of
-            time [rad]
+            Value of self._rotations if t is None and if self._rotations 
+            is not None. Otherwise the actual rotation is calculated as 
+            function of time [rad]
 
         Note:
             The calculated rotation is NOT stored as 'self._rotation'
@@ -274,14 +275,14 @@ class Move(Loop):
     def way(self, t=None):
         """
         Args:
-            t (float, optional):
+            t (float, optional, default: None):
                 time [s]
 
         Returns:
             (float):
-                Way from start position to stop position defined by the given
-                time [m]. If t is None, the length of the full trajectory is
-                returned
+                Way from start position to stop position defined by the 
+                given time [m]. If t is None, the length of the full 
+                trajectory is returned
         """
         if t is None:
             # way from start to stop point
@@ -290,7 +291,7 @@ class Move(Loop):
                 w += (self._wayPoints[i] - self._wayPoints[i-1]).magnitude()
             return w
 
-        # 'dP' is vector from point behind current position to current position
+        # 'dP' is vector from point behind current pos. to current pos.
         iAhead = self.iWayPointAhead(t)
         DP = self._wayPoints[iAhead] - self._wayPoints[iAhead-1]
         dt = t - self._wayPoints[iAhead-1].t
@@ -311,14 +312,14 @@ class Move(Loop):
     def velocity(self, t=None):
         """
         Args:
-            t (float, optional):
+            t (float, optional, default: None):
                 time [s]
 
         Returns:
             (xyz):
-                Value of self._velocity if 't' is None and self._velocity is
-                not None. Otherwise the actual velocity is calculated as
-                function of time [m/s]
+                Value of self._velocity if t is None and self._velocity 
+                is not None. Otherwise the actual velocity is calculated 
+                as function of time [m/s]
 
         Note:
             The calculated velocity is NOT stored as 'self._velocity'

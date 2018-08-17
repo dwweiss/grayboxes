@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
 from time import time
@@ -28,7 +28,8 @@ from grayboxes.base import Base
 class Loop(Base):
     """
     Controls transient and iterative loops. Instances of this class are
-    high-level objects controlling execution of follower and cooperator objects
+    high-level objects controlling execution of follower and cooperator 
+    objects
     """
 
     def __init__(self, identifier='Loop'):

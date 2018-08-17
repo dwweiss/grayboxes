@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
 import numpy as np
@@ -45,7 +45,7 @@ class Sensitivity(Forward):
     def __init__(self, model, identifier='Sensitivity'):
         """
         Args:
-            model (Model_like):
+            model (BoxModel_like):
                 box type model
 
             identifier (str, optional):
@@ -73,7 +73,7 @@ class Sensitivity(Forward):
                     default: self._Y
 
                 x (2D array_like of float):
-                    cross-type input points, see Model.cross()
+                    cross-type input points, see BoxModel.cross()
                     default: self._x
 
         Returns:

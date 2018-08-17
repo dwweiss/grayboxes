@@ -17,15 +17,15 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-15 DWW
+      2018-08-17 DWW
 """
 
 import numpy as np
-from grayboxes.model import Model
+from grayboxes.boxmodel import BoxModel
 from grayboxes.neural import Neural
 
 
-class Black(Model):
+class Black(BoxModel):
     """
     Black box model y = F^*(x, w), w = train(X, Y, f(x))
 
@@ -95,7 +95,7 @@ class Black(Model):
                 ... additional training options of network, see Neural.train()
 
         Returns:
-            see Model.train()
+            see BoxModel.train()
         """
         if X is None or Y is None:
             return None
@@ -143,7 +143,7 @@ class Black(Model):
 
     def predict(self, x, **kwargs):
         """
-        Executes Model, stores input x as self.x and output as self.y
+        Executes box model, stores input x as self.x and output as self.y
 
         Args:
             x (2D or 1D array_like of float):

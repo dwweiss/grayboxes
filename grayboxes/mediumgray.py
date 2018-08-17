@@ -17,21 +17,22 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
 import numpy as np
-from grayboxes.model import Model
+from grayboxes.boxmodel import BoxModel
 from grayboxes.lightgray import LightGray
 from grayboxes.black import Black
 from grayboxes.neural import Neural
 
 
-class MediumGray(Model):
+class MediumGray(BoxModel):
     """
-    Medium gray box model comprising light gray box and black box submodels
+    Medium gray box model comprising light gray and black box submodels
 
-    Training input self.X (process input) is union of common and unique input:
+    Training input self.X (process input) is union of common and unique 
+    input:
         X = X_com + X_unq
     """
 
@@ -42,10 +43,10 @@ class MediumGray(Model):
                 theoretical submodel f(self, x, *args, **kwargs) or
                 f(x, *args, **kwargs) for single data point
 
-                - argument 'x' to function f() corresponds to test input x_prc
-                - model input is x_prc as the union of the common part of 'x'
-                  and x_unq
-                - in f() the subset x_unq of is unused
+                - argument 'x' to function f() corresponds to test input 
+                  x_prc
+                - model input is x_prc (x_prc = x_com + x_unq)
+                - in f() the subset x_unq of x_prc is unused
 
             identifier (str, optional):
                 object identifier
@@ -69,8 +70,8 @@ class MediumGray(Model):
 
     def train(self, X, Y, **kwargs):
         """
-        Trains model, stores X and X as self.X and self.Y, and stores result of
-        best training trial as self.best
+        Trains model, stores X and X as self.X and self.Y, and stores 
+        result of best training trial as self.best
 
         Args:
             X (2D or 1D array_like of float):
@@ -88,7 +89,7 @@ class MediumGray(Model):
                 local (int or None):
                     size of subset sizes if local training type of medium gray
                         box model
-                    if 'local' is None, FalsE or 0, a single global network is
+                    if 'local' is None, False or 0, a single global network is
                         trained without local tuning and data collection
 
                 methods (str or list of str):
@@ -99,20 +100,22 @@ class MediumGray(Model):
                     default: 'BFGS'
 
                 shuffle (bool):
-                    if 'local' is geater 1 and 'shuffled' is True, then x- and
-                    y-datasets are shuffled before split to local datasets
+                    if 'local' is geater 1 and 'shuffled' is True, then 
+                    x- and y-datasets are shuffled before split to local 
+                    datasets
                     default: True
 
                 tun0 (2D or 1D array_like of float):
-                    sequence of initial guess of the tuning parameter set,
+                    sequence of initial guess of tuning parameter set.
                     If missing, then initial values will be all 1.0
-                    tun0.shape[1] is the number of tuning parameters if 2D arr.
+                    tun0.shape[1] is the number of tuning parameters 
+                        if tun0 is an 2D array
                     see LightGray.train()
 
                 ... network options, see class Neural
 
         Returns:
-            see Model.train()
+            see BoxModel.train()
 
         Example:
             Method f(self, x) or function f(x) is assigned to self.f, example:
@@ -158,7 +161,7 @@ class MediumGray(Model):
             xyRnd2d = np.c_[self.X, self.Y]
             if shuffle:
                 np.random.shuffle(xyRnd2d)
-            xyAll3d = np.array_split(xyRnd2d, nSub)          # list of 2d array
+            xyAll3d = np.array_split(xyRnd2d, nSub)   # list of 2d array
 
             xTunAll2d = []
             nInp = self.X.shape[1]
@@ -178,10 +181,11 @@ class MediumGray(Model):
                                         neurons=neurons, methods=methods)
                 self.weights = None
             else:
-                self.weights = xTunAll2d[0]        # local==X.shape[0]: const w
+                # constant weights if local == X.shape[0], (1 group)
+                self.weights = xTunAll2d[0]
 
-            # TODO remove next line after test
-            self.__weightsForPresentation = xTunAll2d   # only for presentation
+            # TODO remove next line after release test of this module
+            self.__weightsForPresentation = xTunAll2d
 
         else:
             self.write('+++ Medium gray (global training)')
@@ -191,7 +195,8 @@ class MediumGray(Model):
             if self._black is not None:
                 del self._black
             self._black = Neural(f=self.f)
-            self._black.train(self.X, self.Y, neurons=neurons, methods=methods)
+            self._black.train(self.X, self.Y, neurons=neurons, 
+                              methods=methods)
 
         self.ready = True
         self.best = self.error(self.X, self.Y, **opt)
@@ -199,7 +204,7 @@ class MediumGray(Model):
 
     def predict(self, x, **kwargs):
         """
-        Executes Model, stores input x as self.x and output as self.y
+        Executes box model, stores input x as self.x and output as self.y
 
         Args:
             x (2D or 1D array_like of float):
@@ -222,11 +227,12 @@ class MediumGray(Model):
                 for xPrc in self.x:
                     if xPrc[0] is not None:
                         xTun = self._black.predict(x=xPrc, **opt)[0]
-                        yAll.append(Model.predict(self, xPrc, *xTun, **opt)[0])
+                        yAll.append(BoxModel.predict(self, xPrc, *xTun, 
+                                                     **opt)[0])
                 self.y = yAll
             else:
                 # local==X.shape[0]: const w
-                self.y = Model.predict(self, self.x, *self.weights, **opt)
+                self.y = BoxModel.predict(self, self.x, *self.weights, **opt)
         else:
             self.y = self._black.predict(x=x, **opt)
 

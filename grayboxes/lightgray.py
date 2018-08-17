@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -26,19 +26,19 @@
 import sys
 import numpy as np
 import scipy.optimize
-from grayboxes.model import Model
+from grayboxes.boxmodel import BoxModel
 try:
     import modestga
 except ImportError:
     print('??? Package modestga not imported')
 
 
-class LightGray(Model):
+class LightGray(BoxModel):
     """
     Light gray box model y=f(x_com, x_tun)
 
-    Extends the functionality of class Model by a train() method which fits
-    the theoretical submodel f(x) with a set of tuning parameters x_tun
+    Extends the functionality of class BoxModel by a train() method which 
+    tunes the theoretical submodel f(x) with a set of tuning parameters x_tun
 
     Notes:
         - tun0 (int, 1D or 2D array_like of float) is principally a mandatory
@@ -136,14 +136,14 @@ class LightGray(Model):
 
     # function wrapper for scipy minimize
     def meanSquareErrror(self, weights, **kwargs):
-        y = Model.predict(self, self.X, *weights,
+        y = BoxModel.predict(self, self.X, *weights,
                           **self.kwargsDel(kwargs, 'x'))
         return np.mean((y - self.Y)**2)
 
     # function wrapper for scipy least_square and leastsq
     def difference(self, weights, **kwargs):
-        return (Model.predict(self, self.X, *weights,
-                              **self.kwargsDel(kwargs, 'x')) -
+        return (BoxModel.predict(self, self.X, *weights,
+                                 **self.kwargsDel(kwargs, 'x')) -
                 self.Y).ravel()
 
     def minimizeLeastSquares(self, method, tun0, **kwargs):
@@ -171,12 +171,12 @@ class LightGray(Model):
 
         Returns:
             (dict {str: float/int/str}):
-                results, see Model.train()
+                results, see BoxModel.train()
 
         """
         results = self.initResults('method', method)
-        self.weights = None                       # required by Model.predict()
-        self.ready = True                         # required by Model.predict()
+        self.weights = None             # required by BoxModel.predict()
+        self.ready = True               # required by BoxModel.predict()
 
         if method in self.scipyMinimizers:
             if method.startswith('bas'):
@@ -337,7 +337,7 @@ class LightGray(Model):
 
         Returns:
             (dict {str: float or int or str}):
-                results, see Model.train()
+                results, see BoxModel.train()
 
         Note:
             If argument 'tun0' is not given, self.f(None) must return an 1D
@@ -390,7 +390,7 @@ class LightGray(Model):
                     method, tun0, **self.kwargsDel(kwargs, ('method', 'tun0')))
 
                 if results['weights'] is not None:
-                    self.weights = results['weights']     # for Model.predict()
+                    self.weights = results['weights']  # for BoxModel.predict()
                     err = self.error(X=X, Y=Y, silent=True)
                     self.weights = None             # back to None for training
                     if self.best['L2'] > err['L2']:
@@ -426,7 +426,7 @@ class LightGray(Model):
 
     def predict(self, x, *args, **kwargs):
         """
-        Executes Model, stores input x as self.x and output as self.y
+        Executes box model, stores input x as self.x and output as self.y
 
         Args:
             x (2D or 1D array_like of float):
@@ -443,4 +443,4 @@ class LightGray(Model):
                 prediction output, shape: (nPoint, nOut)
         """
         args = self.weights if self.weights is not None else args
-        return Model.predict(self, x, *args, **self.kwargsDel(kwargs, 'x'))
+        return BoxModel.predict(self, x, *args, **self.kwargsDel(kwargs, 'x'))
