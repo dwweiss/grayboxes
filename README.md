@@ -42,4 +42,4 @@ _grayboxes_  is the foundation of the extension package [_coloredlids_](https://
 - Modules _lightgray_ and _minimum_ are dependent on package _modestga_ [[MGA18]](https://github.com/dwweiss/grayboxes/wiki/References#mga18)
 - Module _neural_ is dependent on package _neurolab_ [[NLB15]](https://github.com/dwweiss/grayboxes/wiki/References#nlb15)
 
-These dependencies are satisfied if _grayboxes_ is installed with the commands in section [_Installation_](#Installation)  
+These dependencies are satisfied if _grayboxes_ is installed with the commands in section [_Installation_](#installation)  
