@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-15 DWW
+      2018-08-17 DWW
 """
 
 import unittest	
@@ -29,10 +29,10 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.black import Black 
-from grayboxes.model import grid, noise
-from grayboxes.white import White
-from grayboxes.neural import Neural
 from grayboxes.plotarrays import plotIsoMap
+from grayboxes.neural import Neural
+from grayboxes.boxmodel import grid, noise
+from grayboxes.white import White
 
 
 class TestUM(unittest.TestCase):

@@ -37,6 +37,15 @@ class TestUM(unittest.TestCase):
         pass
  
     def test1(self):
+        foo = ___()
+        foo()
+        
+        self.assertTrue(True)
+
+    def test2(self):
+        foo = ___()
+        foo()
+        
         self.assertTrue(True)
 
 if __name__ == '__main__':

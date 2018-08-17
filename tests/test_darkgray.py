@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
 import unittest	
@@ -29,9 +29,9 @@ import pandas as pd
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.darkgray import DarkGray
-from grayboxes.black import Black
-from grayboxes.model import frame2arr 
 from grayboxes.plotarrays import plotIsoMap, plotWireframe
+from grayboxes.boxmodel import frame2arr 
+from grayboxes.black import Black
 
 
 df = pd.DataFrame({'x0': [2, 3, 4.5, 5, 9],

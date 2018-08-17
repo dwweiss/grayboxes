@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
 import unittest	
@@ -27,17 +27,18 @@ import numpy as np
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.inverse import Inverse
-from grayboxes.black import Black
-from grayboxes.lightgray import LightGray
-from grayboxes.model import grid, rand, noise
 from grayboxes.plotarrays import plot_X_Y_Yref
+from grayboxes.boxmodel import grid, rand, noise
 from grayboxes.white import White
+from grayboxes.lightgray import LightGray
+from grayboxes.black import Black
 
 
-def f(self, x, *args):
+def f(self, x, *args, **kwargs):
     p0, p1, p2 = args if len(args) > 0 else np.ones(3)
     #print(' x:', x, 'args:', args, 'P:', p0, p1, p2)
     return [np.sin(p0 * x[0]) + p1 * (x[1] - 1.)**2 + p2]
+
 
 class TestUM(unittest.TestCase):
     def setUp(self):

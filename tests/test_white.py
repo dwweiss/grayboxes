@@ -17,19 +17,19 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
 import unittest	
 import sys
 import os
 import numpy as np
-from grayboxes.plotarrays import plotIsoMap
-from grayboxes.model import grid, cross
-from grayboxes.forward import Forward
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.white import White
+from grayboxes.plotarrays import plotIsoMap
+from grayboxes.boxmodel import grid, cross
+from grayboxes.forward import Forward
 
 
 def fUser(self, x, *args):

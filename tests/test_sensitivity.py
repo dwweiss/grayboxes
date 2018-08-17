@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
 import unittest	
@@ -27,7 +27,7 @@ import numpy as np
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.sensitivity import Sensitivity
-from grayboxes.model import cross
+from grayboxes.boxmodel import cross
 from grayboxes.white import White
 
 

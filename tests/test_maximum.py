@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
 import unittest	
@@ -26,8 +26,8 @@ import os
 import numpy as np
 
 sys.path.append(os.path.abspath('..'))
+from grayboxes.boxmodel import rand
 from grayboxes.maximum import Maximum
-from grayboxes.model import rand
 from grayboxes.white import White
 
 

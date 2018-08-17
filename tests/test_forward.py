@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
 import unittest	
@@ -28,7 +28,7 @@ import numpy as np
 sys.path.append(os.path.abspath('..'))
 from grayboxes.forward import Forward
 from grayboxes.plotarrays import plotIsoMap
-from grayboxes.model import grid, cross, rand
+from grayboxes.boxmodel import grid, cross, rand
 from grayboxes.white import White
 
 
@@ -39,7 +39,7 @@ def function(x, *args):
 
 
 # method with access to 'self' attributes
-def method(self, x, *args):
+def method(self, x, *args, **kwargs):
     print('1')
     return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
@@ -52,7 +52,7 @@ class TestUM(unittest.TestCase):
         pass
  
     def test1(self):
-        s = 'Forward() with demo function build-in into Model'
+        s = 'Forward() with demo function build-in into BoxModel'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         x, y = Forward(White(function))(x=grid(3, [0, 1], [0, 1]))
@@ -61,7 +61,7 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test2(self):
-        s = 'Forward() with demo function build-in into Model'
+        s = 'Forward() with demo function build-in into BoxModel'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
         x, y = Forward(White('demo'))(x=cross(5, [1, 2], [3, 4]))
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0], scatter=True)

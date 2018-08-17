@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-17 DWW
 """
 
 import unittest	
@@ -27,9 +27,8 @@ import numpy as np
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.lightgray import LightGray
-
 from grayboxes.plotarrays import plot_X_Y_Yref
-from grayboxes.model import grid, noise, rand
+from grayboxes.boxmodel import grid, noise, rand
 from grayboxes.white import White
 
 
@@ -95,8 +94,6 @@ class TestUM(unittest.TestCase):
         s = 'Creates exact output y_exa(X), add noise, target is Y(X)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
     
-
-
         s = 'Tunes model, compare: y(X) vs y_exa(X)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
