@@ -14,11 +14,13 @@ _grayboxes_ contributes to the creation and evaluation of [white](https://github
 
 _grayboxes_  is the foundation of the extension package [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) for  implementation of distributed theoretical submodels. _coloredlids_  based models are compatible to the model [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model) of the _grayboxes_ library, see figure below.
 
-<!-- [[Link to grayboxes Wiki]](https://github.com/dwweiss/grayboxes/wiki) -->
 
 <br>
 <p align="center"><img src="https://github.com/dwweiss/grayboxes/blob/master/doc/fig/operationsOnBoxTypeModels_mediumGray_observation.png">
 </p>
+
+[[Link to grayboxes Wiki]](https://github.com/dwweiss/grayboxes/wiki)
+
 
 ### Content
 
