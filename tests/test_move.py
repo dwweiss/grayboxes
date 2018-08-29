@@ -44,7 +44,7 @@ way = [xyz(.0,  .0, .0),     #   ^
 rot = [xyz(20 * np.sin(i*3), 4*i-20, i*i-30) for i in range(len(way))]
 print(len(rot), [str(rot[i]) for i in range(9)])
 
-foo = Move('')
+foo = Move('move')
 speed = 0.8
 foo.setTrajectory(way, rot=rot, speed=speed)
 

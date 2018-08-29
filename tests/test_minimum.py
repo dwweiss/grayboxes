@@ -64,7 +64,7 @@ class TestUM(unittest.TestCase):
         s = 'Minimum, assigns random series of initial x'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Minimum(White('demo'))
+        op = Minimum(White('demo'), 'test2')
         x, y = op(x=rand(10, [-5, 5], [-7, 7]), method='nelder-mead',
                   silent=True)
         # op.plot()
@@ -76,7 +76,7 @@ class TestUM(unittest.TestCase):
         s = 'Minimum, assigns random series of initial x'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Minimum(White(f))
+        op = Minimum(White(f), 'test3')
         x, y = op(x=rand(10, [-5, 5], [-7, 7]), method='nelder-mead',
                   silent=True)
         # op.plot()
@@ -88,7 +88,7 @@ class TestUM(unittest.TestCase):
         s = 'Minimum, generates series of initial x on grid'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        x, y = Forward(White(f))(x=grid(3, [-2, 2], [-2, 2]))
+        x, y = Forward(White(f), 'test4')(x=grid(3, [-2, 2], [-2, 2]))
         plotSurface(x[:, 0], x[:, 1], y[:, 0])
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
 
@@ -105,7 +105,7 @@ class TestUM(unittest.TestCase):
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         if True:
-            op = Minimum(White('demo'))
+            op = Minimum(White('demo'), 'test5')
 
             methods = ['ga', 'BFGS']
             methods = op._validMethods

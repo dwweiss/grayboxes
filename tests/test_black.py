@@ -48,7 +48,7 @@ class TestUM(unittest.TestCase):
         X = grid(-20, [0, 1])
         Y = noise(White(lambda x: [x[0]**2])(x=X), absolute=noise_abs)
 
-        y = Black()(X=X, Y=Y, x=X, neurons=[], silent=True)
+        y = Black('black1')(X=X, Y=Y, x=X, neurons=[], silent=True)
 
         plt.plot(X, Y, '.', X, y, '-')
         plt.show()
@@ -76,7 +76,7 @@ class TestUM(unittest.TestCase):
         nPointTst = nPointTrn
         x = np.atleast_2d(np.linspace(X.min()-dx, X.max()+dx, nPointTst)).T
 
-        blk = Black()
+        blk = Black('black2')
         opt = {'neurons': [10, 10], 'trials': 5, 'goal': 1e-6,
                'epochs': 500, 'methods': 'bfgs rprop'}
 
@@ -265,7 +265,7 @@ class TestUM(unittest.TestCase):
 
         Y = np.array(df.loc[:, ['u']])                   # extracts an 2D array
         for f in definitions:
-            blk = Black()
+            blk = Black('test4')
 
             if hasattr(f, '__call__'):
                 print(f.__name__)

@@ -48,7 +48,7 @@ class TestUM(unittest.TestCase):
         s = 'Maximum, assigns series of initial x'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Maximum(White(f))
+        op = Maximum(White(f), 'test1')
         x, y = op(x=rand(10, [-5, 5], [-7, 7]), optimizer='nelder-mead')
         op.plot()
         print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)

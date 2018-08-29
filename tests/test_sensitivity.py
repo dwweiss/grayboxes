@@ -48,7 +48,8 @@ class TestUM(unittest.TestCase):
         s = 'Sensitivity with method f(self, x)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        xRef, dy_dx = Sensitivity(White(f))(x=cross(3, [2, 3], [3, 4]))
+        xRef, dy_dx = Sensitivity(White(f), 'test1')(x=cross(3, 
+                                                     [2, 3], [3, 4]))
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()
         print('dy_dx:', dy_dx)
@@ -60,7 +61,7 @@ class TestUM(unittest.TestCase):
         s = 'Sensitivity with demo function'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Sensitivity(White('demo'))
+        op = Sensitivity(White('demo'), 'test2')
         xRef, dy_dx = op(x=cross(3, [2, 3], [3, 4], [4, 5]))
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()

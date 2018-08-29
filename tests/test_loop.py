@@ -79,7 +79,7 @@ class HeatConduction(Loop):
         plt.show()
 
 
-foo = HeatConduction()
+foo = HeatConduction('conduction')
 foo.setFollower([Base('follower 1'), Base('follower 2')])
 foo.silent = False
 

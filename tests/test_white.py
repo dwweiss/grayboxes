@@ -52,7 +52,7 @@ class TestUM(unittest.TestCase):
         s = 'White box (expanded)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        model = White(fUser)
+        model = White(fUser, 'test1')
         y = model(x=x)
 
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
@@ -63,7 +63,7 @@ class TestUM(unittest.TestCase):
         s = 'White box (compact)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        y = White(fUser)(x=x)
+        y = White(fUser, 'test2')(x=x)
 
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
 
@@ -73,7 +73,7 @@ class TestUM(unittest.TestCase):
         s = 'Forward operator on White box model'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        model = White(fUser)
+        model = White(fUser, 'test3')
         x, y = Forward(model)(x=grid(8, [-1, 8], [0, 3]))
 
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
@@ -84,7 +84,7 @@ class TestUM(unittest.TestCase):
         s = 'Forward operator on demo White box'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        x, y = Forward(White('demo'))(x=cross(9, [-1, 8], [0, 3]))
+        x, y = Forward(White('demo'), 'test4')(x=cross(9, [-1, 8], [0, 3]))
 
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
 

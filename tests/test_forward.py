@@ -55,7 +55,7 @@ class TestUM(unittest.TestCase):
         s = 'Forward() with demo function build-in into BoxModel'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        x, y = Forward(White(function))(x=grid(3, [0, 1], [0, 1]))
+        x, y = Forward(White(function), 'test1')(x=grid(3, [0, 1], [0, 1]))
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
 
         self.assertTrue(True)
@@ -63,7 +63,7 @@ class TestUM(unittest.TestCase):
     def test2(self):
         s = 'Forward() with demo function build-in into BoxModel'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-        x, y = Forward(White('demo'))(x=cross(5, [1, 2], [3, 4]))
+        x, y = Forward(White('demo'), 'test2')(x=cross(5, [1, 2], [3, 4]))
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0], scatter=True)
 
         self.assertTrue(True)
@@ -72,7 +72,7 @@ class TestUM(unittest.TestCase):
         s = "Forward, assign external function (without self-argument) to f"
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Forward(White(function))
+        op = Forward(White(function), 'test3')
         _, y = op(x=rand(12, [2, 3], [3, 4]))
         print('x:', op.model.x, '\ny1:', op.model.y)
 
@@ -82,7 +82,7 @@ class TestUM(unittest.TestCase):
         s = "Forward, assign method (with 'self'-argument) to f"
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Forward(White(function))
+        op = Forward(White(function), 'test4')
         _, y = op(x=[[2, 3], [3, 4], [4, 5], [5, 6], [6, 7]])
         print('x:', op.model.x, '\ny1:', op.model.y)
 

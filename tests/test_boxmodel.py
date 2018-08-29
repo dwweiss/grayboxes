@@ -57,7 +57,7 @@ class TestUM(unittest.TestCase):
  
     def test1(self):
         x = grid(100, [0.9, 1.1], [0.9, 1.1])
-        y_exa = White('demo')(x=x)
+        y_exa = White('demo', 'test1')(x=x)
         y = noise(y_exa, relative=20e-2)
 
         plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
@@ -71,7 +71,7 @@ class TestUM(unittest.TestCase):
 
     def test2(self):
         x = grid(4, [0, 12], [0, 10])
-        y_exa = White(f)(x=x)
+        y_exa = White(f, 'test2')(x=x)
         y = noise(y_exa, relative=20e-2)
 
         plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
@@ -89,7 +89,7 @@ class TestUM(unittest.TestCase):
         X = grid(5, [-1, 2], [3, 4])
         print('X:', X)
 
-        Y_exa = White(f)(x=X)
+        Y_exa = White(f, 'test3')(x=X)
         plotIsoMap(X[:, 0], X[:, 1], Y_exa[:, 0], title='$Y_{exa,0}$')
         plotIsoMap(X[:, 0], X[:, 1], Y_exa[:, 1], title='$Y_{exa,1}$')
         print('Y_exa:', Y_exa)
@@ -107,7 +107,7 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test4(self):
-        model = BoxModel(f)
+        model = BoxModel(f, 'test4')
         y = model.f([2, 3], 2, 0, 1)
         print('y:', y)
 
@@ -137,7 +137,7 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test5(self):
-        model = LightGray(f)
+        model = LightGray(f, 'test5')
         nPoint = 20
         X = rand(nPoint, [0, 10], [0, 10])
         Y = noise(White(f)(x=X), absolute=0.1)

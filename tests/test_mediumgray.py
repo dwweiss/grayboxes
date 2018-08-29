@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-08-29 DWW
 """
 
 import unittest	
@@ -44,10 +44,10 @@ def f(self, x, *args, **kwargs):
         x (1D array_like of float):
             common input
 
-        args (argument list, optional):
+        args (float, optional):
             tuning parameters as positional arguments
 
-        kwargs (dict, optional):
+        kwargs (Any, optional):
             keyword arguments {str: float/int/str}
     """
     if x is None:

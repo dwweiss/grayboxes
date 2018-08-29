@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-08-29 DWW
 """
 
 import unittest	
@@ -36,15 +36,15 @@ def f(self, x, *args, **kwargs):
     """
     Theoretical submodel for single data point
 
-    Aargs:
+    Args:
         x (1D array_like of float):
             common input
 
-        args (argument list, optional):
-            tuning parameters as positional arguments
+        args (float, optional):
+            tuning parameters
 
-        kwargs (dict, optional):
-            keyword arguments {str: float/int/str}
+        kwargs (Union[float, int, str], optional):
+            keyword arguments
     """
     if x is None:
         return np.ones(4)
@@ -98,18 +98,18 @@ class TestUM(unittest.TestCase):
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         # train with 9 random initial tuning parameter sets, each of size 4
-        model = LightGray(f2)
+        model = LightGray(f2, 'test1')
         tun0 = rand(9, *(4 * [[0, 2]]))
 
         for _tun0 in [tun0, None]:
-            print('+++ tun0:', _tun0, '*'*40)
+            print('+++ tun0:\n', _tun0, '\n', '*'*40)
 
             y = model(X=X, Y=Y, tun0=_tun0, x=X, methods=methods,
                       detailed=True, nItMax=5000, bounds=4*[(0, 2)])
 
-            y = LightGray(f2)(X=X, Y=Y, x=X, methods=methods, nItMax=5000,
-                              tun0=_tun0, silent=not True, detailed=True)
-
+            y = LightGray(f2, 'test1b')(X=X, Y=Y, x=X, methods=methods, 
+                                        nItMax=5000, tun0=_tun0, 
+                                        silent=not True, detailed=True)
             plot_X_Y_Yref(X, y, y_exa, ['X', 'y', 'y_{exa}'])
             if 1:
                 print('best:', model.best)
@@ -128,11 +128,12 @@ class TestUM(unittest.TestCase):
 
         # train with single initial tuning parameter set, nTun from f2(None)
         if 1:
-            y = LightGray(f2)(X=X, Y=Y, x=X, tun0=np.ones(4),
-                              silent=not True, methods=methods)
+            y = LightGray(f2, 'test2')(X=X, Y=Y, x=X, tun0=np.ones(4),
+                                       silent=not True, methods=methods, 
+                                       detailed=False)
 
-        y = LightGray(f2)(X=X, Y=Y, x=X,
-                          silent=not True, methods='all')
+        y = LightGray(f2, 'test2b')(X=X, Y=Y, x=X,
+                                    silent=not True, methods='all')
 
         self.assertTrue(y is not None)
  

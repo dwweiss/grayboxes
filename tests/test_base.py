@@ -35,6 +35,9 @@ class TestUM(unittest.TestCase):
             super().__init__(identifier=identifier)
             self.x = 3.0
     
+        def pre(self, **kwargs):
+            super().pre()
+
         def task(self, **kwargs):
             super().task()
     
@@ -47,8 +50,8 @@ class TestUM(unittest.TestCase):
 
         def post(self, **kwargs):
             super().post()
-            self.write('    x: ', self.x)
-            self.write('    y: ', self.y)
+#            self.write('    x(' + self.identifier + '): ' + str(self.x))
+#            self.write('    y(' + self.identifier + '): ' + str(self.y))
             
 
     def setUp(self):
@@ -59,11 +62,11 @@ class TestUM(unittest.TestCase):
  
     def test1(self):
         # creates instance
-        foo = self.Foo('root')
+
+        foo = self.Foo('root1')
         foo.gui = False
 
         # assigns path to files
-        foo.path = 'c:/Temp'
 
         # creates objects
         f1 = self.Foo('follower 1')
@@ -74,11 +77,11 @@ class TestUM(unittest.TestCase):
         f21 = self.Foo('follower 2->1 and cooperator 1--2')
         f22 = self.Foo('follower 2->2')
 
-        # connects objects                                    foo
-        foo.setFollower([f1, f2])           # .             /     \
-        f1.setFollower([f11, f12, f13])     # .          f1 ......   f2
-        f2.setFollower([f21, f22])          # .        / |  \     : /  \
-        f1.setCooperator(f21)               # .     f11 f12 f13   f21 f22
+        # connects objects                                   foo
+        foo.setFollower([f1, f2])           # .            /     \
+        f1.setFollower([f11, f12, f13])     # .         f1 ......   f2
+        f2.setFollower([f21, f22])          # .       / |  \     : /  \
+        f1.setCooperator(f21)               # .    f11 f12 f13   f21 f22
 
         # links between two objects
         f13.x = 6.789
@@ -95,25 +98,22 @@ class TestUM(unittest.TestCase):
         assert f1.link.identifier == f1_b_link.identifier
         print('-'*20)
 
-        # assigns a private logfile to follower f11
-        f11.logFile = 'f11log'
-        f11.write('abc')
         foo()
 
         # prints content of root and its followers
         print('\nPrint(foo): ' + str(foo))
         self.assertTrue(True)
+        del foo
  
     def test2(self): 
-        # assigns a new log file common to root and its followers
-        foo = self.Foo('root')
-        foo.logFile = 'abc'
+        foo = self.Foo('root2')
         foo()
-        self.assertTrue(True)
+        foo.write(str('my write id:' + foo.identifier))
+        self.assertTrue(True) 
 
     def test3(self): 
         # searches for specific follower in tree
-        foo = self.Foo('root')
+        foo = self.Foo('root3')
         identifier = 'follower 11'
         p = foo.getFollowerDownwards(identifier=identifier)
         if p is None:
@@ -125,19 +125,30 @@ class TestUM(unittest.TestCase):
 
     def test4(self): 
         # destructs tree
-        foo = self.Foo('root')
+        foo = self.Foo('root4')
+        foo()
         print('*** destruct')
-        print('foo 1:', foo)
+        print('foo 4:', foo)
         foo.destruct()
         self.assertTrue(True)
 
     def test5(self): 
         # sends warning and termination of program
-        foo = self.Foo('root')
-        print('foo 2:', foo)
-        foo.warning('my warning1')
-        foo.terminate('my error message')
+        foo = self.Foo('root5')
+        print('foo 5:', foo)
+        foo.gui = not True  # TODO toggle foo.gui if TKinter interface
+        foo.warn('my warning1')
+        foo.terminate('warning to GUI')
         self.assertRaise()
+
+    def test6(self): 
+        # sends warning
+        foo = self.Foo('root6')
+        foo.gui = False
+        foo()
+        print('foo 6:', foo)
+        foo.warn('my warning1')
+        self.assertTrue(True)
 
 
 if __name__ == '__main__':

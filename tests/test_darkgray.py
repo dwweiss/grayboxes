@@ -90,7 +90,7 @@ class TestUM(unittest.TestCase):
         s = 'Dark gray box model 1'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        model = DarkGray('demo')
+        model = DarkGray('demo', 'test1')
         X, Y = frame2arr(df, ['x0', 'x4'], ['y0'])
         y = model(X=X, Y=Y, x=X, silent=True, neurons=[10])
         plotIsoMap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
@@ -114,7 +114,7 @@ class TestUM(unittest.TestCase):
         def f(x, *args, **kwargs):
             return x[0] + x[1]
 
-        y = DarkGray(f)(X=X, Y=Y, x=X, silent=True, neurons=[10])
+        y = DarkGray(f, 'test2')(X=X, Y=Y, x=X, silent=True, neurons=[10])
 
         plotIsoMap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
         plotIsoMap(X[:, 0], X[:, 1], y[:, 0], title='y(X)')
@@ -135,7 +135,7 @@ class TestUM(unittest.TestCase):
         X = np.asfarray(df.loc[:, ['mDot', 'p']])
         Y = np.asfarray(df.loc[:, ['A']])
 
-        y = Black()(X=X, Y=Y, neurons=[], silent=True, x=X)
+        y = Black('test3')(X=X, Y=Y, neurons=[], silent=True, x=X)
 
         plotIsoMap(X.T[0], X.T[1], Y.T[0] * 1e3, title=r'$A_{prc}\cdot 10^3$')
         plotIsoMap(X.T[0], X.T[1], y.T[0] * 1e3, title=r'$A_{blk}\cdot 10^3$')
