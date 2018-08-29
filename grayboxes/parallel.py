@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-08-20 DWW
 """
 
 __all__ = ['mpi', 'communicator', 'rank', 'predict_scatter', 'split', 'merge']
@@ -108,10 +108,10 @@ def predict_scatter(f, x, *args, **kwargs):
         x (2D or 1D array_like of float):
             prediction input, shape: (nPoint, nInp)
 
-        args (argument list, optional):
+        args (float, optional):
             positional arguments
 
-        kwargs (dict, optional):
+        kwargs (Any, optional):
             keyword arguments
 
             silent (bool):
@@ -216,7 +216,7 @@ def predict_scatter(f, x, *args, **kwargs):
 #    # distributes 2D input groups to multiple cores
 #    yAll = []
 #    for xProc in xAll:
-#        # excutes for every point in group
+#        # executes for every point in group
 #        print('xProc:', xProc)
 #        yProc = loads(subprocess.check_output(
 #                [sys.executable, f, 'subprocess'],

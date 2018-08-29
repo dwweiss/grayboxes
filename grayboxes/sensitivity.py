@@ -65,11 +65,11 @@ class Sensitivity(Forward):
                 keyword arguments
 
                 X (2D or 1D array_like of float, optional):
-                    training input, shape: (nPoint, nInp) or shape: (nPoint)
+                    training input, shape: (nPoint, nInp) or (nPoint,)
                     default: self._X
 
                 Y (2D or 1D array_like of float, optional):
-                    training target, shape: (nPoint, nOut) or shape: (nPoint)
+                    training target, shape: (nPoint, nOut) or (nPoint,)
                     default: self._Y
 
                 x (2D array_like of float):
@@ -117,8 +117,8 @@ class Sensitivity(Forward):
                 grad = np.gradient(yy, dx)
                 self.dy_dx[j, k] = grad[jCenter]
         s = np.array2string(self.dy_dx).replace(' ', '').replace('\n',
-                                                                 '\n' + ' '*10)
-        self.write('    grad: ', s[1:-1])
+                                                                 '\n' + ' '*22)
+        self.write('    grad: ' + str(s[1:-1]))
 
         return xRef, self.dy_dx
 

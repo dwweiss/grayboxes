@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-08-20 DWW
 """
 
 import numpy as np
@@ -90,7 +90,7 @@ class DarkGray(BoxModel):
 
         Args:
             x (2D or 1D array_like of float):
-                prediction input, shape: (nPoint, nInp) or shape: (nInp,)
+                prediction input, shape: (nPoint, nInp) or (nInp,)
 
             kwargs (dict, optional):
                 keyword arguments

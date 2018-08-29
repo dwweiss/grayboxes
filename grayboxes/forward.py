@@ -28,17 +28,18 @@ from grayboxes.white import White
 
 class Forward(Base):
     """
-    Predicts $y = \phi(x)$ for series of data points, x.shape: (nPoint, nInp)
+    Predicts $y = \phi(x)$ for series of data points, 
+    x.shape: (nPoint, nInp)
 
     Examples:
         X = [[... ]]  input of training
         Y = [[... ]]  target of training
         x = [[... ]]  input of prediction
 
-        def function(x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+        def function(x, c0=1,c1=1,c2=1,c3=1,c4=1,c5=1,c6=1,c7=1):
             return 2.2 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
-        def method(self, x, c0=1, c1=1, c2=1, c3=1, c4=1, c5=1, c6=1, c7=1):
+        def method(self, x, c0=1,c1=1,c2=1,c3=1,c4=1,c5=1,c6=1,c7=1):
             return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
         # create operation on model
@@ -55,13 +56,13 @@ class Forward(Base):
 
 
     Note:
-        Forward.__call__() returns 2-tuple of 2D arrays of float (x and y)
+        Forward.__call__() returns 2-tuple of 2D arrays of float
     """
 
     def __init__(self, model, identifier='Forward'):
         """
         Args:
-            model (BoxModel_like):
+            model (BoxModel):
                 box type model
 
             identifier (str, optional):
@@ -74,7 +75,7 @@ class Forward(Base):
     def model(self):
         """
         Returns:
-            (BoxModel_like):
+            (BoxModel):
                 box type model
         """
         return self._model
@@ -82,22 +83,22 @@ class Forward(Base):
     @model.setter
     def model(self, value):
         """
-        Sets box type model and assigns Forward's logFile
+        Sets box type model
 
         Args:
-            value (BoxModel_like):
+            value (BoxModel):
                 box type model
         """
         self._model = value
         if self._model is not None:
             assert issubclass(type(value), BoxModel), \
                 'invalid model type: ' + str(type(value))
-            self._model.logFile = self.logFile
 
     def pre(self, **kwargs):
         """
         - Assigns box type model
-        - Assigns training input and target (X, Y), and prediction input x
+        - Assigns training input and target (X, Y)
+        - Assigns prediction input x
         - Trains model if (X, Y) are not None
 
         Args:
@@ -105,19 +106,20 @@ class Forward(Base):
                 keyword arguments:
 
                 XY (2-tuple of 2D array_like of float, optional):
-                    input and target of training, this argument supersedes X, Y
+                    input and target of training, this argument 
+                    supersedes X, Y
 
                 X (2D or 1D array_like of float, optional):
-                    training input, shape: (nPoint, nInp) or shape: (nPoint)
+                    training input, shape: (nPoint, nInp) or (nPoint,)
                     default: self._X
 
                 Y (2D or 1D array_like of float, optional):
-                    training target, shape: (nPoint, nOut) or shape: (nPoint)
+                    training target, shape: (nPoint, nOut) or (nPoint,)
                     default: self._Y
 
                 x (2D or 1D array_like of float, optional):
                     input to forward prediction or to sensitivity analysis
-                    shape: (nPoint, nInp) or shape: (nInp)
+                    shape: (nPoint, nInp) or (nInp,)
                     default: self._x
         """
         super().pre(**kwargs)

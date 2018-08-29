@@ -75,10 +75,10 @@ class MediumGray(BoxModel):
 
         Args:
             X (2D or 1D array_like of float):
-                training input X_prc, shape: (nPoint, nInp) or shape: (nPoint,)
+                training input X_prc, shape: (nPoint, nInp) or (nPoint,)
 
             Y (2D or 1D array_like of float):
-                training target Y_com, shape: (nPoint, nOut) or shape:(nPoint,)
+                training target Y_com, shape: (nPoint, nOut) or (nPoint,)
 
             kwargs (dict, optional):
                 keyword arguments:
@@ -208,7 +208,7 @@ class MediumGray(BoxModel):
 
         Args:
             x (2D or 1D array_like of float):
-                prediction input, shape: (nPoint, nInp) or shape: (nInp,)
+                prediction input, shape: (nPoint, nInp) or (nInp,)
 
             kwargs (dict, optional):
                 keyword arguments

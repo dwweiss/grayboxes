@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-08-29 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -170,16 +170,17 @@ class Minimum(Forward):
             value = self._validMethods[0]
         value = str(value)
         if len(value) == 1:
-            self.write("??? optimiz. method too short (min 3 char): '", value,
-                       "', continue with: '", self._validMethods[0], "'")
+            self.write("??? optimiz. method too short (min 2 char): '" + 
+                       str(value) + "', continue with: '" + 
+                       self._validMethods[0] + "'")
             self._method = self._validMethods[0]
 
         valids = [x.lower().startswith(value[:3].lower())
                   for x in self._validMethods]
         if not any(valids):
-            self.write("??? Unknown optimization method: '", value,
-                       "', continue with: '", self._validMethods[0],
-                       "', validMethods: '", self._validMethods, "'")
+            self.write("??? Unknown optimization method: '" + str(value) +
+                       "', continue with: '" + str(self._validMethods[0]) +
+                       "', validMethods: '" + str(self._validMethods) + "'")
             self._method = self._validMethods[0]
         else:
             self._method = self._validMethods[valids.index(True)]
@@ -191,7 +192,7 @@ class Minimum(Forward):
         Args:
             x (2D or 1D array_like of float):
                 input of multiple or single data points,
-                shape: (nPoint, nInp) or shape: (nInp,)
+                shape: (nPoint, nInp) or (nInp,)
 
             kwargs (dict, optional):
                 keyword arguments
@@ -231,7 +232,7 @@ class Minimum(Forward):
         Returns:
             (2-tuple of 1D array of float):
                 model input at optimum and corresponding model output,
-                shape: (nInp) and shape: (nOut)
+                shape: (nInp,) and shape: (nOut,)
         Note:
             - requires initial point(s) self.x for getting input number: nInp
             - if inverse problem solution then self.y is required as target
@@ -243,7 +244,7 @@ class Minimum(Forward):
         method = self.kwargsGet(kwargs, ('method', 'methods'), None)
         if method is not None:
             self.method = method
-        self.write('+++ method: ', self.method)
+        self.write('+++ Method: ' + str(self.method))
 
         # sets target for Inverse
         if type(self).__name__ in ('Inverse'):
@@ -296,7 +297,7 @@ class Minimum(Forward):
             self._history.append(self._trialHistory)
 
         if not success:
-            self.write('+++ error message: ', res.message)
+            self.write('+++ error message: ' + str(res.message))
             x = [None] * x.size
             y = [None] * y.size
 
@@ -304,9 +305,10 @@ class Minimum(Forward):
         if nTrial > 1:
             self.write('+++ Optima of all trials:')
             for iTrial, history in enumerate(self._history):
-                self.write('    [' + str(iTrial) + '] x: ', history[-1][0],
-                           '\n        y: ', history[-1][1],
-                           '\n        objective: ', history[-1][2])
+                s = ' ' if iTrial < 10 else ''
+                self.write('    ['+s+str(iTrial)+'] x: '+str(history[-1][0]))
+                self.write('         y: ' + str(history[-1][1]))
+                self.write('         objective: ' + str(history[-1][2]))
 
             # self._history[iTrial][iLast=-1][jObj=2] -> list of best obj.
             finalObjectives = [hist[-1][2] for hist in self._history]
@@ -324,9 +326,11 @@ class Minimum(Forward):
         finalBest = historyBest[-1]
         self.x, self.y = finalBest[0], finalBest[1]
         objectiveBest = finalBest[2]
-        self.write('+++ Best trial:\n    [' + str(iTrialBest) + '] x: ',
-                   self.x, '\n        y: ', self.y, '\n        objective: ',
-                   objectiveBest)
+        self.write('+++ Best trial:')
+        s = ' ' if iTrial < 10 else ''
+        self.write('    [' + s + str(iTrialBest) + '] x: ' + str(self.x))
+        self.write('         y: ' + str(self.y)) 
+        self.write('         objective: ' + str(objectiveBest))
         return self.x, self.y
 
     def plot(self, select=None):
@@ -342,8 +346,9 @@ class Minimum(Forward):
 
     def plotHistory(self):
         for iTrial, trialHist in enumerate(self._history):
-            self.write('+++ Plot[iTrial: ' + str(iTrial) + ']',
-                       trialHist[-1][1], ' = f(' + str(trialHist[-1][0]) + ')')
+            self.write('    Plot[iTrial: ' + str(iTrial) + '] ' + 
+                       str(trialHist[-1][1]) + ' = f(' + 
+                       str(trialHist[-1][0]) + ')')
             assert len(trialHist[0]) > 1
 
             # self._history[iTrial][ [x0..nInp-1], [y0..nOut-1], obj ]
@@ -442,7 +447,7 @@ class Minimum(Forward):
         nOut = len(self._history[0][0][1])
 
         if nInp >= 2:
-            self.write('+++ Trajectory of objective vs (x0, x1), all trials')
+            self.write('    Trajectory of objective vs (x0, x1), all trials')
             mpl.rcParams['legend.fontsize'] = 10
             fig = plt.figure(figsize=(10, 8))
             ax = fig.gca(projection='3d')

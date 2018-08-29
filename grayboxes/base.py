@@ -17,28 +17,29 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-28 DWW
 
   Note on program arguments:
-    - no arguments                 : program starts in default mode
+    - no arguments          : program starts in default mode
     - two arguments: 'path inputFile'
-                                   : command line mode with password protection
+                            : command line mode with password protection
     - three arguments '-s path inputFile'
-                                   : command line mode, no password
-    - two arguments '-s -g'        : graphic mode, no console output
-    - one argument '-g'            : graphic mode with information to console
+                            : command line mode, no password
+    - two arguments '-s -g' : graphic mode, no console output
+    - one argument '-g'     : graphic mode with information to console
 
 """
 
-from io import IOBase
+import os
+import sys
 from datetime import datetime
 from getpass import getpass
 from hashlib import sha224
 from re import sub
-from sys import version_info, exit, stdout, argv, modules
+from time import time
 from tempfile import gettempdir
 from pathlib import Path
-from time import time
+from typing import Any, Dict, Iterable, List, Optional, Union
 import numpy as np
 try:
     from tkinter import Button
@@ -48,34 +49,42 @@ try:
     from tkinter import Tk
 except ImportError:
     print("\n!!! Wrong Python interpreter (version: '" +
-          str(version_info.major) + '.' + str(version_info.major) +
-          '.' + str(version_info.micro) + "') or 'tkinter' not imported")
+          str(sys.version_info.major) + '.' + str(sys.version_info.major) +
+          '.' + str(sys.version_info.micro) + "') or 'tkinter' not imported")
+import logging
+logger = logging.getLogger(__name__)
+
 try:
     import grayboxes.parallel as parallel
 except ImportError:
-    print("!!! Module 'parallel' not imported")
+    try:
+        import parallel as parallel
+    except ImportError:
+        print("!!! Module 'parallel' not imported")
 
 
 class Base(object):
     """
     Connects model objects and controls their execution
 
-    The objects are organized in overlapping tree structures. The concept of
-    conservative leader-follower relationships (authoritarian) is extended by
-    leader-cooperator relationships (partnership). The differentiation into
-    leader-follower and leader-cooperator relationships allows the creation of
-    complex object structures which can coexist in space, time or abstract
+    The objects are organized in overlapping tree structures. The 
+    concept of conservative leader-follower relationships 
+    (authoritarian) is extended by leader-cooperator relationships 
+    (partnership). The differentiation into leader-follower and 
+    leader-cooperator relationships allows the creation of complex 
+    object structures which can coexist in space, time or abstract 
     contexts.
 
     The implementation supports:
 
-    - Distributed development of objects derived from the connecting base class
+    - Distributed development of objects derived from the connecting 
+      Base class
 
     - Object specialization in "vertical" and "horizontal" direction
         - leader-type objects implementing alternative control of tasks
         - peer-type opjects implement empirical submodels (data-driven),
-          theoretical submodels, knowledge objects (e.g. properties of matter)
-          and generic service objects (e.g. plotting devices)
+          theoretical submodels, knowledge objects (e.g. properties of 
+          matter) and generic service objects (e.g. plotting)
 
      - Uniform interface to code execution of objects derived from the
        connector class objects via public methods
@@ -83,34 +92,37 @@ class Base(object):
         - main task:    task() which is called by control()
         - post-process: post() which calls save()
 
-      The __call__() method calls pre(), control() and post() recursively.
-      Iterative or transient repetition of the task() method will be
-      controlled in derived classes by a overloaded control(), see class Loop
+      The __call__() method calls pre(), control() and post() 
+      recursively. Iterative or transient repetition of the task() 
+      method will be controlled in derived classes by a overloaded 
+      control(), see class Loop
 
-        leader object
-           ^
-           |
-         --|---------                                 transient or
-        | leader()   |                             ---iterative----
-        |------------|         ---> pre()         |                ^
-        |            |        |                   v                |
-        | self.__call__()  ---+---> control() ----o---> task() ----o---> stop
-        |            |        |
-        |            |         ---> post()
-        |            |
-        |------------|
-        | follower() |
-         --|---------
-           |-> follower/cooperator.__call__()
-           |-> follower/cooperator.__call__()
-           :
 
-      The execution sequence in a tree of objects is outlined in the figure
-      below: recursive call of pre() for object (1) and its followers (11),
-      (12), (111), (112) and its cooperators (21) and (211).
+    leader object
+       ^
+       |
+     --|---------                                transient or
+    | leader()   |                            ---iterative----
+    |------------|        ---> pre()         |                ^
+    |            |       |                   v                |
+    | self.__call__() ---+---> control() ----o---> task() ----o---> stop
+    |            |       |
+    |            |        ---> post()
+    |            |
+    |------------|
+    | follower() |
+    --|---------
+      |-> follower/cooperator.__call__()
+      |-> follower/cooperator.__call__()
+      :
 
-      Execution of methods task() and post() is similar. Note that method pre()
-      of object (2) is not executed.
+      The execution sequence in a tree of objects is outlined in the 
+      figure below: recursive call of pre() for object (1) and its 
+      followers (11), (12), (111), (112) and its cooperators (21) and 
+      (211).
+
+      Execution of methods task() and post() is similar. Note that 
+      method pre() of object (2) is not executed.
 
        -----------                                   -----------
       | no leader |                                 | no leader |
@@ -130,7 +142,7 @@ class Base(object):
       |-----------|          |-----------|      |   |-----------|
       |           |          |           |      +-->|           |
       |object (11)|          |object (12)|          |object (21)|
-      |   Base -----> pre()  |   Base -----> pre()  |   Base -----> pre()
+      |   Base -----> pre()  |   Base -----> pre()  |   Base ----> pre()
       |           |          |           |          |           |
       |-----------|          |-----------|          |-----------|
       | follower()|          |no follower|          | follower()|
@@ -143,14 +155,14 @@ class Base(object):
       |-----------|          |-----------|          |-----------|
       |           |          |           |          |           |
       |object(111)|          |object(112)|          |object(211)|
-      |   Base -----> pre()  |   Base -----> pre()  |   Base -----> pre()
+      |   Base -----> pre()  |   Base -----> pre()  |   Base ----> pre()
       |           |          |           |          |           |
       |-----------|          |-----------|          |-----------|
       |no follower|          |no follower|          |no follower|
        -----------            -----------           ------------
     """
 
-    def __init__(self, identifier='Base', argv=None):
+    def __init__(self, identifier: str='Base', argv: List[str]=None) -> None:
         """
         Initializes object
 
@@ -161,36 +173,36 @@ class Base(object):
                 argv (positional arguments, optional):
                     program arguments
         """
+        if not identifier:
+            identifier = self.__class__.__name__
         self._identifier = str(identifier)
         self.argv = argv
         self.program = self.__class__.__name__
-        self.version = '130618_dww'
+        self.version = '280818_dww'
 
-        self._execTimeStart = 0.0       # start measuring execution time
-        self._minExecTimeShown = 1.0    # times less than limit are not shown
-        self.path = None                # path to files, see @path.setter
-        self.extension = None           # file extension, see @extension.setter
+        self._execTimeStart = 0.0       # start measure execution time
+        self._minExecTimeShown = 1.0    # times < limit are not shown
+        self.path = None                # path to files,see @path.setter
+        self.extension = None           # file ext,see @extension.setter
 
-        self._gui = False               # no graphic user interface if False
+        self._gui = False               # no graphic interface if False
         self._batch = False             # no user interaction if True
         self._silent = False            # no console output if True
 
-        self._ready = True              # if True, successful train/prediction
+        self._ready = True              # if True, successful train/pred
 
-        self._preDone = False           # internal use: True if  pre() is done
-        self._taskDone = False          # internal use: True if task() is done
-        self._postDone = False          # internal use: True if post() is done
+        self._preDone = False           # internal: True if  pre() done
+        self._taskDone = False          # internal: True if task() done
+        self._postDone = False          # internal: True if post() done
 
-        self._lineCompleted = True      # helper variable for self.write()
-        self._logFile = None            # log file, see self.write()
 
         self._leader = None             # leader object
         self._followers = []            # array of follower objects
 
         self._data = None               # data organized in a DataFrame
         self._csvSeparator = ','        # separator in csv-files
-
-    def __call__(self, **kwargs):
+        
+    def __call__(self, **kwargs: Dict[str, Any]) -> float:
         """
         Executes model
 
@@ -206,7 +218,7 @@ class Base(object):
                 or -1.0 if parallel and rank > 0
         """
         # skip model execution if parallelized with MPI and rank > 0
-        if 'parallel' in modules and parallel.rank():
+        if 'parallel' in sys.modules and parallel.rank():
             return -1.0
 
         self.silent = kwargs.get('silent', self.silent)
@@ -215,12 +227,12 @@ class Base(object):
         self.pre(**kwargs)
 
         res = self.control(**kwargs)
-
         self.post(**kwargs)
         self.epilog()
+
         return res
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = ''
         if not self.leader:
             s += "@root: '" + self.identifier + "', \n"
@@ -248,15 +260,30 @@ class Base(object):
                 # if self.isCooperator(x): s = '# (cooperator)'
         return s
 
-    def destruct(self):
+    def destruct(self) -> bool:
+        """
+        Destructs all followers. Cooperators will be kept
+        
+        Returns:
+            (bool):
+                True on success
+        """
         if self._data:
             del self._data
-        if self._logFile:
-            self._logFile.close()
+        if self.isRoot():
+            logging.shutdown()
 
         return self.destructDownwards(fromNode=self)
 
-    def destructDownwards(self, fromNode):
+    def destructDownwards(self, fromNode: 'Base') -> bool:
+        """
+        Destructs all followers downwards from 'fromNode'. Cooperators 
+        will be kept
+        
+        Returns:
+            (bool):
+                True on success
+        """
         if not fromNode:
             return False
         for i in range(len(fromNode.followers)):
@@ -265,10 +292,20 @@ class Base(object):
                 if id(node.leader) == id(fromNode):
                     self.destructDownwards(node)
         if fromNode.leader:
-            fromNode.leader.destructFollower(fromNode)
+            fromNode.leader._destructFollower(fromNode)
         return True
 
-    def destructFollower(self, node):
+    def _destructFollower(self, node: 'Base') -> bool:
+        """
+        Destructs the followers of 'node'. Cooperators will be kept
+        
+        Args:
+            node (Base):
+                actual node
+                
+        Returns:
+            (bool): False if this node has no followers
+        """
         if not node:
             return False
         i = -1
@@ -281,23 +318,21 @@ class Base(object):
         if self.isCooperator(node):
             return False
         del node._data
-        if node._logFile is not None:
-            node._logFile.close()
         self._followers[i] = None
         return True
 
-    def root(self):
+    def root(self) -> 'Base':
         """
         Returns:
-            (binding):
-                root node of this tree (the node which leader is None)
+            (Base):
+                root node of this tree (the leader of root is None)
         """
         p = self
         while p.leader:
             p = p.leader
         return p
 
-    def treeLevel(self):
+    def treeLevel(self) -> int:
         """
         Returns:
             (int):
@@ -310,87 +345,87 @@ class Base(object):
             n += 1
         return n
 
-    def indent(self):
-        return '    ' * self.treeLevel()
+    def indent(self) -> str:
+        return (4 * ' ') * self.treeLevel()
 
     @property
-    def identifier(self):
+    def identifier(self) -> str:
         return self._identifier
 
     @identifier.setter
-    def identifier(self, value):
+    def identifier(self, value: str):
         if value:
             self._identifier = str(value)
         else:
             self._identifier = self.__class__.__name__
 
     @property
-    def argv(self):
+    def argv(self) -> List[str]:
         return self._argv
 
     @argv.setter
-    def argv(self, value):
+    def argv(self, value: Optional[List[str]]):
         if value is None:
-            self._argv = argv
+            self._argv = sys.argv
         else:
             self._argv = value
 
     @property
-    def gui(self):
+    def gui(self) -> bool:
         return self._gui
 
     @gui.setter
-    def gui(self, value):
-        if 'tkinter' not in modules:
+    def gui(self, value: bool):
+        if 'tkinter' not in sys.modules:
             value = False
-            self.write("!!! 'gui' is not set: no module 'tkinter'")
-        self._gui = bool(value)
+            self.warn("!!! 'gui' is not set: no module 'tkinter'")
+        self._gui = value
         for x in self._followers:
-            x._gui = bool(value)
+            x._gui = value
 
     @property
-    def batch(self):
+    def batch(self) -> bool:
         return self._batch
 
     @batch.setter
-    def batch(self, value):
-        self._batch = bool(value)
+    def batch(self, value: bool):
+        self._batch = value
         for x in self._followers:
-            x._batch = bool(value)
+            x._batch = value
 
     @property
-    def silent(self):
-        return self._silent
+    def silent(self) -> bool:
+        return self._silent or ('parallel' in sys.modules and parallel.rank())
 
     @silent.setter
-    def silent(self, value):
+    def silent(self, value: bool):
         self._silent = value
 
     @property
-    def ready(self):
+    def ready(self) -> bool:
         return self._ready
 
     @ready.setter
-    def ready(self, value):
+    def ready(self, value: bool):
         self._ready = value
 
     @property
-    def path(self):
+    def path(self) -> str:
         return self._path
 
     @path.setter
-    def path(self, value):
+    def path(self, value: Union[str, Path]):
         if not value:
             self._path = gettempdir()
         else:
             self._path = Path(str(value))
 
     @property
-    def extension(self):
+    def extension(self) -> str:
         return str(self._extension)
 
     @extension.setter
-    def extension(self, value):
+    def extension(self, value: str):
         if not value:
             self._extension = ''
         else:
@@ -400,120 +435,82 @@ class Base(object):
                 self._extension = str(value)
 
     @property
-    def logFile(self):
-        return self._logFile
-
-    @logFile.setter
-    def logFile(self, file):
-        """
-        - Closes log file if open.
-        - Opens new log file if 'file' is not None. If 'file' == "", the
-          identifier of the object is used as log file name.
-        - Assigns 'None' to log file if opening of log file fails.
-
-        Args:
-            file (str or IOBase or None):
-                file name or binding to log file; 'None' stops logging
-        """
-        if self._logFile is not None:
-            self._logFile.close()
-            self._logFile = None
-
-        if file is None:
-            return
-
-        if isinstance(file, IOBase):
-            self._logFile = file
-            return
-
-        if not file:
-            file = self.identifier
-            print('file:', file)
-            file += '.log'
-            try:
-                self._logFile = open(self.path / file, 'w')
-                self.write('+++ log: ', "'", file, "'")
-            except IOError:
-                self._logFile = None
-                print("??? self._logFile: '" + self.path / str(file) +
-                      "' not open for writing")
-
-    @property
-    def csvSeparator(self):
+    def csvSeparator(self) -> str:
         return str(self._csvSeparator)
 
     @csvSeparator.setter
-    def csvSeparator(self, value):
+    def csvSeparator(self, value: str):
         if value is None:
             self._csvSeparator = ' '
         else:
             self._csvSeparator = value
 
     @property
-    def leader(self):
+    def leader(self) -> 'Base':
         return self._leader
 
     @leader.setter
-    def leader(self, other):
+    def leader(self, other: 'Base'):
         if other:
             other.setFollower(self)
 
     @property
-    def followers(self):
+    def followers(self) -> List['Base']:
         return self._followers
 
     @followers.setter
-    def followers(self, other):
+    def followers(self, other: Iterable['Base']) -> None:
         self.terminate("followers.setter: 'followers' is protected," +
                        " use 'setFollower()'")
 
-    def isRoot(self):
+    def isRoot(self) -> bool:
         return not self.leader
 
     @property
-    def data(self):
+    def data(self) -> Any:
         return self._data
 
     @data.setter
-    def data(self, other):
+    def data(self, other: Any):
         if self._data is not None:
             if not self.silent:
                 print("+++ data.setter: delete 'data'")
             del self._data
-        # if not self.silent: print("+++ data.setter: assign new 'data'")
         self._data = other
 
-    def __getitem__(self, identifier):
+    def __getitem__(self, identifier: str) -> Optional['Base']:
         """
-        Indexing, e.g.: b = Base(); b.setFollower(['f1', 'f2']); f = b['f1']
+        Indexing, eg b = Base(); b.setFollower(['f1','f2']); f = b['f1']
 
-        Search for node with 'identifier'. Search starts downwards from root
+        Searches for node with 'identifier'. Starts downwards from root.
 
         Args:
             identifier (str):
                 identifier of searched node
 
         Returns:
-            (binding):
+            (Base):
                 node with given identifier or None if node not found
         """
         return self.getFollower(identifier)
 
-    def getFollower(self, identifier):
+    def getFollower(self, identifier: str) -> Optional['Base']:
         """
-        Search for node with 'identifier'. Search starts downwards from root
+        Search for node with 'identifier'. Search starts downwards 
+        from root
 
         Args:
             identifier (str):
                 identifier of searched node
 
         Returns:
-            (binding):
+            (Base):
                 node with given identifier or None if node not found
         """
         return self.getFollowerDownwards(identifier, fromNode=None)
 
-    def getFollowerDownwards(self, identifier, fromNode=None):
+    def getFollowerDownwards(self, identifier: str, fromNode: 
+        Optional['Base']=None) -> Optional['Base']:
         """
         Search for node with given 'identifier', start search downwards
         from 'fromNode'
@@ -522,12 +519,12 @@ class Base(object):
             identifier (str):
                 identifier of wanted node
 
-            fromNode (binding, optional):
-                start node for downward search. If 'fromNode' is None, search
-                starts from root
+            fromNode (Base or None, optional):
+                start node for downward search. If 'fromNode' is None, 
+                search starts from root
 
         Returns:
-            (binding to tree node)
+            (Base)
                 node with given identifier or None if node not found
         """
         if self.identifier == identifier:
@@ -549,16 +546,16 @@ class Base(object):
                     return node
         return None
 
-    def setFollower(self, other):
+    def setFollower(self, other: Union['Base', Iterable['Base']]) -> 'Base':
         """
         Adds other node
 
         Args:
-            other (Base):
-                binding to other node
+            other (Base or iterable of Base):
+                other node(s)
 
         Returns:
-            (binding):
+            (Base):
                 other node
         """
         if other:
@@ -566,6 +563,7 @@ class Base(object):
                 other._leader = self
                 if other not in self._followers:
                     self._followers.append(other)
+
             else:
                 for obj in other:
                     obj._leader = self
@@ -573,10 +571,15 @@ class Base(object):
                         self._followers.append(obj)
         return other
 
-    def isFollower(self, other):
+    def isFollower(self, other: 'Base') -> bool:
+        """
+        Returns:
+            (bool):
+                True if 'other' is a follower of this node 
+        """
         return other._leader == self and other in self._followers
 
-    def setCooperator(self, other):
+    def setCooperator(self, other: Union['Base', Iterable['Base']]) -> 'Base':
         if other:
             if not isinstance(other, (list, tuple)):
                 if other not in self._followers:
@@ -587,7 +590,12 @@ class Base(object):
                         self._followers.append(obj)
         return other
 
-    def isCooperator(self, other):
+    def isCooperator(self, other: 'Base') -> bool:
+        """
+        Returns:
+            (bool):
+                True if 'other' is a cooperator of this node 
+        """
         return other._leader != self and other in self._followers
 
     def cleanString(self, s: str) -> str:
@@ -598,9 +606,10 @@ class Base(object):
         rs.reverse()
         return ''.join(rs)
 
-    def kwargsDel(self, kwargs, remove):
+    def kwargsDel(self, kwargs: Dict[str, Any], 
+                  remove: Union[str, List[str]]) -> Dict[str, Any]:
         """
-        Makes copy of keyword dictionary and removes given keys
+        Makes copy of keyword dictionary and removes given key(s)
 
         Args:
             kwargs (dict):
@@ -618,97 +627,87 @@ class Base(object):
                 del dic[key]
         return dic
 
-    def kwargsGet(self, kwargs, keys, default=None):
+    def kwargsGet(self, kwargs: Dict[str, Any], 
+                  keys: Union[str, List[str]], default: Any=None) -> Any:
         """
-        Returns value of kwargs for first matching key
-        or 'default' if none of the keys is valid
+        Returns value of kwargs for first matching key or 'default' if 
+        all keys are invalid
 
         Args:
             kwargs (dict):
                 keyword arguments
 
-            keys (str or array_like of str):
+            keys (str or list of str):
                 keyword or list of alternative keywords
 
-            default(any type, optional):
-                value to be returns if none of the keys in kwargs
+            default(Any, optional):
+                value to be returned if none of the keys is in kwargs
 
         Returns:
-            (any type):
-                value of first matching key or value of 'default'
+            (Any):
+                value of first matching key or 'default'
         """
         for key in np.atleast_1d(keys):
             if key in kwargs:
                 return kwargs[key]
         return default
 
-    def terminate(self, message=''):
+    def terminate(self, message: str='') -> None:
         if not message:
             message = 'Fatal error'
-        self.write("???\n??? '" + self.program + "', terminated due to: '" +
-                   message + "'\n???")
+
+        if not self.silent:
+            print("\n???\n??? '" + self.program + "', terminated due to: '" +
+                  message + "'\n???")
         if self.gui:
-            messagebox.showerror("Termination of: '" + self.program + "'",
+            messagebox.showerror("Termination: '" + self.program + "'",
                                  message)
-        exit()
+        logger.critical(self.identifier + ' : ' + message)
+        self.destruct()
+            
+        sys.exit()
 
-    def warning(self, message='', wait=False):
-        if not message:
-            message = 'Warning'
-        wait = bool(wait)
-        self.write("!!! '", self.program, "', warning: '", message, "'")
-        if self.gui:
-            messagebox.showinfo(self.program + ' - Warning', message)
-        else:
-            if not self.silent and wait:
-                # os.system('pause')
-                input('!!! Press Enter to continue ...')
-
-    def write(self, *message):
+    def warn(self, message: str='', wait: bool=False) -> None:
         """
-        Sends output to console (if not in silent mode) and to log file of root
-
-        Wraps print() function considering indent of follower objects
+        - Sends message to logger
+        - Sends message to TKinter widget if in GUI mode, otherwise to console
 
         Args:
-            message (list):
-                list of variable arguments to be written; if last argument is
-                'None', line wont be completed (no carriage return)
-        Note:
-            No seperator between print elements, comparable to print(x, sep='')
+            message (str):
+                warning to be written to log file and console
         """
-        silent = self.silent or ('parallel' in modules and parallel.rank())
+        if not self.silent:
+            print("!!! '" + self.program  + "', warning: '" +  message + "'")
+        if self.gui:
+            messagebox.showinfo(self.program + ' - Warning', message)
+        logger.warning(self.identifier + ' : ' + message)
+        if not self.silent and wait:
+            # consider to replace input() with os.system('pause')
+            input('!!! Press Enter to continue ...')
 
-        lf = self._logFile
-        if lf is None:
-            lf = self.root()._logFile
-
-        if self._lineCompleted:
-            if not silent:
-                print(self.indent(), end='')
-            if lf:
-                print(self.indent(), end='', file=lf)
-        for x in message:
-            if x is not None:
-                if not silent:
-                    print(str(x), end='', sep='')
-                if lf:
-                    print(str(x), end='', sep='', file=lf)
-        if not message or message[-1] is not None:
-            if not silent:
-                print()
-            if lf:
-                print(file=lf)
-            self._lineCompleted = True
-
-    def _qualify(self):
+    def write(self, message: str) -> None:
         """
-        Asks for password. Terminates program if password is wrong
+        - Sends message to logger with file handler
+        - Sends message to console if not in silent mode
+
+        Args:
+            message (str):
+                message to be written to log file and console
+        """
+        now = datetime.now().strftime('%H:%M:%S.%f')[:-4]
+        if not self.silent:
+            print(self.indent() + message)
+        logger.info(now + ' ' + self.indent() + message)
+
+    def _authenticate(self) -> None:
+        """
+        Asks for password. Terminates program if wrong password
 
         Note:
             Create new hash string 's' with:
                 import hashlib
-                s = hashlib.sha224('new password'.encode('UTF-8')).hexdigest()
+                s = hashlib.sha224(
+                    'new password'.encode('UTF-8')).hexdigest()
         """
         s = 'c0dad715ce5501ea5e382d3a44a7cf816f9a1a309dfeb88cbe9ebfbd'
         if self.gui:
@@ -725,14 +724,14 @@ class Base(object):
             pw = entry2.get()
             parent.withdraw()
         else:
-            stdout.flush()
+            sys.stdout.flush()
             pw = getpass('Enter password: ')
         if sha224(pw.encode('UTF-8')).hexdigest() != s:
             self.terminate('wrong password')
 
-    def prolog(self, purpose='Processing data',
-               usage='[ path sourceFile [ -s -g ] ]',
-               example='-g -s d:/path/ test.xml'):
+    def prolog(self, purpose: str='Processing data',
+               usage: str='[ path sourceFile [ -s -g ] ]',
+               example: str='-g -s /tmp test.xml') -> None:
         if '-h' in self.argv or '--help' in self.argv:
             print("This is: '" + self.program + "', version " + self.version)
             print('\nPurpose: ' + purpose)
@@ -740,79 +739,78 @@ class Base(object):
             print('Example: ' + self.program + ' ' + example)
             exit()
 
-        qualify = False
+        authenticate = False
         if len(self.argv) > 1+0:
             self.gui = '-g' in self.argv or '--gui' in self.argv
             self.silent = '-s' in self.argv or '--silent' in self.argv
-            if not self.gui and self.silent:
-                qualify = False
+            if not self.gui and self._silent:
+                authenticate = False
         else:
             if not self.gui:
                 # self.silent = False
                 pass
 
+        global logger
+        if not logger.handlers:
+            logger.setLevel(logging.INFO)
+            f = os.path.join(os.path.join(self.path, self.identifier + '.log'))
+            handler = logging.FileHandler(f, mode='w')
+            handler.setLevel(logging.DEBUG)
+            logger.addHandler(handler)
+ 
         if self.isRoot():
-            if self._logFile is None:
-                self.logFile = None  # see setter, assigns: identifier + '.log'
-
-        if self.isRoot():
-            self.write('=== path: ', "'", self.path, "'")
-            silentPrevious = self.silent
-            self.silent = True
-            self.write('+++ date: ', str(datetime.now().date()),
-                       ' ', str(datetime.now().time())[:8])
-            self.silent = silentPrevious
-
-            self.write()
-            self.write("*** This is: '", self.program, "'", None)
+            if authenticate:
+                self._authenticate()                
+                
+            message = "*** This is: '" + self.program + "'"
             if self.identifier and self.identifier != self.program:
-                self.write(", id: '", self.identifier, "'", None)
-            self.write(", version: '", self.version, "'")
-            if qualify:
-                self._qualify()
-                pass
-
-        if self.isRoot():
+                message += ", id: '" + self.identifier + "'"
+            message += ", version: '" + self.version + "'"            
+            self.write(message)            
+            self.write('    Date: ' + str(datetime.now().date()) +
+                       ' ' + str(datetime.now().time())[:8])
+            self.write('    Path: ' + "'" + str(self.path) + "'")
             self.write('=== Pre-processing')
             self._execTimeStart = time()
 
-    def epilog(self):
+    def epilog(self) -> None:
         if self.isRoot():
-            message = "'" + self.program + "' is successfully completed."
+            message = "'" + self.program + "' is successfully completed\n"
             execTime = time() - self._execTimeStart
             if execTime >= self._minExecTimeShown:
-                self.write('    Execution time: ', format(round(execTime, 2)))
-            self.write('*** ', message, '\n')
-
-        if self._logFile is not None:
-            self._logFile.close()
-            self._logFile = None
+                self.write('    Execution time: ' + format(round(execTime, 2)))
+            self.write('*** ' + message)
 
         for x in self.followers:
             x.epilog()
 
-        if self.isRoot() and self.gui:
-            messagebox.showinfo(self.program, message)
+            if self.gui:
+                messagebox.showinfo(self.program, message)
 
-    def load(self):
+        if logger.handlers:
+            logger.info('')
+            logger.handlers = []
+        sys.stdout.flush()
+
+    def load(self) -> bool:
         return True
 
-    def save(self):
+    def save(self) -> bool:
         return True
 
-    def initialCondition(self):
-        # super().initialCondition()                # use it in derived classes
+    def initialCondition(self) -> bool:
+        # super().initialCondition()         # use it in derived classes
         pass
 
-    def updateNonLinear(self):
-        # super().updateNonLinear()                 # use it in derived classes
+    def updateNonLinear(self) -> bool:
+        # super().updateNonLinear()          # use it in derived classes
         pass
 
-    def updateTransient(self):
-        # super().updateTransient()                 # use it in derived classes
+    def updateTransient(self) -> bool:
+        # super().updateTransient()          # use it in derived classes
         pass
 
-    def pre(self, **kwargs):
+    def pre(self, **kwargs: Dict[str, Any]) -> bool:
         """
         Args:
             kwargs (dict, optional):
@@ -829,14 +827,15 @@ class Base(object):
                 self.write(self.indent() + "    ['" + x.identifier +
                            "' is cooperator]")
         if self.root().followers:
-            self.write('--- Pre (', self.identifier, ')')
+            self.write('--- Pre (' + self.identifier + ')')
 
         if self.data is None:
             ok = self.load()
         self._preDone = True
+        sys.stdout.flush()
         return ok
 
-    def task(self, **kwargs):
+    def task(self, **kwargs: Dict[str, Any]) -> float:
         """
         Args:
             kwargs (dict, optional):
@@ -852,11 +851,12 @@ class Base(object):
                 self.write(self.indent() + "    ['" + x.identifier +
                            "' is cooperator]")
         if self.root().followers:
-            self.write('--- Task (', self.identifier, ')')
+            self.write('--- Task (' + self.identifier + ')')
         self._taskDone = True
+        sys.stdout.flush()
         return 0.0
 
-    def post(self, **kwargs):
+    def post(self, **kwargs: Dict[str, Any]) -> bool:
         """
         Args:
             kwargs (dict, optional):
@@ -873,13 +873,14 @@ class Base(object):
                 self.write(self.indent() + "    ['" + x.identifier +
                            "' is cooperator]")
         if self.root().followers:
-            self.write('--- Post (', self.identifier, ')')
+            self.write('--- Post (' + self.identifier + ')')
         if self.data is None:
             ok = self.save()
         self._postDone = True
+        sys.stdout.flush()
         return ok
 
-    def control(self, **kwargs):
+    def control(self, **kwargs: Dict[str, Any]) -> float:
         """
         Args:
             kwargs (dict, optional):
@@ -887,7 +888,7 @@ class Base(object):
 
         Returns:
             (float):
-                residuum from range [0., 1.], indicating error
+                residuum from range [0., 1.], indicating error of task
         """
         if self.isRoot():
             execTime = time() - self._execTimeStart

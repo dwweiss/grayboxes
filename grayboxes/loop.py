@@ -146,14 +146,14 @@ class Loop(Base):
                 s += ' & non-linear: ' + str(self.nItMax) + ')'
             else:
                 s += ' & linear)'
-        self.write('=== Control', s)
+        self.write('=== Control' + s)
 
         ###############################
         def _nonLinearIteration(self):
             self.it = -1
             while self.it < self.nItMax:
                 self.it += 1
-                self.write('+++ Iteration: ', self.it)
+                self.write('+++ Iteration: ' + str(self.it))
                 self.updateNonLinear()
                 res = self.task(**kwargs)
 

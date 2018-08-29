@@ -162,13 +162,13 @@ class Neural(object):
 
         Args:
             X (2D or 1D array_like of float, optional, default: self.X):
-                training input, shape: (nPoint, nInp) or shape: (nPoint,)
+                training input, shape: (nPoint, nInp) or (nPoint,)
                 
             Y (2D or 1D array_like of float, optional, default: self.Y):
-                training target, shape: (nPoint, nOut) or shape: (nPoint,)
+                training target, shape: (nPoint, nOut) or (nPoint,)
 
             x (2D or 1D array_like of float, optional, default: self.x):
-                prediction input, shape: (nPoint, nInp) or shape: (nInp,)
+                prediction input, shape: (nPoint, nInp) or (nInp,)
 
             kwargs (dict, optional):
                 keyword arguments, see: train() and predict()
@@ -287,10 +287,10 @@ class Neural(object):
 
         Args:
            X (2D or 1D array_like of float, optional):
-                training input, shape: (nPoint, nInp) or shape: (nPoint,)
+                training input, shape: (nPoint, nInp) or (nPoint,)
 
             Y (2D or 1D array_like of float, optional):
-                training target, shape: (nPoint, nOut) or shape: (nPoint,)
+                training target, shape: (nPoint, nOut) or (nPoint,)
 
             xKeys (1D array_like of str, optional):
                 list of column keys for data selection
@@ -334,11 +334,11 @@ class Neural(object):
 
         Args:
             X (2D or 1D array_like of float, optional):
-                training input, shape: (nPoint, nInp) or shape: (nPoint,)
+                training input, shape: (nPoint, nInp) or (nPoint,)
                 default: self.X
 
             Y (2D or 1D array_like of float, optional):
-                training target, shape: (nPoint, nOut) or shape: (nPoint,)
+                training target, shape: (nPoint, nOut) or (nPoint,)
                 default: self.Y
 
             kwargs (dict, optional):
@@ -620,7 +620,7 @@ class Neural(object):
 
         Args:
             x (2D or 1D array_like of float):
-                prediction input, shape: (nPoint, nInp) or shape: (nInp)
+                prediction input, shape: (nPoint, nInp) or (nInp,)
 
             kwargs (dict, optional):
                 keyword arguments

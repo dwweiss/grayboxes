@@ -555,10 +555,10 @@ class BoxModel(Base):
         """
         Returns:
             X (2D or 1D array_like of float):
-                training input, shape: (nPoint, nInp) or shape: (nPoint,)
+                training input, shape: (nPoint, nInp) or (nPoint,)
 
             Y (2D or 1D array_like of float):
-                training target, shape: (nPoint, nOut) or shape: (nPoint,)
+                training target, shape: (nPoint, nOut) or (nPoint,)
 
             xKeys (1D list of str):
                 list of column keys for data selection
@@ -578,10 +578,10 @@ class BoxModel(Base):
         Args:
             value (4-tuple of two arrays of float and two arrays of str):
                 X (2D or 1D array_like of float):
-                    training input, shape: (nPoint, nInp) or shape: (nPoint,)
+                    training input, shape: (nPoint, nInp) or (nPoint,)
 
                 Y (2D or 1D array_like of float):
-                    training target, shape: (nPoint, nOut) or shape: (nPoint,)
+                    training target, shape: (nPoint, nOut) or (nPoint,)
 
                 xKeys (1D array_like of str, optional):
                     list of column keys for data selection
@@ -623,11 +623,11 @@ class BoxModel(Base):
         """
         Args:
             X (2D or 1D array_like of float, optional):
-                training input, shape: (nPoint, nInp) or shape: (nPoint,)
+                training input, shape: (nPoint, nInp) or (nPoint,)
                 default: self.X
 
             Y (2D or 1D array_like of float, optional):
-                training target, shape: (nPoint, nOut) or shape: (nPoint,)
+                training target, shape: (nPoint, nOut) or (nPoint,)
                 default: self.Y
 
         Returns:
@@ -701,10 +701,10 @@ class BoxModel(Base):
 
         Args:
             X (2D or 1D array_like of float):
-                training input, shape: (nPoint, nInp) or shape: (nPoint,)
+                training input, shape: (nPoint, nInp) or (nPoint,)
 
             Y (2D or 1D array_like of float):
-                training target, shape: (nPoint, nOut) or shape: (nPoint,)
+                training target, shape: (nPoint, nOut) or (nPoint,)
 
             kwargs (dict, optional):
                 keyword arguments
@@ -761,12 +761,12 @@ class BoxModel(Base):
 
         Args:
             x (2D or 1D array_like of float):
-                prediction input, shape: (nPoint, nInp) or shape: (nInp,)
+                prediction input, shape: (nPoint, nInp) or (nInp,)
 
-            args (list, optional):
+            args (float, optional):
                 positional arguments
 
-            kwargs (dict, optional):
+            kwargs (Any, optional):
                 keyword arguments
 
         Returns:
@@ -799,17 +799,17 @@ class BoxModel(Base):
             Y (2D array_like of float):
                 reference output, shape: (nPoint, nOut)
 
-            args (argument list, optional):
+            args (float, optional):
                 positional arguments
 
-            kwargs (dict, optional):
+            kwargs (Any, optional):
                 keyword arguments:
 
                 silent (bool):
                     if True then print of norm is suppressed
                     default: False
         Returns:
-            (dict: {str: float/str/int})
+            (Dict[str, Union[float, int, str]])
                 result of evaluation
                     'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
                     'abs'   (float): max{|net(x) - Y|} of best training
@@ -835,11 +835,11 @@ class BoxModel(Base):
             best['abs'] = dy.ravel()[best['iAbs']]
 
             if not kwargs.get('silent', True):
-                self.write('    L2: ', np.round(best['L2'], 4),
-                           ' max(abs(y-Y)): ', np.round(best['abs'], 5),
-                           ' [', best['iAbs'], ']',
-                           ' x,y:(', np.round(X.ravel()[best['iAbs']], 3),
-                           ', ', np.round(Y.ravel()[best['iAbs']], 3), ')')
+                self.write('    L2: ' + str(np.round(best['L2'], 4)) +
+                           ' max(abs(y-Y)): ' + str(np.round(best['abs'], 5)) +
+                           ' [' + str(best['iAbs']) + '] x,y:(' + 
+                           str( np.round(X.ravel()[best['iAbs']], 3)) + ', ' + 
+                           str(np.round(Y.ravel()[best['iAbs']], 3)) + ')')
         return best
 
     def pre(self, **kwargs):
@@ -854,12 +854,12 @@ class BoxModel(Base):
                     'XY' supersede 'X' and 'Y'
 
                 X (2D or 1D array_like of float, optional):
-                    training input, shape: (nPoint, nInp) or shape: (nPoint,)
+                    training input, shape: (nPoint, nInp) or (nPoint,)
                     'XY' supersede 'X' and 'Y'
                     default: self.X
 
                 Y (2D or 1D array_like of float, optional):
-                    training target, shape: (nPoint, nOut) or shape: (nPoint,)
+                    training target, shape: (nPoint, nOut) or (nPoint,)
                     'XY' supersede 'X' and 'Y'
                     default: self.Y
 
@@ -902,7 +902,7 @@ class BoxModel(Base):
                 keyword arguments:
 
                 x (2D or 1D array_like of float):
-                    prediction input, shape: (nPoint, nInp) or shape: (nInp,)
+                    prediction input, shape: (nPoint, nInp) or (nInp,)
 
         Returns:
             (2D array of float):

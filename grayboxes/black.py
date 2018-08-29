@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-08-20 DWW
 """
 
 import numpy as np
@@ -29,23 +29,23 @@ class Black(BoxModel):
     """
     Black box model y = F^*(x, w), w = train(X, Y, f(x))
 
-        - Neural network is employed if argument 'neurons' is passed by kwargs
-          Best neural network of all trials is saved as 'self._empirical._net'
+        - Neural network is employed if kwargs contains 'neurons'
+          Best network of all trials is saved as 'self._empirical._net'
 
-        - Splines are employed if the argument 'splines' is passed by kwargs
+        - Splines are employed if the kwargs contains 'splines'
 
     Example:
         X = np.linspace(0.0, 1.0, 20)
         x = X * 2
         Y = X**2
 
-        # black box, neural network, expanded:
+        # black box, neural network, expanded variant:
         model = Black()
         model(X=X, Y=Y, neurons=[2, 3])
         yTrn = model(x=X)
         yTst = model(x=x)
 
-        # black box, neural network, compact:
+        # black box, neural network, compact variant:
         y = Black()(XY=(X, Y), neurons=[2, 3], x=x)
         
     Todo:
@@ -59,7 +59,7 @@ class Black(BoxModel):
                 object identifier
         """
         super().__init__(f=None, identifier=identifier)
-        self._empirical = None         # holds instance of Neural, splines etc.
+        self._empirical = None   # holds instance of Neural, splines etc
 
     @property
     def silent(self):
@@ -73,26 +73,26 @@ class Black(BoxModel):
 
     def train(self, X, Y, **kwargs):
         """
-        Trains model, stores X and Y as self.X and self.Y, and stores result
-        of best training trial as self.best
+        Trains model, stores X and Y as self.X and self.Y, and stores 
+        result of best training trial as self.best
 
         Args:
             X (2D or 1D array_like of float):
-                training input, shape: (nPoint, nInp) or shape: (nPoint,)
+                training input, shape: (nPoint, nInp) or (nPoint,)
 
             Y (2D or 1D array_like of float):
-                training target, shape: (nPoint, nOut) or shape: (nPoint,)
+                training target, shape: (nPoint, nOut) or (nPoint,)
 
             kwargs (dict, optional):
                 keyword arguments:
 
                 neurons (int or 1D array_like of int):
-                    number of neurons in the hidden layers of neural network
+                    number of neurons in hidden layers of neural network
 
                 splines (1D array_like of float):
                     not specified yet
 
-                ... additional training options of network, see Neural.train()
+                ... additional training options, see Neural.train()
 
         Returns:
             see BoxModel.train()
@@ -113,7 +113,7 @@ class Black(BoxModel):
         splines = kwargs.get('splines', None) if neurons is None else None
 
         if neurons is not None:
-            self.write('+++ train neural, hidden neurons:', neurons)
+            self.write('+++ train neural, hidden neurons:' + str(neurons))
 
             if self._empirical is not None:
                 del self._empirical
@@ -143,11 +143,11 @@ class Black(BoxModel):
 
     def predict(self, x, **kwargs):
         """
-        Executes box model, stores input x as self.x and output as self.y
+        Executes box model, stores input as self.x and output as self.y
 
         Args:
             x (2D or 1D array_like of float):
-                prediction input, shape: (nPoint, nInp) or shape: (nInp,)
+                prediction input, shape: (nPoint, nInp) or (nInp,)
 
             kwargs (dict, optional):
                 keyword arguments

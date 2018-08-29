@@ -55,7 +55,7 @@ class Inverse(Minimum):
         Args:
             x (2D or 1D array_like of float):
                 input of multiple or single data points,
-                shape: (nPoint, nInp) or shape: (nInp)
+                shape: (nPoint, nInp) or (nInp,)
 
             kwargs (dict, optional):
                 keyword arguments for predict()
