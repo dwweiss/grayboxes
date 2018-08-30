@@ -47,10 +47,11 @@ def grid(n, *ranges):
              3     4     5     6
 
     Args:
-        n (int or 1D array_like of int):
-            number of nodes per axis for which initial values are generated.
-            If n is single and negative, the array will be transformed to 2D
-            and transposed: grid(-5, [0, 1]) ==> [[0], [.25], [.5], [.75], [1]]
+        n (int or iterable of int):
+            number of nodes per axis for which initial values are
+            generated. If n is single and NEGATIVE, the array will be
+            transformed to 2D and transposed:
+            grid(-5, [0, 1]) ==> [[0], [.25], [.5], [.75], [1]]
 
         ranges (variable length argument list of pairs of float):
             list of (min, max) pairs
@@ -74,7 +75,8 @@ def grid(n, *ranges):
 
     if ranges.shape[0] == 1:
         x = xVar[0]
-        if _n < 0:
+        # if argument n is a negative int:
+        if n[0] < 0:
             x = np.atleast_2d(x).T
     elif ranges.shape[0] == 2:
         x0, x1 = np.meshgrid(xVar[0], xVar[1])
@@ -104,12 +106,13 @@ def grid(n, *ranges):
                  x3.ravel(), x4.ravel(), x5.ravel())]
     else:
         assert 0, 'ranges: ' + str(ranges)
+
     return np.asfarray(x)
 
 
 def cross(n, *ranges):
     """
-    Sets intial (uniformly spaced) cross input, for instance for 2 input
+    Sets initial (uniformly spaced) cross input, for instance for 2 input
     with 5 nodes per axis: cross(5, [3., 7.], [-4., -2.])
 
                  -2.0
@@ -124,7 +127,7 @@ def cross(n, *ranges):
     Args:
         n (int):
             number of nodes per axis for which initial values are generated
-            n is corrected to athe next odd number if n is even
+            n is corrected to the next odd number if n is even
 
         ranges (variable length argument list of pairs of float):
             list of (min, max) pairs
@@ -160,7 +163,7 @@ def cross(n, *ranges):
 
 def rand(n, *ranges):
     """
-    Sets intial (uniformly distributed) random input, for instance for 2
+    Sets initial (uniformly distributed) random input, for instance for 2
     input with 12 trials: rand(12, [1., 3.], [-7., -5.])
 
       -5.0 ---------------
@@ -191,7 +194,7 @@ def rand(n, *ranges):
     assert all(x[0] <= x[1] for x in ranges), 'ranges: ' + str(ranges)
 
     x = np.array([[random.uniform(min(rng[0], rng[1]), max(rng[0], rng[1]))
-                  for rng in ranges] for i in range(n)])
+                  for rng in ranges] for _ in range(n)])
     return x
 
 
@@ -224,7 +227,7 @@ def noise(y, absolute=0.0, relative=0.0, uniform=True):
 
         absolute (float, optional):
             upper boundary of interval of absolute values of noise to be added.
-            The lower boundary is the opposite of 'abolute'
+            The lower boundary is the opposite of 'absolute'
             default: 0.0
 
         relative (float, optional):
@@ -234,10 +237,10 @@ def noise(y, absolute=0.0, relative=0.0, uniform=True):
             default: 0.0
 
         uniform (bool, optional):
-            if True then noise is uniformely distributed between the upper and
+            if True then noise is uniformly distributed between the upper and
             lower boundaries given by 'absolute' and/or 'relative'.
             Otherwise these upper boundaries represent the standard deviation
-            of a Gaussian distribution (at given boundarynoise value is 60.7%
+            of a Gaussian distribution (at given boundary noise value is 60.7%
             of max noise )
             default: True
 
@@ -279,11 +282,29 @@ def frame2arr(df, keys0, keys1=None, keys2=None, keys3=None, keys4=None,
         df (pandas.DataFrame of float):
             data object
 
-        keys0 (str of list of str):
+        keys0 (str or iterable of str):
             key(s) of column 0 for data selection
 
-        keys1..keys7 (str or list of str, optional):
-            key(s) of columns 1..7 for data selection
+        keys1 (str or iterative of str, optional):
+            keys(s) of column 1 for data selection
+
+        keys2 (str or iterative of str, optional):
+            keys(s) of column 2 for data selection
+
+        keys3 (str or iterative of str, optional):
+            keys(s) of column 3 for data selection
+
+        keys4 (str or iterative of str, optional):
+            keys(s) of column 4 for data selection
+
+        keys5 (str or iterative of str, optional):
+            keys(s) of column 5 for data selection
+
+        keys6 (str or iterative of str, optional):
+            keys(s) of column 6 for data selection
+
+        keys7 (str or iterative of str, optional):
+            keys(s) of column 7 for data selection
 
     Returns:
         (tuple of 1D arrays of float):
@@ -830,15 +851,15 @@ class BoxModel(Base):
             except ValueError:
                 print('X Y y:', X.shape, Y.shape, y.shape)
                 assert 0
-            best = {'L2': np.sqrt(np.mean(np.square(dy)))}
-            best['iAbs'] = np.abs(dy).argmax()
+            best = {'L2': np.sqrt(np.mean(np.square(dy))),
+                    'iAbs': np.abs(dy).argmax()}
             best['abs'] = dy.ravel()[best['iAbs']]
 
             if not kwargs.get('silent', True):
                 self.write('    L2: ' + str(np.round(best['L2'], 4)) +
                            ' max(abs(y-Y)): ' + str(np.round(best['abs'], 5)) +
                            ' [' + str(best['iAbs']) + '] x,y:(' + 
-                           str( np.round(X.ravel()[best['iAbs']], 3)) + ', ' + 
+                           str(np.round(X.ravel()[best['iAbs']], 3)) + ', ' +
                            str(np.round(Y.ravel()[best['iAbs']], 3)) + ')')
         return best
 

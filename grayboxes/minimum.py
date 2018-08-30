@@ -216,7 +216,7 @@ class Minimum(Forward):
     def task(self, **kwargs):
         """
         Args:
-            kwargs (dict, optional):
+            kwargs (Dict[str, Any], optional):
                 keyword arguments:
 
                 bounds (2D array_like of float):
@@ -257,6 +257,8 @@ class Minimum(Forward):
         self._history = []
         for x0 in xIni:
             self._trialHistory = []
+
+            success = None
 
             if self.method.startswith('bas'):
                 res = scipy.optimize.basinhopping(

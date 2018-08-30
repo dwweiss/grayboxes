@@ -28,17 +28,25 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import mlab, cm
-from mpl_toolkits.mplot3d import Axes3D                 # for "projection='3d'"
+from mpl_toolkits.mplot3d import Axes3D          # for "projection='3d'"
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as AA
+from typing import Iterable, Optional, Tuple, Union
 
 
-def isIrregularMesh(x, y, z) -> bool:
+def isIrregularMesh(x: np.ndarray, y: np.ndarray, z: np.ndarray) -> bool:
     """
     Checks if all three arrays are 1D and of the same length
 
     Args:
-        x, y, z (array of float): arrays of corrdinates and dependent variable
+        x (array of float):
+            arrays of coordinates and dependent variable
+
+        y (array of float):
+            arrays of coordinates and dependent variable
+
+        z (array of float):
+            arrays of coordinates and dependent variable
 
     Returns:
         True if all arrays are 1D and of same length
@@ -48,13 +56,23 @@ def isIrregularMesh(x, y, z) -> bool:
         len(x) == len(y) and len(x) == len(z)
 
 
-def isRegularMesh(x, y, z, dim=2):
+def isRegularMesh(x: np.ndarray, y: np.ndarray, z: np.ndarray,
+                  dim: int=2) -> bool:
     """
-    Checks if all three arrays are of dimension 'dim' and of the same length
+    Checks if all three arrays are of dimension 'dim' and of same length
 
     Args:
-        x, y, z (array of float): arrays of corrdinates and dependent variable
-        dim (int, optional): dimension of the arrays
+        x (array of float):
+            arrays of coordinates and dependent variable
+
+        y (array of float):
+            arrays of coordinates and dependent variable
+
+        z (array of float):
+            arrays of coordinates and dependent variable
+
+        dim (int, optional):
+            dimension of the arrays
 
     Returns:
         True if all arrays are of dimension 'dim' and of same length
@@ -64,21 +82,27 @@ def isRegularMesh(x, y, z, dim=2):
              for arr in [y, z] for i in range(dim)])
 
 
-def toRegularMesh(x, y, z, nx=50, ny=None):
+def toRegularMesh(x: np.ndarray, y: np.ndarray, z: np.ndarray, nx: int=50,
+                  ny: int=None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Maps irregular arrays to regular 2D arrays for x, y and z
 
     Args:
-        x, y (array_like of float):
-            coordinates as 1D-arrays
+        x (array of float):
+            arrays of coordinates and dependent variable
+
+        y (array of float):
+            arrays of coordinates and dependent variable
+
         z (array_like of float):
             irregular 1D or 2D-array of size: len(x)*len(y)
+
         nx, ny (int, optional):
             number of nodes along x- and y-axis
 
     Returns:
-        x, y, z (array of float): coordinates and independent variable as
-            regular 2D-arrays of same shape
+        x, y, z (3-tuple of array of float): coordinates and independent
+            variable as regular 2D-arrays of same shape
     """
     x = np.asfarray(x)
     y = np.asfarray(y)
@@ -90,7 +114,7 @@ def toRegularMesh(x, y, z, nx=50, ny=None):
         if z.ndim == 2:
             assert x.size * y.size == z.size, 'incompatible arrays'
             X, Y = np.meshgrid(x, y)
-            return (X, Y, z)
+            return X, Y, z
         else:
             assert x.size == y.size and x.size == z.size, \
               'incompatible arr x..z.shape:' + str((x.shape, y.shape, z.shape))
@@ -102,14 +126,19 @@ def toRegularMesh(x, y, z, nx=50, ny=None):
             Y = np.linspace(y.min(), y.max(), ny)
             X, Y = np.meshgrid(X, Y)
             Z = mlab.griddata(x, y, z, X, Y, interp='linear')
-            return (X, Y, Z)
+            return X, Y, Z
     else:
         assert x.size == y.size and x.size == z.size, 'incompatible arrays'
-        return (x, y, z)
+        return x, y, z
 
 
-def clip_xyz(x, y, z, z2=None, xrange=[0., 0.], yrange=[0., 0.],
-             zrange=[0., 0.]):
+def clip_xyz(x: Iterable[float], y: Iterable[float], z: Iterable[float],
+             z2: Optional[Iterable[float]]=None,
+             xrange: Optional[Tuple[float, float]]=None,
+             yrange: Optional[Tuple[float, float]]=None,
+             zrange: Optional[Tuple[float, float]]=None) -> \
+             Union[Tuple[np.ndarray, np.ndarray, np.ndarray],
+                   Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
     """
     - Clips IRREGULAR arrays for x, y, z (1D arrays of same length)
     - Assigns array of size 2 to ranges if size is not 2
@@ -117,20 +146,32 @@ def clip_xyz(x, y, z, z2=None, xrange=[0., 0.], yrange=[0., 0.],
       upper bound of a range is not equal
 
     Args:
-        x, y, z (1D array_like of float):
-            data as 1D-arrays
+        x (iterable of float):
+            array of coordinates
 
-        z2 (1D array_like of float, optional):
+        y (iterable of float):
+            array of coordinates
+
+        z (iterable of float):
+            array of values over (x, y)
+
+        z2 (iterable of float, optional):
             second z-data as 1D-array
 
-        xrange, yrange, zrange: (list of float):
-            ranges in x-, y- and z-direction
+        xrange: (2-tuple of float):
+            ranges in x-direction
+
+        yrange: (2-tuple of float):
+            ranges in y-direction
+
+        zrange: (2-tuple of float):
+            ranges in z-direction
 
     Returns:
-        (three 1D arrays of float):
+        (3-tuple of arrays of float):
             if z2 is None
         or
-        (four 1D arrays of float):
+        (4-tuple of arrays of float):
             if z2 is not None
     """
     x = np.asfarray(x)
@@ -164,18 +205,21 @@ def clip_xyz(x, y, z, z2=None, xrange=[0., 0.], yrange=[0., 0.],
 
     indices = []
     for i in range(len(z)):
-        if not hasXRange or (xrange[0] <= x[i] and x[i] <= xrange[1]):
-            if not hasYRange or (yrange[0] <= y[i] and y[i] <= yrange[1]):
-                if not hasZRange or (zrange[0] <= z[i] and z[i] <= zrange[1]):
+        if not hasXRange or (xrange[0] <= x[i] <= xrange[1]):
+            if not hasYRange or (yrange[0] <= y[i] <= yrange[1]):
+                if not hasZRange or (zrange[0] <= z[i] <= zrange[1]):
                     indices.append(i)
     if z2 is None:
-        return (x[indices], y[indices], z[indices])
+        return x[indices], y[indices], z[indices]
     else:
-        return (x[indices], y[indices], z[indices], z2[indices])
+        return x[indices], y[indices], z[indices], z2[indices]
 
 
-def plt_pre(xLabel='x', yLabel='y', title='', xLog=False, yLog=False,
-            grid=True, figsize=None, fontsize=None):
+def plt_pre(xLabel: str='x', yLabel: str='y', title: str='',
+            xLog: bool=False, yLog: bool=False, grid: bool=True,
+            figsize: Optional[Tuple[float, float]]=None,
+            fontsize: Optional[int]=None) \
+        -> plt.figure:
     """
     Begin multiple plots
     """
@@ -206,7 +250,8 @@ def plt_pre(xLabel='x', yLabel='y', title='', xLog=False, yLog=False,
     return fig
 
 
-def plt_post(file='', legendPosition=(1.1, 1.05)):
+def plt_post(file: str='', legendPosition: Optional[Tuple[float, float]]=
+             (1.1, 1.05)) -> None:
     """
     End multiple plots
     """
@@ -230,9 +275,12 @@ def plt_post(file='', legendPosition=(1.1, 1.05)):
     plt.show()
 
 
-def plot1(x, y, labels=['x', 'y'], title='', xLog=False, yLog=False,
-          grid=True, figsize=None, fontsize=None, legendPosition=None,
-          file=''):
+def plot1(x: Iterable[float], y: Iterable[float], labels=['x', 'y'],
+          title: str='', xLog: bool=False, yLog: bool=False,
+          grid: Optional[bool]=True, figsize: Optional[Tuple[int, int]]=None,
+          fontsize: Optional[int]=None,
+          legendPosition: Optional[Tuple[float, float]]=None,
+          file='') -> None:
     plt_pre(xLabel=labels[0], yLabel=labels[1], title=title,
             xLog=xLog, yLog=yLog, grid=grid,
             figsize=figsize, fontsize=fontsize)
@@ -599,14 +647,6 @@ def plotVector(x, y,
                fontsize=None,
                legendPosition='',
                file=''):
-#    if xrange[0] is None:
-#        xrange[0] = min(x)
-#    if xrange[1] is None:
-#        xrange[1] = max(x)
-#    if yrange[0] is None:
-#        yrange[0] = min(y)
-#    if yrange[1] is None:
-#        yrange[1] = max(y)
     for i in range(len(units)):
         if not units[i].startswith('['):
             units[i] = '[' + units[i] + ']'

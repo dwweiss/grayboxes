@@ -60,6 +60,7 @@ class Black(BoxModel):
         """
         super().__init__(f=None, identifier=identifier)
         self._empirical = None   # holds instance of Neural, splines etc
+        self.best = None
 
     @property
     def silent(self):

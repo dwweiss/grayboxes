@@ -237,7 +237,7 @@ def split(x2D, nProc):
     - Splits the 2D array into an 3D array
 
     Args:
-        x (2D or 1D array_like of float):
+        x2D (2D or 1D array_like of float):
             input array, shape: (nProc, nInp) or (nInp,)
 
         nProc (int):
@@ -310,7 +310,7 @@ def x3d_to_str(data, indent='    '):
     assert data is not None
 
     if isinstance(indent, int):
-        indent = int * ' '
+        indent = indent * ' '
     s = ''
     for iProc, yProc in enumerate(data):
         s += indent + 'process ' + str(iProc) + ': '

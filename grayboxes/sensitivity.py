@@ -53,12 +53,13 @@ class Sensitivity(Forward):
         """
         super().__init__(model=model, identifier=identifier)
 
-        self.axisIndices = None         # point indices for which x[j] is equal
+        self.axisIndices = None  # point indices for which x[j] is equal
         self.dy_dx = None
+        self.indicesWithEqualXj = None
 
     def task(self, **kwargs):
         """
-        Analyzes sensistivity
+        Analyzes sensitivity
 
         Args:
             kwargs (dict, optional):

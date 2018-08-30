@@ -92,7 +92,7 @@ class LightGray(BoxModel):
         y = model(X=X, Y=Y, tun0=4, x=x)             # train and predict
     """
 
-    def __init__(self, f, identifier :str='LightGray') -> None:
+    def __init__(self, f, identifier='LightGray') -> None:
         """
         Args:
             f (method or function):
@@ -141,7 +141,7 @@ class LightGray(BoxModel):
     # function wrapper for scipy minimize
     def meanSquareErrror(self, weights, **kwargs):
         y = BoxModel.predict(self, self.X, *weights,
-                          **self.kwargsDel(kwargs, 'x'))
+                             **self.kwargsDel(kwargs, 'x'))
         return np.mean((y - self.Y)**2)
 
     # function wrapper for scipy least_square and leastsq
@@ -321,14 +321,14 @@ class LightGray(BoxModel):
             Y (2D or 1D array_like of float):
                 training target, shape: (nPoint, nOut) or (nPoint,)
 
-            tun0 (2D or 1D array_like of float, optional):
-                sequence of initial guess of the tuning parameter sets,
-                If missing, then initial values will be all 1
-                tun0.shape[1] is the number of tuning parameters
-                [IS PASSED IN KWARGS to be compatible to parallel.py]
-
             kwargs (Any, optional):
                 keyword arguments:
+
+                tun0 (2D or 1D array_like of float, optional):
+                    sequence of initial guess of the tuning parameter sets,
+                    If missing, then initial values will be all 1
+                    tun0.shape[1] is the number of tuning parameters
+                    [IS PASSED IN KWARGS to be compatible to parallel.py]
 
                 methods (Union[str, Iterable[str]]):
                     optimizer method of
@@ -369,7 +369,7 @@ class LightGray(BoxModel):
             methods = self.validMethods
         if any([tr not in self.validMethods for tr in methods]):
             methods = self.validMethods[0]
-            self.write("!!! correct method: '" + methods + "' ==> ", methods)
+            self.write("!!! correct method: '" + methods + "' ==> " + methods)
         methods = np.atleast_1d(methods)
 
         # set detailed print (only if not silent)

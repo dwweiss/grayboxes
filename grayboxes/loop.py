@@ -39,15 +39,16 @@ class Loop(Base):
         self.it = 0                     # actual number of iterations
         self.nItMin = 0                 # minimum number of iterations
         self.nItMax = 0                 # maximum number of iterations
-        self.epsilon = 0.0              # maximum residuum tolerated
-        self.omega = 1.0                # relaxation factor
+        self.epsilon = 0.               # maximum residuum tolerated
+        self.omega = 1.                 # relaxation factor
 
         # transient settings are only relevant if tEnd > 0
-        self.t = 0.0                    # actual time
+        self.t = 0.                     # actual time
         self.tBegin = 0.                # start time
         self.tEnd = 0.                  # final time
         self.dt = 1e-2                  # time step size
-        self.theta = 0.5                # time discretisation sheme
+        self.theta = 0.5                # time discretization scheme
+        self.execTimeStart = 0.         # store start time
 
     def __str__(self):
         s = super().__str__()
@@ -103,7 +104,7 @@ class Loop(Base):
             self.dt = dt
             self.theta = theta
 
-    def initialCondition(self) -> bool:
+    def initialCondition(self):
         for x in self.followers:
             x.initialCondition()
 
@@ -121,7 +122,7 @@ class Loop(Base):
     def control(self, **kwargs):
         """
         Args:
-            kwargs (dict, optional):
+            kwargs (Dict[str, Any], optional):
                 keyword arguments passed to task()
 
         Returns:
@@ -149,25 +150,25 @@ class Loop(Base):
         self.write('=== Control' + s)
 
         ###############################
-        def _nonLinearIteration(self):
+        def _nonLinearIteration():
             self.it = -1
             while self.it < self.nItMax:
                 self.it += 1
                 self.write('+++ Iteration: ' + str(self.it))
                 self.updateNonLinear()
-                res = self.task(**kwargs)
+                _res = self.task(**kwargs)
 
-                if res <= self.epsilon and self.it >= self.nItMin:
+                if _res <= self.epsilon and self.it >= self.nItMin:
                     break
-            return res
+            return _res
         ###############################
 
-        # initialize arrays of unknowns, coordinates and boundary conditions
+        # initialize arrays of unknowns, coordinates and boundary cond.
         self.initialCondition()
 
         if not self.isTransient():
             ###############################
-            res = _nonLinearIteration(self)             # steady, non-linear
+            res = _nonLinearIteration()             # steady, non-linear
             ###############################
         else:
             self.t = 0.0
@@ -177,10 +178,10 @@ class Loop(Base):
                 self.updateTransient()
                 if self.isNonLinear():
                     ###############################
-                    res = _nonLinearIteration(self)     # transient, non-linear
+                    res = _nonLinearIteration()  # transient, non-linear
                     ###############################
                 else:
-                    res = self.task(**kwargs)           # transient, linear
+                    res = self.task(**kwargs)        # transient, linear
 
         if self.isRoot():
             execTime = time() - self.execTimeStart

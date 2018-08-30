@@ -461,19 +461,19 @@ class Neural(object):
 
         self._ready = False
 
-        # if theoretical submodel 'f' is provided, alternative training is used
+        # alternative training if theoretical submodel 'f' is provided
         if self.f is not None:
             methods = [x for x in methods if x in ('genetic', 'derivative')]
             if not methods:
                 methods = 'genetic'
         else:
             if not methods:
-                methods == 'all'
+                methods = 'all'
             if isinstance(methods, str):
                 if methods == 'all':
                     methods = 'cg gd gdx gdm gda rprop bfgs genetic'
                 methods = methods.split()
-            methods = list(OrderedDict.fromkeys(methods))          # redundancy
+            methods = list(OrderedDict.fromkeys(methods))   # redundancy
         self._methods = [x.lower() for x in methods]
 
         if errorf is None:

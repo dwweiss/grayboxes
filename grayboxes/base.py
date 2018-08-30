@@ -63,6 +63,7 @@ except ImportError:
         print("!!! Module 'parallel' not imported")
 
 
+# noinspection PyAttributeOutsideInit
 class Base(object):
     """
     Connects model objects and controls their execution
@@ -82,7 +83,7 @@ class Base(object):
 
     - Object specialization in "vertical" and "horizontal" direction
         - leader-type objects implementing alternative control of tasks
-        - peer-type opjects implement empirical submodels (data-driven),
+        - peer-type objects implement empirical submodels (data-driven),
           theoretical submodels, knowledge objects (e.g. properties of 
           matter) and generic service objects (e.g. plotting)
 
@@ -170,15 +171,15 @@ class Base(object):
             identifier (string, optional):
                 unique identifier of object
 
-                argv (positional arguments, optional):
-                    program arguments
+            argv (positional arguments, optional):
+                program arguments
         """
         if not identifier:
             identifier = self.__class__.__name__
         self._identifier = str(identifier)
         self.argv = argv
         self.program = self.__class__.__name__
-        self.version = '280818_dww'
+        self.version = '300818_dww'
 
         self._execTimeStart = 0.0       # start measure execution time
         self._minExecTimeShown = 1.0    # times < limit are not shown
@@ -195,19 +196,18 @@ class Base(object):
         self._taskDone = False          # internal: True if task() done
         self._postDone = False          # internal: True if post() done
 
-
         self._leader = None             # leader object
         self._followers = []            # array of follower objects
 
         self._data = None               # data organized in a DataFrame
         self._csvSeparator = ','        # separator in csv-files
         
-    def __call__(self, **kwargs: Dict[str, Any]) -> float:
+    def __call__(self, **kwargs: Any) -> float:
         """
         Executes model
 
         Args:
-            kwargs (dict, optional):
+            kwargs (Dict[str, Any], optional):
                 keyword arguments passed to pre(), control() and post()
 
                 silent (bool):
@@ -455,13 +455,12 @@ class Base(object):
             other.setFollower(self)
 
     @property
-    def followers(self) -> List['Base']:
+    def followers(self) -> Iterable['Base']:
         return self._followers
 
     @followers.setter
     def followers(self, other: Iterable['Base']) -> None:
-        self.terminate("followers.setter: 'followers' is protected," +
-                       " use 'setFollower()'")
+        self.setFollower(other)
 
     def isRoot(self) -> bool:
         return not self.leader
@@ -510,7 +509,7 @@ class Base(object):
         return self.getFollowerDownwards(identifier, fromNode=None)
 
     def getFollowerDownwards(self, identifier: str, fromNode: 
-        Optional['Base']=None) -> Optional['Base']:
+                             Optional['Base']=None) -> Optional['Base']:
         """
         Search for node with given 'identifier', start search downwards
         from 'fromNode'
@@ -606,20 +605,20 @@ class Base(object):
         rs.reverse()
         return ''.join(rs)
 
-    def kwargsDel(self, kwargs: Dict[str, Any], 
-                  remove: Union[str, List[str]]) -> Dict[str, Any]:
+    def kwargsDel(self, kwargs: Any,
+                  remove: Union[str, Iterable[str]]) -> Dict[str, Any]:
         """
         Makes copy of keyword dictionary and removes given key(s)
 
         Args:
-            kwargs (dict):
+            kwargs (Dict[str, Any]):
                 keyword arguments
 
-            remove (str or list of str):
+            remove (str or iterable of str):
                 keywords of items to be removed
 
         Returns:
-            dict of keyword arguments without removed items
+            dictionary without removed items
         """
         dic = kwargs.copy()
         for key in np.atleast_1d(remove):
@@ -627,17 +626,17 @@ class Base(object):
                 del dic[key]
         return dic
 
-    def kwargsGet(self, kwargs: Dict[str, Any], 
-                  keys: Union[str, List[str]], default: Any=None) -> Any:
+    def kwargsGet(self, kwargs: Any,
+                  keys: Union[str, Iterable[str]], default: Any=None) -> Any:
         """
         Returns value of kwargs for first matching key or 'default' if 
         all keys are invalid
 
         Args:
-            kwargs (dict):
+            kwargs (Dict[str, Any]):
                 keyword arguments
 
-            keys (str or list of str):
+            keys (str or iterable of str):
                 keyword or list of alternative keywords
 
             default(Any, optional):
@@ -675,9 +674,12 @@ class Base(object):
         Args:
             message (str):
                 warning to be written to log file and console
+
+            wait (bool):
+                wait with program execution
         """
         if not self.silent:
-            print("!!! '" + self.program  + "', warning: '" +  message + "'")
+            print("!!! '" + self.program + "', warning: '" + message + "'")
         if self.gui:
             messagebox.showinfo(self.program + ' - Warning', message)
         logger.warning(self.identifier + ' : ' + message)
@@ -743,7 +745,7 @@ class Base(object):
         if len(self.argv) > 1+0:
             self.gui = '-g' in self.argv or '--gui' in self.argv
             self.silent = '-s' in self.argv or '--silent' in self.argv
-            if not self.gui and self._silent:
+            if not self.gui and self.silent:
                 authenticate = False
         else:
             if not self.gui:
@@ -810,10 +812,10 @@ class Base(object):
         # super().updateTransient()          # use it in derived classes
         pass
 
-    def pre(self, **kwargs: Dict[str, Any]) -> bool:
+    def pre(self, **kwargs: Any) -> bool:
         """
         Args:
-            kwargs (dict, optional):
+            kwargs (Dict[str, Any], optional):
                 keyword arguments
 
         Returns:
@@ -835,10 +837,10 @@ class Base(object):
         sys.stdout.flush()
         return ok
 
-    def task(self, **kwargs: Dict[str, Any]) -> float:
+    def task(self, **kwargs: Any) -> float:
         """
         Args:
-            kwargs (dict, optional):
+            kwargs (Dict[str, Any], optional):
                 keyword arguments
 
         Returns:
@@ -856,10 +858,10 @@ class Base(object):
         sys.stdout.flush()
         return 0.0
 
-    def post(self, **kwargs: Dict[str, Any]) -> bool:
+    def post(self, **kwargs: Any) -> bool:
         """
         Args:
-            kwargs (dict, optional):
+            kwargs (Dict[str, Any], optional):
                 keyword arguments
 
         Returns:
@@ -880,10 +882,10 @@ class Base(object):
         sys.stdout.flush()
         return ok
 
-    def control(self, **kwargs: Dict[str, Any]) -> float:
+    def control(self, **kwargs: Any) -> float:
         """
         Args:
-            kwargs (dict, optional):
+            kwargs (Dict[str, Any], optional):
                 keyword arguments passed to task()
 
         Returns:

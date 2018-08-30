@@ -151,7 +151,7 @@ class xyz(object):
             phiRad (array of float):
                 angle of counter-clockwise rotation [rad]
 
-            rotAxis (array of float):
+            rotAxis (iterable of float):
                 coordinates of rotation axis, one and only one component
                 is None; this component indicates the rotation axis.
                 e.g. 'rotAxis.y is None' forces rotation around y-axis,
@@ -242,6 +242,8 @@ class xyzt(xyz):
             point (xyz or xyzt, optional, default=None):
                 'point' will be assigned to this object if 'point' is not None
         """
+        super().__init__(x, y, z)
+
         if isinstance(point, xyzt):
             self.x, self.y, self.z, self.t = point.x, point.y, point.z, point.t
         elif isinstance(point, xyz):
