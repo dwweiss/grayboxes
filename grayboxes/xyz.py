@@ -17,13 +17,14 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-08-30 DWW
 """
 
 __all__ = ['xyz', 'xyzt']
 
 from math import sqrt, sin, cos, pi
 import numpy as np
+from typing import Iterable, List, Optional, Tuple, Union
 
 
 class xyz(object):
@@ -31,7 +32,8 @@ class xyz(object):
     Point in 3D space (x, y, z)
     """
 
-    def __init__(self, x=0., y=0., z=0., point=None):
+    def __init__(self, x: float=0., y: float=0., z: float=0.,
+                 point: Optional['xyz']=None) -> None:
         """
         Args:
             x, y, z (float, optional, default=0):
@@ -50,30 +52,30 @@ class xyz(object):
             self.x, self.y, self.z = None, None, None
             print("??? xyz: point is not of type 'xyz', type=", type(point))
 
-    def __add__(self, P):
+    def __add__(self, P: 'xyz') -> 'xyz':
         if isinstance(P, xyz):
             return xyz(self.x + P.x, self.y + P.y, self.z + P.z)
         else:
             return xyz(self.x + P, self.y + P, self.z + P)
 
-    def __sub__(self, P):
+    def __sub__(self, P: Union[float, 'xyz']) -> 'xyz':
         if isinstance(P, xyz):
             return xyz(self.x - P.x, self.y - P.y, self.z - P.z)
         else:
             return xyz(self.x - P, self.y - P, self.z - P)
 
-    def __mul__(self, multiplier):
+    def __mul__(self, multiplier: Union[float, 'xyz']) -> 'xyz':
         if isinstance(multiplier, xyz):
             return self.dot(multiplier)
         else:
             return xyz(self.x * multiplier, self.y * multiplier,
                        self.z * multiplier)
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'xyz') -> bool:
         return np.isclose(self.x, other.x) and np.isclose(self.y, other.y) \
             and np.isclose(self.z, other.z)
 
-    def at(self, i):
+    def at(self, i: int) -> float:
         """
         Accesses point components by index
 
@@ -95,30 +97,34 @@ class xyz(object):
             print('??? parameter of at() is out of range:', i)
             assert 0
 
-    def magnitude(self):
+    def magnitude(self) -> float:
         return sqrt(self.x**2 + self.y**2 + self.z**2)
 
-    def unitVector(self):
+    def unitVector(self) -> 'xyz':
         magn = self.magnitude()
         if magn < 1e-20:
             return xyz(0., 0., 1.)
         denom = 1.0 / magn
         return xyz(self.x * denom, self.y * denom, self.z * denom)
 
-    def dot(self, P):
+    def dot(self, P: 'xyz') -> float:
         return self.x * P.x + self.y * P.y + self.z * P.z
 
-    def cross(self, P):
+    def cross(self, P: 'xyz') -> 'xyz':
         return xyz(self.y * P.z - self.z * P.y,
                    self.z * P.x - self.x * P.z,
                    self.x * P.y - self.y * P.x)
 
-    def translate(self, offset):
+    def translate(self, offset: Iterable[float]) -> None:
         self.x += offset[0]
         self.y += offset[1]
         self.z += offset[2]
 
-    def _rotate2d(self, phiRad, XX, YY, XX0=0., YY0=0.):
+    def _rotate2d(self, phiRad: float, XX: Union[float, Iterable[float]],
+                  YY: Union[float, Iterable[float]], XX0: float=0.,
+                  YY0: float=0.) -> Union[Tuple[float, float],
+                                          Tuple[Iterable[float],
+                                                Iterable[float]]]:
         """
         Helper method for rotation in 2D plane
 
@@ -126,14 +132,17 @@ class xyz(object):
             phiRad (float):
                 angle in [rad]
 
-            XX, YY (float):
-                2D coordinates
+            XX (float):
+                x-coordinates
 
-            XX, YY (float):
-                2D coordinates
+            YY (float):
+                y-coordinates
 
-            XX0, YY0 (float, optional, default=0):
-                2D coordinates of center of rotation
+            XX0 (float, optional, default=0):
+                x-coordinate of center of rotation
+
+            YY0 (float, optional, default=0):
+                y-coordinate of center of rotation
 
         Returns:
             (2-tuple of float):
@@ -143,7 +152,8 @@ class xyz(object):
         yy = YY0 + (XX - XX0) * sin(phiRad) + (YY - YY0) * cos(phiRad)
         return xx, yy
 
-    def rotate(self, phiRad, rotAxis):
+    def rotate(self, phiRad: Iterable[float],
+               rotAxis: Iterable[float]) -> Tuple[float, float]:
         """
         Coordinate transformation: rotate this point in Cartesian system
 
@@ -170,15 +180,16 @@ class xyz(object):
             print('??? invalid definition of rotation axis', rotAxis)
             assert 0
 
-    def rotateDeg(self, phiDeg, rotAxis):
+    def rotateDeg(self, phiDeg: Iterable[float],
+                  rotAxis: Iterable[float]) -> Tuple[float, float]:
         """
         Coordinate transformation: rotate this point in Cartesian system
 
         Args:
-            phiDeg (array of float):
+            phiDeg (iterable of float):
                 angle of counter-clockwise rotation [degrees]
 
-            rotAxis (array of float):
+            rotAxis (iterable of float):
                 coordinates of rotation axis, one and only one component
                 is None; this component indicates the rotation axis.
                 e.g. 'rotAxis.y is None' forces rotation around y-axis,
@@ -186,7 +197,8 @@ class xyz(object):
         """
         self.rotate(phiDeg / 180. * pi, rotAxis)
 
-    def scale(self, scalingFactor):
+    def scale(self, scalingFactor: Union[int, float,
+                                         List[float], 'xyz']) -> None:
         if isinstance(scalingFactor, (int, float)):
             if self.x is not None:
                 self.x *= float(scalingFactor)
@@ -221,7 +233,7 @@ class xyz(object):
                   type(scalingFactor))
             assert 0
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '(' + str(self.x) + ' ' + str(self.y) + ' ' + str(self.z) + ')'
 
 
@@ -230,13 +242,20 @@ class xyzt(xyz):
     Point in 3D space with time: (x, y, z, t)
     """
 
-    def __init__(self, x=0., y=0., z=0., t=0., point=None):
+    def __init__(self, x: float=0., y: float=0., z: float=0., t: float=0.,
+                 point: Optional[xyz]=None) -> None:
         """
         Args:
-            x, y, z (float, optional, default=0):
-                coordinates of point in 3D space [m, m, m]
+            x (float, optional, default=0.):
+                x-coordinate of point in 3D space [m]
 
-            t (float, optional, default=0):
+            y (float, optional, default=0.):
+                y-coordinate of point in 3D space [m]
+
+            z (float, optional, default=0.):
+                z-coordinate of point in 3D space [m]
+
+            t (float, optional, default=0.):
                 time [s]
 
             point (xyz or xyzt, optional, default=None):
@@ -258,7 +277,7 @@ class xyzt(xyz):
                   type(point))
             self.x, self.y, self.z, self.t = None, None, None, None
 
-    def at(self, i):
+    def at(self, i: int) -> int:
         """
         Accesses point components by index
 
@@ -282,5 +301,5 @@ class xyzt(xyz):
             print('??? i in at() is out of range, i:', i)
             assert 0
 
-    def __str__(self):
+    def __str__(self) -> str:
         return super().__str__()[:-1] + '  ' + str(self.t) + ')'
