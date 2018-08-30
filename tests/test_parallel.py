@@ -20,7 +20,7 @@
       2018-08-16 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -33,10 +33,11 @@ from grayboxes.parallel import mpi, communicator, predict_scatter, split, \
 
 def f(x, *args, **kwargs):
     for i in range(10*1000):
-        sum = 0
-        for i in range(1000):
-            sum += 0.001
+        _sum = 0
+        for j in range(1000):
+            _sum += 0.001
     return [x[0] * 2, x[1]**2]
+
 
 comm = communicator()
 if comm is None:
@@ -55,10 +56,10 @@ print('nCore nProc:', nCore, nProc)
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         #    if 'worker' in sys.argv:
         #
@@ -87,7 +88,6 @@ class TestUM(unittest.TestCase):
         #
         #        print('x:', 'y:', y)
         self.assertTrue(True)
-
 
     def test2(self):
         x = xDemo(nPoint, nInp)

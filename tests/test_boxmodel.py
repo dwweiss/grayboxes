@@ -20,7 +20,7 @@
       2018-08-17 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -51,10 +51,10 @@ def f(self, x, *args, **kwargs):
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         x = grid(100, [0.9, 1.1], [0.9, 1.1])
         y_exa = White('demo', 'test1')(x=x)
@@ -164,7 +164,7 @@ class TestUM(unittest.TestCase):
         plt.show()
 
         self.assertTrue(True)
-        
-        
+
+
 if __name__ == '__main__':
     unittest.main()

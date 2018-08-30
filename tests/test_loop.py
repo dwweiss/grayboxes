@@ -20,7 +20,7 @@
       2018-08-16 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -87,10 +87,10 @@ foo.silent = False
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         print('foo.isTransient:', foo.isTransient())
         print('foo.isNonLinear:', foo.isNonLinear())
@@ -116,8 +116,8 @@ class TestUM(unittest.TestCase):
         foo()
 
         self.assertTrue(True)
-        
-        
+
+
 if __name__ == '__main__':
     unittest.main()
 

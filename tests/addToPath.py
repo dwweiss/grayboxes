@@ -38,16 +38,16 @@ blackList = ['/archive', '/doc', '/temp', '/tmp', '/workbench', '/.', '/_']
 
 # get start directory
 if fromInitFileLocation:
-    dir = os.getcwd()
+    _dir = os.getcwd()
 else:
-    dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    _dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 # add start directory to sys.path
-if dir not in sys.path:
-    sys.path.insert(0, dir)
+if _dir not in sys.path:
+    sys.path.insert(0, _dir)
 
 # add all subdirs to sys.path excluding those which contain 'blackList' strings
-subDirs = [dirs[0] for dirs in os.walk(dir)]
+subDirs = [dirs[0] for dirs in os.walk(_dir)]
 for subDir in list(reversed(subDirs)):
     if subDir not in sys.path:
         if not any([b in subDir for b in blackList]):

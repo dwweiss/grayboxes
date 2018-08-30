@@ -20,7 +20,7 @@
       2018-08-17 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -38,17 +38,17 @@ def f(self, x, *args, **kwargs):
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
         self.assertTrue(True)
 
     def test1(self):
         s = 'Sensitivity with method f(self, x)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        xRef, dy_dx = Sensitivity(White(f), 'test1')(x=cross(3, 
+        xRef, dy_dx = Sensitivity(White(f), 'test1')(x=cross(3,
                                                      [2, 3], [3, 4]))
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()

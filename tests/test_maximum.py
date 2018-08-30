@@ -20,7 +20,7 @@
       2018-08-17 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -40,10 +40,10 @@ def f(self, x, *args):
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         s = 'Maximum, assigns series of initial x'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))

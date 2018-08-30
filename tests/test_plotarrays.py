@@ -20,7 +20,7 @@
       2018-08-16 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -34,10 +34,10 @@ from grayboxes.plotarrays import plotCurves, plotSurface, plotWireframe, \
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         # irregular grid
         x = np.random.rand(10)
@@ -52,7 +52,7 @@ class TestUM(unittest.TestCase):
         plotIsoMap(x, y, z, title=r'$\alpha$ [$\degree$]', triangulation=True)
 
         self.assertTrue(True)
-        
+
     def test2(self):
         # irregular grid
         x = np.random.rand(500)
@@ -62,7 +62,7 @@ class TestUM(unittest.TestCase):
         plotVector(x, y, vx, vy)
 
         self.assertTrue(True)
-        
+
     def test3(self):
         # plot of bars for two 1D arrays y(x)
         plotBars(y1=[20, 35, 30, 35, 27], y1Error=[2, 3, 4, 1, 2],
@@ -93,7 +93,7 @@ class TestUM(unittest.TestCase):
                       figsize=(10, 7), title='', yrange=[10, 70])
 
         self.assertTrue(True)
-        
+
     def test4(self):
         x = np.linspace(0, 8, 100)
         a = np.sin(x)
@@ -107,7 +107,7 @@ class TestUM(unittest.TestCase):
                    legendPosition=None)
 
         self.assertTrue(True)
-        
+
     def test5(self):
         n = 20
         z = np.linspace(-2, 2, n)
@@ -122,7 +122,7 @@ class TestUM(unittest.TestCase):
                        startPoint=True)
 
         self.assertTrue(True)
-        
+
     def test6(self):
         # regular
         n = 16
@@ -143,6 +143,7 @@ class TestUM(unittest.TestCase):
         plotIsoMap(X, Y, Z, labels=['x', 'y', 'z'])
 
         self.assertTrue(True)
+
 
 if __name__ == '__main__':
     unittest.main()

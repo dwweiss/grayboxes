@@ -20,7 +20,7 @@
       2018-08-29 DWW
 """
 
-import unittest	
+import unittest
 import os
 import sys
 import numpy as np
@@ -37,6 +37,9 @@ def f(self, x, *args, **kwargs):
     Theoretical submodel for single data point
 
     Args:
+        self (reference):
+            reference to instance object
+
         x (1D array_like of float):
             common input
 
@@ -86,14 +89,14 @@ plot_X_Y_Yref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         s = 'Creates exact output y_exa(X), add noise, target is Y(X)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-    
+
         s = 'Tunes model, compare: y(X) vs y_exa(X)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
@@ -107,8 +110,8 @@ class TestUM(unittest.TestCase):
             y = model(X=X, Y=Y, tun0=_tun0, x=X, methods=methods,
                       detailed=True, nItMax=5000, bounds=4*[(0, 2)])
 
-            y = LightGray(f2, 'test1b')(X=X, Y=Y, x=X, methods=methods, 
-                                        nItMax=5000, tun0=_tun0, 
+            y = LightGray(f2, 'test1b')(X=X, Y=Y, x=X, methods=methods,
+                                        nItMax=5000, tun0=_tun0,
                                         silent=not True, detailed=True)
             plot_X_Y_Yref(X, y, y_exa, ['X', 'y', 'y_{exa}'])
             if 1:
@@ -119,24 +122,17 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test2(self):
-        def f2(self, x, *args, **kwargs):
-            if x is None:
-                return np.ones(4)
-            p = args if len(args) > 0 else np.ones(4)
-            y0 = p[0] + p[1] * np.sin(p[2] * x[0]) + p[3] * (x[1] - 1.5)**2
-            return [y0]
-
         # train with single initial tuning parameter set, nTun from f2(None)
         if 1:
             y = LightGray(f2, 'test2')(X=X, Y=Y, x=X, tun0=np.ones(4),
-                                       silent=not True, methods=methods, 
+                                       silent=not True, methods=methods,
                                        detailed=False)
 
         y = LightGray(f2, 'test2b')(X=X, Y=Y, x=X,
                                     silent=not True, methods='all')
 
         self.assertTrue(y is not None)
- 
-       
+
+
 if __name__ == '__main__':
     unittest.main()

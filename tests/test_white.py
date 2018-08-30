@@ -20,7 +20,7 @@
       2018-08-17 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -38,16 +38,17 @@ def fUser(self, x, *args):
     y0 = c0 + c1 * np.sin(c2 * x0) + c3 * (x1 - 1.5)**2
     return [y0]
 
+
 x = grid((8, 8), [-1, 8], [0, 3])
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         s = 'White box (expanded)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))

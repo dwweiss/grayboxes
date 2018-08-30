@@ -20,7 +20,7 @@
       2018-08-16 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -45,10 +45,10 @@ def sL2(y, Y):
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         s = 'Example 1 __call__()'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
@@ -64,11 +64,11 @@ class TestUM(unittest.TestCase):
         Y = f(X)
 
         class Train2(nl.core.Train):
-            def error(self, net, input, target, output=None):
+            def error(self, net, inp, target, out=None):
                 """Only for train with teacher"""
-                if output is None:
-                    output = net.sim(input)
-                return net.errorf(target, output)
+                if out is None:
+                    out = net.sim(inp)
+                return net.errorf(target, out)
 
         class TanSig2:
             out_minmax = [-1, 1]
@@ -83,7 +83,7 @@ class TestUM(unittest.TestCase):
                 return (self(y + delta) - self(y)) * reciprocal
 
         net = Neural()
-        for outputf in (nl.trans.PureLin, ): # TanSig2, ):
+        for outputf in (nl.trans.PureLin, ):  # TanSig2, ):
             net(X=X, Y=Y, neurons=[6], epochs=2000, goal=1e-6, show=0,
                 trials=3, methods='rprop', regularization=0.0, plot=0,
                 # outputf=nl.trans.PureLin,    TODO fails with 'invalid output'

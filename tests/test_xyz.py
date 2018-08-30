@@ -20,7 +20,7 @@
       2018-08-15 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 
@@ -31,10 +31,10 @@ from grayboxes.xyz import xyz, xyzt
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         P0 = xyz(2.2, -1)
         print('P0:', P0)

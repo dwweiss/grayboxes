@@ -17,10 +17,10 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-08-30 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -33,7 +33,7 @@ from grayboxes.white import White
 
 
 # function without access to 'self' attributes
-def function(x, *args):
+def func(x, *args):
     print('0')
     return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
@@ -47,15 +47,15 @@ def method(self, x, *args, **kwargs):
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         s = 'Forward() with demo function build-in into BoxModel'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        x, y = Forward(White(function), 'test1')(x=grid(3, [0, 1], [0, 1]))
+        x, y = Forward(White(func), 'test1')(x=grid(3, [0, 1], [0, 1]))
         plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
 
         self.assertTrue(True)
@@ -72,7 +72,7 @@ class TestUM(unittest.TestCase):
         s = "Forward, assign external function (without self-argument) to f"
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Forward(White(function), 'test3')
+        op = Forward(White(func), 'test3')
         _, y = op(x=rand(12, [2, 3], [3, 4]))
         print('x:', op.model.x, '\ny1:', op.model.y)
 
@@ -82,12 +82,12 @@ class TestUM(unittest.TestCase):
         s = "Forward, assign method (with 'self'-argument) to f"
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Forward(White(function), 'test4')
+        op = Forward(White(func), 'test4')
         _, y = op(x=[[2, 3], [3, 4], [4, 5], [5, 6], [6, 7]])
         print('x:', op.model.x, '\ny1:', op.model.y)
 
         self.assertTrue(True)
 
-        
+
 if __name__ == '__main__':
     unittest.main()

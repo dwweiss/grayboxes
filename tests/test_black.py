@@ -17,10 +17,10 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-08-30 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -28,7 +28,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 sys.path.append(os.path.abspath('..'))
-from grayboxes.black import Black 
+from grayboxes.black import Black
 from grayboxes.plotarrays import plotIsoMap
 from grayboxes.neural import Neural
 from grayboxes.boxmodel import grid, noise
@@ -39,7 +39,7 @@ class TestUM(unittest.TestCase):
     def setUp(self):
         self.saveFigures = True
         pass
- 
+
     def tearDown(self):
         pass
 
@@ -109,9 +109,9 @@ class TestUM(unittest.TestCase):
     def test3(self):
         # 1D problem sin(x) with noise, variation of neural network structure
         path = Black().path
-        
+
         print('*' * 30, 'path:', path)
-        
+
         file = 'sin_x_-3..3.5pi'
         nPoint = 20
         maxNeuronsInLayer = 2  # 16
@@ -144,7 +144,7 @@ class TestUM(unittest.TestCase):
                         'L2Test', 'absTest', 'iAbsTest',
                         'mse', 'method', 'epochs'])
         collect = pd.DataFrame(columns=columns)
-        definitionMax = [maxNeuronsInLayer for i in range(nHiddenLayers)]
+        definitionMax = [maxNeuronsInLayer for _ in range(nHiddenLayers)]
         definitionMax = definitionMax + [0] * (MAX_HIDDEN_LAYERS -
                                                nHiddenLayers)
         print('definitionMax:', definitionMax)
@@ -225,14 +225,14 @@ class TestUM(unittest.TestCase):
             print('+++ optimum: definition: ', definitions[iDefBest],
                   ' index: [', iDefBest, '], L2: ',
                   round(L2TstBest, 5), sep='')
-            if (iDef % 10 == 0 or iDef == len(definitions) - 1):
+            if iDef % 10 == 0 or iDef == len(definitions) - 1:
                 print('+++ collect:\n', collect)
                 collect.to_csv(os.path.join(path, file + '.collect.csv'))
                 collect.to_pickle(os.path.join(path, file + '.collect.pkl'))
                 collect.plot(y='L2Test', use_index=True)
 
         self.assertTrue(True)
-        
+
     def test4(self):
         # 2D problem: three 1D user-defined functions f(x) are fitted,
         # and a neural network

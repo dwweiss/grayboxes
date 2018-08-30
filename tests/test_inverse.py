@@ -20,7 +20,7 @@
       2018-08-17 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -36,17 +36,17 @@ from grayboxes.black import Black
 
 def f(self, x, *args, **kwargs):
     p0, p1, p2 = args if len(args) > 0 else np.ones(3)
-    #print(' x:', x, 'args:', args, 'P:', p0, p1, p2)
+    # print(' x:', x, 'args:', args, 'P:', p0, p1, p2)
     return [np.sin(p0 * x[0]) + p1 * (x[1] - 1.)**2 + p2]
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         s = 'Inverse, ranges+rand replaced method f()'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
@@ -116,7 +116,7 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test5(self):
-        s = 'Inverse operation on empirical model of tuned theoretial model'
+        s = 'Inverse operation on empirical model of tuned theoretical model'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         noise_abs = 0.1

@@ -20,7 +20,7 @@
       2018-08-17 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 from io import StringIO
@@ -30,7 +30,7 @@ import pandas as pd
 sys.path.append(os.path.abspath('..'))
 from grayboxes.darkgray import DarkGray
 from grayboxes.plotarrays import plotIsoMap, plotWireframe
-from grayboxes.boxmodel import frame2arr 
+from grayboxes.boxmodel import frame2arr
 from grayboxes.black import Black
 
 
@@ -44,8 +44,8 @@ df = pd.DataFrame({'x0': [2, 3, 4.5, 5, 9],
                    'y2': [9, 10, 11, 12, 14],
                    })
 
-    
-# anonymised data of an observation: A = mDotInd - mDot = F(mDot, p)
+
+# anonymized data of an observation: A = mDotInd - mDot = F(mDot, p)
 # E in [%], mDot and mDotInd normalized with min/max of both arrays
 raw = StringIO("""mDot,p,E,A,mDotInd
     0.003393,  0.000,    NaN,  0.000154,  0.003547
@@ -82,10 +82,10 @@ raw = StringIO("""mDot,p,E,A,mDotInd
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         s = 'Dark gray box model 1'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))

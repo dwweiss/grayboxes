@@ -20,7 +20,7 @@
       2018-08-15 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 
@@ -29,18 +29,18 @@ from grayboxes.base import Base
 
 
 class TestUM(unittest.TestCase):
- 
+
     class Foo(Base):
         def __init__(self, identifier=''):
             super().__init__(identifier=identifier)
             self.x = 3.0
-    
+
         def pre(self, **kwargs):
             super().pre()
 
         def task(self, **kwargs):
             super().task()
-    
+
             self.x *= 2.0
             b = 7.0
             for i in range(int(1e6)):
@@ -52,14 +52,13 @@ class TestUM(unittest.TestCase):
             super().post()
 #            self.write('    x(' + self.identifier + '): ' + str(self.x))
 #            self.write('    y(' + self.identifier + '): ' + str(self.y))
-            
 
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         # creates instance
 
@@ -104,14 +103,14 @@ class TestUM(unittest.TestCase):
         print('\nPrint(foo): ' + str(foo))
         self.assertTrue(True)
         del foo
- 
-    def test2(self): 
+
+    def test2(self):
         foo = self.Foo('root2')
         foo()
         foo.write(str('my write id:' + foo.identifier))
-        self.assertTrue(True) 
+        self.assertTrue(True)
 
-    def test3(self): 
+    def test3(self):
         # searches for specific follower in tree
         foo = self.Foo('root3')
         identifier = 'follower 11'
@@ -123,7 +122,7 @@ class TestUM(unittest.TestCase):
             print('downward search, p.identifier:', p.identifier)
         self.assertTrue(True)
 
-    def test4(self): 
+    def test4(self):
         # destructs tree
         foo = self.Foo('root4')
         foo()
@@ -132,7 +131,7 @@ class TestUM(unittest.TestCase):
         foo.destruct()
         self.assertTrue(True)
 
-    def test5(self): 
+    def test5(self):
         # sends warning and termination of program
         foo = self.Foo('root5')
         print('foo 5:', foo)
@@ -141,7 +140,7 @@ class TestUM(unittest.TestCase):
         foo.terminate('warning to GUI')
         self.assertRaise()
 
-    def test6(self): 
+    def test6(self):
         # sends warning
         foo = self.Foo('root6')
         foo.gui = False

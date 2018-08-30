@@ -20,7 +20,7 @@
       2018-08-29 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -35,6 +35,7 @@ from grayboxes.plotarrays import plot_X_Y_Yref
 
 
 nTun = 3
+
 
 def f(self, x, *args, **kwargs):
     """
@@ -84,10 +85,10 @@ methods = [
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         s = 'Tunes model, compare: y(X) vs y_exa(X)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))

@@ -20,7 +20,7 @@
       2018-08-16 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -56,20 +56,19 @@ print('-' * 40)
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
-        speed = 0.8
         foo.setTrajectory(way, rot=rot, speed=speed)
-        
+
         print('-' * 40)
         print('test:', foo)
         print('-' * 40)
 
         self.assertTrue(True)
-        
+
     def test2(self):
         i = foo.iWayPointAhead(t=0.3)
         print('t=0.3 i:', i)

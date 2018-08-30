@@ -20,7 +20,7 @@
       2018-08-17 DWW
 """
 
-import unittest	
+import unittest
 import sys
 import os
 import numpy as np
@@ -39,6 +39,7 @@ def f(x, *args):
     c0, c1, c2 = args if len(args) > 0 else (1, 1, 1)
     return +(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)
 
+
 # theoretical submodel
 def f1(x):
     y = np.sin(x[0]) + (x[1])**2 + 2
@@ -48,10 +49,10 @@ def f1(x):
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
- 
+
     def tearDown(self):
         pass
- 
+
     def test1(self):
         s = 'Use scipy.optimize.minimize()'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
