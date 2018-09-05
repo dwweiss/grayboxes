@@ -107,7 +107,7 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test3(self):
-        # 1D problem sin(x) with noise, variation of neural network structure
+        # 1D problem sin(x) with noise, variation of network structure
         path = Black().path
 
         print('*' * 30, 'path:', path)
@@ -124,12 +124,12 @@ class TestUM(unittest.TestCase):
         def f(x, *args):
             c0, c1 = args if len(args) > 0 else 1, 1
             return np.sin(x) * c0 + c1
-        X = np.linspace(-2*np.pi, +2*np.pi, nPoint)   # argument of train data
+        X = np.linspace(-2*np.pi, +2*np.pi, nPoint)    # X of train data
         if 0:
-            X = np.flipud(X)                   # reverse order of elements of X
+            X = np.flipud(X)                        # reverse order of X
         x = np.linspace(-3*np.pi, 3*np.pi, 100)
         dx = (X.max() - X.min()) / nPoint
-        x = x + 0.5 * dx          # shift argument for calculation of test data
+        x = x + 0.5 * dx                          # shift x of test data
 
         Y = f(X)
         if maxNoise > 0.0:
@@ -263,7 +263,7 @@ class TestUM(unittest.TestCase):
         # neural network options
         opt = {'methods': 'bfgs rprop', 'neurons': []}
 
-        Y = np.array(df.loc[:, ['u']])                   # extracts an 2D array
+        Y = np.array(df.loc[:, ['u']])            # extracts an 2D array
         for f in definitions:
             blk = Black('test4')
 
@@ -280,9 +280,6 @@ class TestUM(unittest.TestCase):
             blk.train(X, Y, **opt)
             y = blk.predict(X)
             dy = y - Y
-
-            # print('    shapes X:', X.shape, 'U:', U.shape, 'u:', u.shape,
-            #      'du:', du.shape)
 
             # console output
             print('    ' + 76 * '-')

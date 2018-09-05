@@ -38,7 +38,7 @@ def L2(y, Y):
     return np.sqrt(np.mean(np.square(y - Y)))
 
 
-def sL2(y, Y):
+def str_L2(y, Y):
     return str(np.round(L2(y, Y), 4))
 
 
@@ -92,10 +92,10 @@ class TestUM(unittest.TestCase):
             y = net(x=x)
             if 1:
                 plt.plot(x, y, '-',
-                         label='tst:'+sL2(net(x=x),
-                                          f(x))+' trn:'+sL2(net(x=X), Y))
-        plt.title('Test (' + net.best['method'] + ') L2_trn: ' +
-                  str(round(net.best['L2'], 2)))
+                         label='tst:'+str_L2(net(x=x), f(x)) + ' ' + \
+                               'trn:'+str_L2(net(x=X), Y))
+        plt.title('Test (' + net.best['method'] + ') ' + \
+                  'L2_trn: ' + str(round(net.best['L2'], 2)))
         plt.plot(x, f(x), '--', label='tst')
         plt.plot(X, Y, 'o', label='trn')
         # plt.legend(['pred', 'targ', 'true'])

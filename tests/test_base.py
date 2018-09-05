@@ -50,8 +50,8 @@ class TestUM(unittest.TestCase):
 
         def post(self, **kwargs):
             super().post()
-#            self.write('    x(' + self.identifier + '): ' + str(self.x))
-#            self.write('    y(' + self.identifier + '): ' + str(self.y))
+            self.write('    x(' + self.identifier + '): ' + str(self.x))
+            self.write('    y(' + self.identifier + '): ' + str(self.y))
 
     def setUp(self):
         pass
