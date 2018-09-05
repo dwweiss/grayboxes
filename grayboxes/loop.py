@@ -17,11 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-09-04 DWW
 """
 
 from time import time
 import numpy as np
+from typing import Any
+
 from grayboxes.base import Base
 
 
@@ -32,7 +34,7 @@ class Loop(Base):
     objects
     """
 
-    def __init__(self, identifier='Loop'):
+    def __init__(self, identifier: str='Loop') -> None:
         super().__init__(identifier)
 
         # iteration settings are only relevant if nItMax > 0
@@ -48,9 +50,8 @@ class Loop(Base):
         self.tEnd = 0.                  # final time
         self.dt = 1e-2                  # time step size
         self.theta = 0.5                # time discretization scheme
-        self.execTimeStart = 0.         # store start time
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = super().__str__()
 
         if self.isNonLinear():
@@ -70,13 +71,14 @@ class Loop(Base):
                 s += "{steady}"
         return s
 
-    def isNonLinear(self):
+    def isNonLinear(self) -> bool:
         return self.nItMax > 0
 
-    def isTransient(self):
+    def isTransient(self) -> bool:
         return self.tEnd > 0.0
 
-    def setNonLinear(self, nItMin=0, nItMax=0, epsilon=0.0, omega=1.0):
+    def setNonLinear(self, nItMin: int=0, nItMax: int=0, epsilon: float=0.0,
+                     omega: float=1.0) -> None:
         self.nItMax = nItMax if nItMax is not None else 0
         self.nItMax = np.clip(self.nItMax, 0, int(1e6))
 
@@ -89,7 +91,8 @@ class Loop(Base):
             self.epsilon = epsilon
             self.omega = omega
 
-    def setTransient(self, tBegin=0.0, tEnd=0.0, dt=0.0, theta=0.5, n=100):
+    def setTransient(self, tBegin: float=0.0, tEnd: float=0.0, dt: float=0.0,
+                     theta: float=0.5, n: int=100) -> None:
         self.tEnd = tEnd if tEnd is not None else 0.0
         self.tEnd = np.clip(self.tEnd, 0, int(1e6))
 
@@ -104,41 +107,39 @@ class Loop(Base):
             self.dt = dt
             self.theta = theta
 
-    def initialCondition(self):
+    def initialCondition(self) -> None:
         for x in self.followers:
             x.initialCondition()
 
-    def updateNonLinear(self):
+    def updateNonLinear(self) -> None:
         for x in self.followers:
             x.updateNonLinear()
 
-    def updateTransient(self):
+    def updateTransient(self) -> None:
         for x in self.followers:
             x.updateTransient()
         self.t = self.root().t
         self.dt = self.root().dt
         self.theta = self.root().theta
 
-    def control(self, **kwargs):
+    def control(self, **kwargs: Any) -> float:
         """
-        Args:
-            kwargs (Dict[str, Any], optional):
-                keyword arguments passed to task()
+        Kwargs:
+            Keyword arguments passed to super.control() and task()
 
         Returns:
-            (float):
-                residuum from range 0.0..1.0 indicating error of task
+            Residuum from range 0.0..1.0 indicating error of task
         """
         # steady and linear: call control() of base class
         if not self.isTransient() and not self.isNonLinear():
             return super().control(**kwargs)
 
         if self.isRoot():
-            execTime = time() - self._execTimeStart
-            if execTime >= self._minExecTimeShown:
-                self.write('    Execution time: {:2f} s'.format(round(execTime,
+            exe_time = time() - self._exe_time_start
+            if exe_time >= self._min_exe_time_shown:
+                self.write('    Execution time: {:2f} s'.format(round(exe_time,
                            2)))
-            self.execTimeStart = time()
+            self.exe_time_start = time()
         if not self.isTransient():
             s = ' (steady & non-linear: ' + str(self.nItMax) + ')'
         else:
@@ -150,8 +151,9 @@ class Loop(Base):
         self.write('=== Control' + s)
 
         ###############################
-        def _nonLinearIteration():
+        def _nonLinearIteration() -> float:
             self.it = -1
+            _res = np.inf
             while self.it < self.nItMax:
                 self.it += 1
                 self.write('+++ Iteration: ' + str(self.it))
@@ -172,6 +174,7 @@ class Loop(Base):
             ###############################
         else:
             self.t = 0.0
+            res = np.inf
             while (self.t + 1e-10) < self.tEnd:
                 self.t += self.dt
                 self.write('### Physical time: {:f}'.format(self.t))
@@ -184,10 +187,10 @@ class Loop(Base):
                     res = self.task(**kwargs)        # transient, linear
 
         if self.isRoot():
-            execTime = time() - self.execTimeStart
-            if execTime >= self._minExecTimeShown:
-                self.write('    Execution time: {:2f}'.format(round(execTime,
+            exe_time = time() - self._exe_time_start
+            if exe_time >= self._min_exe_time_shown:
+                self.write('    Execution time: {:2f}'.format(round(exe_time,
                            2)))
-            self.execTimeStart = time()
+            self._exe_time_start = time()
         self.write('=== Post-processing')
         return res

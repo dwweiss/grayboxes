@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-28 DWW
+      2018-09-05 DWW
 
   Note on program arguments:
     - no arguments          : program starts in default mode
@@ -30,17 +30,19 @@
 
 """
 
-import os
-import sys
 from datetime import datetime
 from getpass import getpass
 from hashlib import sha224
+import logging
+logger = logging.getLogger(__name__)
+import numpy as np
+import os
+from pathlib import Path
 from re import sub
+import sys
 from time import time
 from tempfile import gettempdir
-from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Union
-import numpy as np
+from typing import Any, Dict, Sequence, List, Optional, Union
 try:
     from tkinter import Button
     from tkinter import Entry
@@ -51,9 +53,6 @@ except ImportError:
     print("\n!!! Wrong Python interpreter (version: '" +
           str(sys.version_info.major) + '.' + str(sys.version_info.major) +
           '.' + str(sys.version_info.micro) + "') or 'tkinter' not imported")
-import logging
-logger = logging.getLogger(__name__)
-
 try:
     import grayboxes.parallel as parallel
 except ImportError:
@@ -63,7 +62,6 @@ except ImportError:
         print("!!! Module 'parallel' not imported")
 
 
-# noinspection PyAttributeOutsideInit
 class Base(object):
     """
     Connects model objects and controls their execution
@@ -163,59 +161,58 @@ class Base(object):
        -----------            -----------           ------------
     """
 
-    def __init__(self, identifier: str='Base', argv: List[str]=None) -> None:
+    def __init__(self, identifier: str='Base', 
+                 argv: Optional[List[str]]=None) -> None:
         """
         Initializes object
 
         Args:
-            identifier (string, optional):
-                unique identifier of object
+            identifier:
+                Unique identifier of object
 
-            argv (positional arguments, optional):
-                program arguments
+            argv:
+                Program arguments
         """
         if not identifier:
             identifier = self.__class__.__name__
-        self._identifier = str(identifier)
-        self.argv = argv
-        self.program = self.__class__.__name__
-        self.version = '300818_dww'
+        self._identifier: str = str(identifier)
+        self.argv: Optional[List[str]] = argv
+        self.program: str = self.__class__.__name__
+        self.version: str = '18.09'
 
-        self._execTimeStart = 0.0       # start measure execution time
-        self._minExecTimeShown = 1.0    # times < limit are not shown
-        self.path = None                # path to files,see @path.setter
-        self.extension = None           # file ext,see @extension.setter
+        self._exe_time_start: float = 0.0      # start measure exec.time
+        self._min_exe_time_shown: float = 1.0  # times < limit not shown
+        self.path: Optional[str] = None        # path to file,see setter
+        self.extension: Optional[str] = None   # file ext., see setter
 
-        self._gui = False               # no graphic interface if False
-        self._batch = False             # no user interaction if True
-        self._silent = False            # no console output if True
+        self._gui: bool = False                # graph.interface if True
+        self._batch: bool = False              # user interact. if False
+        self._silent: bool = False             # console output if False
 
-        self._ready = True              # if True, successful train/pred
+        self._ready: bool = True               # success of train/pred
 
-        self._preDone = False           # internal: True if  pre() done
-        self._taskDone = False          # internal: True if task() done
-        self._postDone = False          # internal: True if post() done
+        self._pre_done: bool = False           # True if  pre() done
+        self._task_done: bool = False          # True if task() done
+        self._post_done: bool = False          # True if post() done
 
-        self._leader = None             # leader object
-        self._followers = []            # array of follower objects
+        self._leader: Base = None              # leader object
+        self._followers: List[Optional['Base']] = []
+                                               # follower object list
 
-        self._data = None               # data organized in a DataFrame
-        self._csvSeparator = ','        # separator in csv-files
+        self._data: Any = None                 # data sets etc
+        self._csv_separator = ','              # separator in csv-files
         
     def __call__(self, **kwargs: Any) -> float:
         """
-        Executes model
+        Executes object
 
-        Args:
-            kwargs (Dict[str, Any], optional):
-                keyword arguments passed to pre(), control() and post()
+        Kwargs:
+            silent (bool):
+                if True, then suppress printing
 
-                silent (bool):
-                    if True then suppress printing
         Returns:
-            (float):
-                residuum from range 0.0 .. 1.0 indicating error of task
-                or -1.0 if parallel and rank > 0
+            Residuum from range 0.0 .. 1.0 indicating error of task
+            or -1.0 if parallel and rank > 0
         """
         # skip model execution if parallelized with MPI and rank > 0
         if 'parallel' in sys.modules and parallel.rank():
@@ -226,14 +223,14 @@ class Base(object):
         self.prolog()
         self.pre(**kwargs)
 
-        res = self.control(**kwargs)
+        res: float = self.control(**kwargs)
         self.post(**kwargs)
         self.epilog()
 
         return res
 
     def __str__(self) -> str:
-        s = ''
+        s: str = ''
         if not self.leader:
             s += "@root: '" + self.identifier + "', \n"
         s += "{identifier: '" + self.identifier + "'"
@@ -265,8 +262,7 @@ class Base(object):
         Destructs all followers. Cooperators will be kept
         
         Returns:
-            (bool):
-                True on success
+            True on success
         """
         if self._data:
             del self._data
@@ -277,12 +273,15 @@ class Base(object):
 
     def destructDownwards(self, fromNode: 'Base') -> bool:
         """
-        Destructs all followers downwards from 'fromNode'. Cooperators 
-        will be kept
+        Destructs all followers downwards from 'fromNode'. 
+        Cooperators will be kept
         
+        Args:
+            fromNode:
+                start node of search
+
         Returns:
-            (bool):
-                True on success
+            True on success
         """
         if not fromNode:
             return False
@@ -300,11 +299,11 @@ class Base(object):
         Destructs the followers of 'node'. Cooperators will be kept
         
         Args:
-            node (Base):
+            node:
                 actual node
                 
         Returns:
-            (bool): False if this node has no followers
+            False if this node has no followers
         """
         if not node:
             return False
@@ -321,11 +320,13 @@ class Base(object):
         self._followers[i] = None
         return True
 
+    def isRoot(self) -> bool:
+        return not self.leader
+
     def root(self) -> 'Base':
         """
         Returns:
-            (Base):
-                root node of this tree (the leader of root is None)
+            Root node of this tree (leader of root node is None)
         """
         p = self
         while p.leader:
@@ -335,8 +336,7 @@ class Base(object):
     def treeLevel(self) -> int:
         """
         Returns:
-            (int):
-                level of this node in tree, relative to root (root is 0)
+            Level of this node in tree, relative to root (root is 0)
         """
         n = 0
         p = self.leader
@@ -436,14 +436,14 @@ class Base(object):
 
     @property
     def csvSeparator(self) -> str:
-        return str(self._csvSeparator)
+        return str(self._csv_separator)
 
     @csvSeparator.setter
     def csvSeparator(self, value: str):
         if value is None:
-            self._csvSeparator = ' '
+            self._csv_separator = ' '
         else:
-            self._csvSeparator = value
+            self._csv_separator = value
 
     @property
     def leader(self) -> 'Base':
@@ -455,15 +455,12 @@ class Base(object):
             other.setFollower(self)
 
     @property
-    def followers(self) -> Iterable['Base']:
+    def followers(self) -> List['Base']:
         return self._followers
 
     @followers.setter
-    def followers(self, other: Iterable['Base']) -> None:
+    def followers(self, other: Union['Base', Sequence['Base']]) -> None:
         self.setFollower(other)
-
-    def isRoot(self) -> bool:
-        return not self.leader
 
     @property
     def data(self) -> Any:
@@ -484,27 +481,24 @@ class Base(object):
         Searches for node with 'identifier'. Starts downwards from root.
 
         Args:
-            identifier (str):
-                identifier of searched node
+            identifier:
+                Identifier of searched node
 
         Returns:
-            (Base):
-                node with given identifier or None if node not found
+            Node with given identifier or None if node not found
         """
         return self.getFollower(identifier)
 
     def getFollower(self, identifier: str) -> Optional['Base']:
         """
-        Search for node with 'identifier'. Search starts downwards 
-        from root
+        Search for node with 'identifier' starts downwards from root
 
         Args:
-            identifier (str):
-                identifier of searched node
+            identifier:
+                Identifier of searched node
 
         Returns:
-            (Base):
-                node with given identifier or None if node not found
+            Node with given identifier or None if node not found
         """
         return self.getFollowerDownwards(identifier, fromNode=None)
 
@@ -515,16 +509,15 @@ class Base(object):
         from 'fromNode'
 
         Args:
-            identifier (str):
-                identifier of wanted node
+            identifier:
+                Identifier of wanted node
 
-            fromNode (Base or None, optional):
-                start node for downward search. If 'fromNode' is None, 
+            fromNode:
+                Start node for downward search. If 'fromNode' is None, 
                 search starts from root
 
         Returns:
-            (Base)
-                node with given identifier or None if node not found
+            Node with given identifier or None if node not found
         """
         if self.identifier == identifier:
             return self
@@ -545,17 +538,17 @@ class Base(object):
                     return node
         return None
 
-    def setFollower(self, other: Union['Base', Iterable['Base']]) -> 'Base':
+    def setFollower(self, other: Union['Base', Sequence['Base']]) \
+            -> Union['Base', Sequence['Base']]:
         """
-        Adds other node
+        Adds other node(s)
 
         Args:
-            other (Base or iterable of Base):
-                other node(s)
+            other:
+                Other node or list of other nodes
 
         Returns:
-            (Base):
-                other node
+            Reference to 'other'
         """
         if other:
             if not isinstance(other, (list, tuple)):
@@ -572,13 +565,27 @@ class Base(object):
 
     def isFollower(self, other: 'Base') -> bool:
         """
+        Args:
+            other:
+                Other node
+
         Returns:
-            (bool):
                 True if 'other' is a follower of this node 
         """
         return other._leader == self and other in self._followers
 
-    def setCooperator(self, other: Union['Base', Iterable['Base']]) -> 'Base':
+    def setCooperator(self, other: Union['Base', Sequence['Base']]) -> 'Base':
+        """
+        Adds other node as cooperator. 
+        'other' keep(s) its/their original leader(s)
+
+        Args:
+            other:
+                Other node or list of other nodes
+
+        Returns:
+            Reference to 'other'
+        """
         if other:
             if not isinstance(other, (list, tuple)):
                 if other not in self._followers:
@@ -592,8 +599,7 @@ class Base(object):
     def isCooperator(self, other: 'Base') -> bool:
         """
         Returns:
-            (bool):
-                True if 'other' is a cooperator of this node 
+            True if 'other' is a cooperator of this node 
         """
         return other._leader != self and other in self._followers
 
@@ -605,50 +611,49 @@ class Base(object):
         rs.reverse()
         return ''.join(rs)
 
-    def kwargsDel(self, kwargs: Any,
-                  remove: Union[str, Iterable[str]]) -> Dict[str, Any]:
+    def kwargsDel(self, _kwargs: Dict[str, Any],
+                  remove: Union[str, Sequence[str]]) -> Dict[str, Any]:
         """
         Makes copy of keyword dictionary and removes given key(s)
 
         Args:
-            kwargs (Dict[str, Any]):
-                keyword arguments
-
-            remove (str or iterable of str):
-                keywords of items to be removed
+            _kwargs:
+                Dictionary with keywords
+            
+            remove:
+                Keyword(s) of items to be removed
 
         Returns:
-            dictionary without removed items
+            Copy of dictionary exclusive removed items
         """
-        dic = kwargs.copy()
+        dic = _kwargs.copy()
         for key in np.atleast_1d(remove):
             if key in dic:
                 del dic[key]
         return dic
 
-    def kwargsGet(self, kwargs: Any,
-                  keys: Union[str, Iterable[str]], default: Any=None) -> Any:
+    def kwargsGet(self, _kwargs: Any,
+                  keys: Union[str, Sequence[str]], default: Any=None) -> Any:
         """
-        Returns value of kwargs for first matching key or 'default' if 
+        Returns value of _kwargs for first matching key or 'default' if 
         all keys are invalid
 
         Args:
-            kwargs (Dict[str, Any]):
-                keyword arguments
+            _kwargs:
+                Dictionay with keyword arguments
 
             keys (str or iterable of str):
-                keyword or list of alternative keywords
+                Keyword or list of alternative keywords
 
             default(Any, optional):
-                value to be returned if none of the keys is in kwargs
+                Value to be returned if none of the keys is in '_kwargs'
 
         Returns:
-            (Any):
-                value of first matching key or 'default'
+            Value of first matching key or 'default'
         """
         for key in np.atleast_1d(keys):
-            if key in kwargs:
-                return kwargs[key]
+            if key in _kwargs:
+                return _kwargs[key]
         return default
 
     def terminate(self, message: str='') -> None:
@@ -672,11 +677,11 @@ class Base(object):
         - Sends message to TKinter widget if in GUI mode, otherwise to console
 
         Args:
-            message (str):
-                warning to be written to log file and console
+            message:
+                Warning to be written to log file and console
 
-            wait (bool):
-                wait with program execution
+            wait:
+                Wait with program execution
         """
         if not self.silent:
             print("!!! '" + self.program + "', warning: '" + message + "'")
@@ -693,8 +698,8 @@ class Base(object):
         - Sends message to console if not in silent mode
 
         Args:
-            message (str):
-                message to be written to log file and console
+            message:
+                Message to be written to log file and console
         """
         now = datetime.now().strftime('%H:%M:%S.%f')[:-4]
         if not self.silent:
@@ -773,18 +778,18 @@ class Base(object):
                        ' ' + str(datetime.now().time())[:8])
             self.write('    Path: ' + "'" + str(self.path) + "'")
             self.write('=== Pre-processing')
-            self._execTimeStart = time()
+            self._exe_time_start = time()
 
     def epilog(self) -> None:
-        if self.isRoot():
-            message = "'" + self.program + "' is successfully completed\n"
-            execTime = time() - self._execTimeStart
-            if execTime >= self._minExecTimeShown:
-                self.write('    Execution time: ' + format(round(execTime, 2)))
-            self.write('*** ' + message)
-
         for x in self.followers:
             x.epilog()
+
+        if self.isRoot():
+            message = "'" + self.program + "' is successfully completed\n"
+            exe_time = time() - self._exe_time_start
+            if exe_time >= self._min_exe_time_shown:
+                self.write('    Execution time: ' + format(round(exe_time, 2)))
+            self.write('*** ' + message)
 
             if self.gui:
                 messagebox.showinfo(self.program, message)
@@ -814,13 +819,11 @@ class Base(object):
 
     def pre(self, **kwargs: Any) -> bool:
         """
-        Args:
-            kwargs (Dict[str, Any], optional):
-                keyword arguments
+        Kwargs:
+            Keyword arguments to be passed to pre() of followers
 
         Returns:
-            (bool):
-                False if data loading failed
+            False if data loading failed
         """
         ok = True
         for x in self.followers:
@@ -833,19 +836,17 @@ class Base(object):
 
         if self.data is None:
             ok = self.load()
-        self._preDone = True
+        self._pre_done = True
         sys.stdout.flush()
         return ok
 
     def task(self, **kwargs: Any) -> float:
         """
-        Args:
-            kwargs (Dict[str, Any], optional):
-                keyword arguments
+        Kwargs:
+            Keyword arguments to be passed to task () of followers
 
         Returns:
-            (float):
-                residuum from range [0., 1.], indicating error
+            Residuum from range [0., 1.], indicating error of task
         """
         for x in self.followers:
             x.task(**kwargs)
@@ -854,19 +855,17 @@ class Base(object):
                            "' is cooperator]")
         if self.root().followers:
             self.write('--- Task (' + self.identifier + ')')
-        self._taskDone = True
+        self._task_done = True
         sys.stdout.flush()
         return 0.0
 
     def post(self, **kwargs: Any) -> bool:
         """
-        Args:
-            kwargs (Dict[str, Any], optional):
-                keyword arguments
+        Kwargs:
+            Keyword arguments to be passed to post() of followers
 
         Returns:
-            (bool):
-                if False, data saving failed
+            False if data saving failed
         """
         ok = True
         for x in self.followers:
@@ -877,37 +876,35 @@ class Base(object):
         if self.root().followers:
             self.write('--- Post (' + self.identifier + ')')
         if self.data is None:
-            ok = self.save()
-        self._postDone = True
+            ok = self.save
+        self._post_done = True
         sys.stdout.flush()
         return ok
 
     def control(self, **kwargs: Any) -> float:
         """
-        Args:
-            kwargs (Dict[str, Any], optional):
-                keyword arguments passed to task()
+        Kwargs:
+            Keyword arguments to be passed to task () of this object
 
         Returns:
-            (float):
-                residuum from range [0., 1.], indicating error of task
+            Residuum from range [0., 1.], indicating error of task
         """
         if self.isRoot():
-            execTime = time() - self._execTimeStart
-            if execTime >= self._minExecTimeShown:
-                self.write('    Execution time: {:2f} s'.format(round(execTime,
+            exe_time = time() - self._exe_time_start
+            if exe_time >= self._min_exe_time_shown:
+                self.write('    Execution time: {:2f} s'.format(round(exe_time,
                                                                       2)))
-            self._execTimeStart = time()
+            self._exe_time_start = time()
 
         if self.isRoot():
             self.write('=== Task-processing')
         res = self.task(**kwargs)
 
         if self.isRoot():
-            execTime = time() - self._execTimeStart
-            if execTime >= self._minExecTimeShown:
-                self.write('    Execution time: {:2f} s'.format(round(execTime,
+            exe_time = time() - self._exe_time_start
+            if exe_time >= self._min_exe_time_shown:
+                self.write('    Execution time: {:2f} s'.format(round(exe_time,
                                                                       2)))
-            self._execTimeStart = time()
+            self._exe_time_start = time()
         self.write('=== Post-processing')
         return res

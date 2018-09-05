@@ -17,14 +17,45 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-30 DWW
+      2018-09-05 DWW
 """
 
 __all__ = ['xyz', 'xyzt']
 
-from math import sqrt, sin, cos, pi
 import numpy as np
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
+
+
+def _rotate2d(phi_rad: Union[float, Sequence[float]],
+              XX: Union[float, Sequence[float], np.ndarray],
+              YY: Union[float, Sequence[float], np.ndarray],
+              XX0: float = 0., YY0: float = 0.) \
+        -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
+    """
+    Helper method for rotation of (XX,YY) point in 2D plane
+
+    Args:
+        phi_rad:
+            angle in [rad]
+
+        XX:
+            x-coordinates [m]
+
+        YY:
+            y-coordinates [m]
+
+        XX0:
+            x-coordinate of center of rotation [m]
+
+        YY0:
+            y-coordinate of center of rotation [m]
+
+    Returns:
+        Transformed 2D coordinates [m]
+    """
+    xx = XX0 + (XX-XX0) * np.cos(phi_rad) - (YY-YY0) * np.sin(phi_rad)
+    yy = YY0 + (XX-XX0) * np.sin(phi_rad) + (YY-YY0) * np.cos(phi_rad)
+    return xx, yy
 
 
 class xyz(object):
@@ -36,11 +67,15 @@ class xyz(object):
                  point: Optional['xyz']=None) -> None:
         """
         Args:
-            x, y, z (float, optional, default=0):
-                coordinates of point in 3D space [m]
+            x:
+                x-coordinate of point in 3D space [m]
+            y:
+                y-coordinate of point in 3D space [m]
+            z:
+                z-coordinate of point in 3D space [m]
 
-            point (xyz or xyzt, optional, default=None):
-                'point' will be assigned to this object if 'point' is not None
+            point:
+                Point will be assigned to this object if it is not None [m]
         """
         if isinstance(point, xyz):
             self.x, self.y, self.z = point.x, point.y, point.z
@@ -52,7 +87,7 @@ class xyz(object):
             self.x, self.y, self.z = None, None, None
             print("??? xyz: point is not of type 'xyz', type=", type(point))
 
-    def __add__(self, P: 'xyz') -> 'xyz':
+    def __add__(self, P: Union[float, 'xyz']) -> 'xyz':
         if isinstance(P, xyz):
             return xyz(self.x + P.x, self.y + P.y, self.z + P.z)
         else:
@@ -66,26 +101,26 @@ class xyz(object):
 
     def __mul__(self, multiplier: Union[float, 'xyz']) -> 'xyz':
         if isinstance(multiplier, xyz):
-            return self.dot(multiplier)
+            return xyz(self.x * multiplier.x, self.y * multiplier.y,
+                       self.z * multiplier.z)
         else:
             return xyz(self.x * multiplier, self.y * multiplier,
                        self.z * multiplier)
 
     def __eq__(self, other: 'xyz') -> bool:
-        return np.isclose(self.x, other.x) and np.isclose(self.y, other.y) \
-            and np.isclose(self.z, other.z)
+        return np.allclose([self.x, self.y, self.z],
+                           [other.x, other.y, other.z])
 
     def at(self, i: int) -> float:
         """
         Accesses point components by index
 
         Args:
-            i (int):
-                index of component (0: x, 1: y, 2: z)
+            i:
+                Index of component (0: x, 1: y, 2: z)
 
         Returns:
-            (float):
-                value of component
+            Value of component [m]
         """
         if i == 0:
             return self.x
@@ -98,7 +133,7 @@ class xyz(object):
             assert 0
 
     def magnitude(self) -> float:
-        return sqrt(self.x**2 + self.y**2 + self.z**2)
+        return np.sqrt(self.x**2 + self.y**2 + self.z**2)
 
     def unitVector(self) -> 'xyz':
         magn = self.magnitude()
@@ -115,90 +150,63 @@ class xyz(object):
                    self.z * P.x - self.x * P.z,
                    self.x * P.y - self.y * P.x)
 
-    def translate(self, offset: Iterable[float]) -> None:
-        self.x += offset[0]
-        self.y += offset[1]
-        self.z += offset[2]
+    def translate(self, offset: Union[Sequence[float], 'xyz']) -> None:
+        if isinstance(offset, xyz):
+            self.x += offset.x
+            self.y += offset.y
+            self.z += offset.z
+        else:
+            self.x += offset[0]
+            self.y += offset[1]
+            self.z += offset[2]
 
-    def _rotate2d(self, phiRad: float, XX: Union[float, Iterable[float]],
-                  YY: Union[float, Iterable[float]], XX0: float=0.,
-                  YY0: float=0.) -> Union[Tuple[float, float],
-                                          Tuple[Iterable[float],
-                                                Iterable[float]]]:
-        """
-        Helper method for rotation in 2D plane
-
-        Args:
-            phiRad (float):
-                angle in [rad]
-
-            XX (float):
-                x-coordinates
-
-            YY (float):
-                y-coordinates
-
-            XX0 (float, optional, default=0):
-                x-coordinate of center of rotation
-
-            YY0 (float, optional, default=0):
-                y-coordinate of center of rotation
-
-        Returns:
-            (2-tuple of float):
-                transformed 2D coordinates
-        """
-        xx = XX0 + (XX - XX0) * cos(phiRad) - (YY - YY0) * sin(phiRad)
-        yy = YY0 + (XX - XX0) * sin(phiRad) + (YY - YY0) * cos(phiRad)
-        return xx, yy
-
-    def rotate(self, phiRad: Iterable[float],
-               rotAxis: Iterable[float]) -> Tuple[float, float]:
+    def rotate(self, phiRad: Sequence[float],
+               rotAxis: Sequence[float]) -> None:
         """
         Coordinate transformation: rotate this point in Cartesian system
 
         Args:
-            phiRad (array of float):
-                angle of counter-clockwise rotation [rad]
+            phiRad:
+                Angle(s) of counter-clockwise rotation [rad]
 
-            rotAxis (iterable of float):
-                coordinates of rotation axis, one and only one component
+            rotAxis:
+                Coordinate(s) of rotation axis, one and only one component
                 is None; this component indicates the rotation axis.
                 e.g. 'rotAxis.y is None' forces rotation around y-axis,
-                rotation center is (P0.x, P0.z)
+                rotation center is (P0.x, P0.z) [m]
         """
         if rotAxis[0] is None:
-            self.y, self.z = self._rotate2d(phiRad, self.y, self.z, rotAxis[1],
-                                            rotAxis[2])
+            self.y, self.z = _rotate2d(phiRad, self.y, self.z, rotAxis[1],
+                                       rotAxis[2])
         elif rotAxis[1] is None:
-            self.z, self.x = self._rotate2d(phiRad, self.z, self.x, rotAxis[2],
-                                            rotAxis[0])
+            self.z, self.x = _rotate2d(phiRad, self.z, self.x, rotAxis[2],
+                                       rotAxis[0])
         elif rotAxis[2] is None:
-            self.x, self.y = self._rotate2d(phiRad, self.x, self.y, rotAxis[0],
-                                            rotAxis[1])
+            self.x, self.y = _rotate2d(phiRad, self.x, self.y, rotAxis[0],
+                                       rotAxis[1])
         else:
             print('??? invalid definition of rotation axis', rotAxis)
             assert 0
 
-    def rotateDeg(self, phiDeg: Iterable[float],
-                  rotAxis: Iterable[float]) -> Tuple[float, float]:
+    def rotateDeg(self, phiDeg: Sequence[float],
+                  rotAxis: Sequence[float]) -> None:
         """
         Coordinate transformation: rotate this point in Cartesian system
 
         Args:
-            phiDeg (iterable of float):
-                angle of counter-clockwise rotation [degrees]
+            phiDeg:
+                Angle(s) of counter-clockwise rotation [degrees]
 
-            rotAxis (iterable of float):
-                coordinates of rotation axis, one and only one component
+            rotAxis:
+                Coordinate(s) of rotation axis, one and only one component
                 is None; this component indicates the rotation axis.
                 e.g. 'rotAxis.y is None' forces rotation around y-axis,
                 rotation center is (P0.x, P0.z)
         """
-        self.rotate(phiDeg / 180. * pi, rotAxis)
+        self.rotate(np.asfarray(phiDeg) / 180. * np.pi, rotAxis)
 
-    def scale(self, scalingFactor: Union[int, float,
-                                         List[float], 'xyz']) -> None:
+    def scale(self, scalingFactor: 
+              Union[int, float, Sequence[float], 'xyz']) -> None:
         if isinstance(scalingFactor, (int, float)):
             if self.x is not None:
                 self.x *= float(scalingFactor)
@@ -213,7 +221,8 @@ class xyz(object):
                 self.y *= float(scalingFactor.y)
             if self.z is not None:
                 self.z *= float(scalingFactor.z)
-        elif isinstance(scalingFactor, list) and len(scalingFactor) == 3:
+        elif isinstance(scalingFactor, (list, tuple)) and \
+                len(scalingFactor) == 3:
             if self.x is not None:
                 self.x *= float(scalingFactor[0])
             if self.y is not None:
@@ -243,23 +252,23 @@ class xyzt(xyz):
     """
 
     def __init__(self, x: float=0., y: float=0., z: float=0., t: float=0.,
-                 point: Optional[xyz]=None) -> None:
+                 point: Optional[Union[xyz, 'xyzt']]=None) -> None:
         """
         Args:
-            x (float, optional, default=0.):
+            x:
                 x-coordinate of point in 3D space [m]
 
-            y (float, optional, default=0.):
+            y:
                 y-coordinate of point in 3D space [m]
 
-            z (float, optional, default=0.):
+            z:
                 z-coordinate of point in 3D space [m]
 
-            t (float, optional, default=0.):
+            t:
                 time [s]
 
-            point (xyz or xyzt, optional, default=None):
-                'point' will be assigned to this object if 'point' is not None
+            point:
+                Point will be assigned to this object if it is not None
         """
         super().__init__(x, y, z)
 
@@ -282,12 +291,11 @@ class xyzt(xyz):
         Accesses point components by index
 
         Args:
-            i (int):
-                index of component (0:x, 1:y, 2:z, 3:t)
+            i:
+                Index of component (0:x, 1:y, 2:z, 3:t)
 
         Returns:
-            (float):
-                value of component
+            Value of component
         """
         if i == 0:
             return self.x

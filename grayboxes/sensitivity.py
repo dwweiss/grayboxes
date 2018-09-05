@@ -17,11 +17,14 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-09-03 DWW
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import Any, Optional, Tuple
+
+from grayboxes.boxmodel import BoxModel
 from grayboxes.forward import Forward
 from grayboxes.plotarrays import plotBarArrays
 
@@ -42,14 +45,14 @@ class Sensitivity(Forward):
         dy_dx = op(x=cross(5, *ranges)       # generate x from ranges and cross
     """
 
-    def __init__(self, model, identifier='Sensitivity'):
+    def __init__(self, model: BoxModel, identifier: str='Sensitivity') -> None:
         """
         Args:
             model (BoxModel_like):
-                box type model
+                Box type model
 
-            identifier (str, optional):
-                object identifier
+            identifier:
+                Object identifier
         """
         super().__init__(model=model, identifier=identifier)
 
@@ -57,32 +60,30 @@ class Sensitivity(Forward):
         self.dy_dx = None
         self.indicesWithEqualXj = None
 
-    def task(self, **kwargs):
+    def task(self, **kwargs: Any) \
+            -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         """
         Analyzes sensitivity
 
-        Args:
-            kwargs (dict, optional):
-                keyword arguments
+        Kwargs:
+            X (2D or 1D array_like of float, optional):
+                training input, shape: (nPoint, nInp) or (nPoint,)
+                default: self._X
 
-                X (2D or 1D array_like of float, optional):
-                    training input, shape: (nPoint, nInp) or (nPoint,)
-                    default: self._X
+            Y (2D or 1D array_like of float, optional):
+                training target, shape: (nPoint, nOut) or (nPoint,)
+                default: self._Y
 
-                Y (2D or 1D array_like of float, optional):
-                    training target, shape: (nPoint, nOut) or (nPoint,)
-                    default: self._Y
-
-                x (2D array_like of float):
-                    cross-type input points, see BoxModel.cross()
-                    default: self._x
+            x (2D array_like of float):
+                cross-type input points, see BoxModel.cross()
+                default: self._x
 
         Returns:
-            x (1D array of float):
-                reference point in the center of the cross
-
-            dy/dx (1D array of float):
-                gradient of y with respect to x in reference point
+            2-tuple:
+                x (1D array of float):
+                    reference point in the center of the cross
+                dy/dx (1D array of float):
+                    gradient of y with respect to x in reference point
         """
         # trains (if X and Y not None) and predicts self.y = f(self.x)
         super().task(**self.kwargsDel(kwargs, 'x'))
@@ -123,7 +124,7 @@ class Sensitivity(Forward):
 
         return xRef, self.dy_dx
 
-    def plot(self):
+    def plot(self) -> None:
         """
         Plots gradient df(x)/dx
         """

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-20 DWW
+      2018-09-05 DWW
 """
 
 __all__ = ['mpi', 'communicator', 'rank', 'predict_scatter', 'split', 'merge']
@@ -25,6 +25,7 @@ __all__ = ['mpi', 'communicator', 'rank', 'predict_scatter', 'split', 'merge']
 import numpy as np
 import psutil
 import sys
+from typing import Any, Callable, Optional, Union
 import os
 if os.name == 'posix':
     try:
@@ -55,26 +56,24 @@ if os.name == 'posix':
 """
 
 
-def mpi():
+def mpi() -> Optional[int]:
     """
     Gets message passing interface (MPI)
 
     Returns:
-        (int or None):
-            None if MPI is not available, MPI reference otherwise
+        None if MPI is not available, MPI reference otherwise
     """
     if os.name != 'posix' or 'mpi4py' not in sys.modules:
         return None
     return mpi4py.MPI
 
 
-def communicator():
+def communicator() -> Optional[int]:
     """
     Gets communicator of the message passing interface (MPI)
 
     Returns:
-        (int or None):
-            None if MPI is not available, communicator otherwise
+        None if MPI is not available, communicator otherwise
     """
     x = mpi()
     if x is None:
@@ -82,13 +81,12 @@ def communicator():
     return x.COMM_WORLD
 
 
-def rank():
+def rank() -> Optional[int]:
     """
     Gets process rank from communicator of MPI
 
     Returns:
-        (int or None):
-            None if MPI is not available, process rank otherwise
+        None if MPI is not available, process rank otherwise
     """
     comm = communicator()
     if comm is None:
@@ -96,26 +94,25 @@ def rank():
     return comm.Get_rank()
 
 
-def predict_scatter(f, x, *args, **kwargs):
+def predict_scatter(f: Callable, x: np.ndarray, *args: float, **kwargs: Any) \
+        -> np.ndarray:
     """
     Parallelizes prediction of model y = f(x) employing scatter() and 
     gather()
 
     Args:
-        f (function):
+        f:
             generic function f(x) without 'self' argument
 
         x (2D or 1D array_like of float):
             prediction input, shape: (nPoint, nInp)
 
-        args (float, optional):
+        args:
             positional arguments
 
-        kwargs (Any, optional):
-            keyword arguments
-
-            silent (bool):
-                If silent is True then supress printing
+    Kwargs:
+        silent (bool):
+            If silent is True then supress printing
 
     Returns:
         y (2D array of float):
@@ -231,7 +228,7 @@ def predict_scatter(f, x, *args, **kwargs):
 #    return y
 
 
-def split(x2D, nProc):
+def split(x2D: np.ndarray, nProc: int) -> np.ndarray:
     """
     - Fills up given 2D array with 'np.inf' to a size of multiple of 'nProc'
     - Splits the 2D array into an 3D array
@@ -240,13 +237,13 @@ def split(x2D, nProc):
         x2D (2D or 1D array_like of float):
             input array, shape: (nProc, nInp) or (nInp,)
 
-        nProc (int):
+        nProc:
             number of x-segments to be sent to multiple processes
 
     Returns:
         (3D array of float):
             array of 2D arrays, shape: (nProc, nPointPerProc, nInp)
-            or 
+        or 
             np.atleast_3d(np.inf) if x2D is None
     """
     if x2D is None:
@@ -260,7 +257,7 @@ def split(x2D, nProc):
     return np.array(np.split(x2D, nProc))
 
 
-def merge(y3D):
+def merge(y3D: np.ndarray) -> np.ndarray:
     """
     - Merges output from predictions of all processes to single 2D output array
     - Excludes output points with first element equaling np.inf
@@ -290,7 +287,7 @@ def merge(y3D):
     return np.array(y2D)
 
 
-def x3d_to_str(data, indent='    '):
+def x3d_to_str(data: np.ndarray, indent: Union[str, int]='    ') -> str:
     """
     Creates string matrix with of MPI input or output
 
@@ -298,14 +295,13 @@ def x3d_to_str(data, indent='    '):
         data (3D array_like of float):
             input or output array, shape: (nProc, nPointPerProc, nInp)
 
-        indent (str or int):
+        indent:
             indent in string representation if type of indent is string
             or number of spaces used as indent
 
     Returns:
-        (str):
-           string representation of segments of processes and  of filled 
-           up values
+       string representation of segments of processes and of filled
+       up values
     """
     assert data is not None
 
@@ -323,13 +319,13 @@ def x3d_to_str(data, indent='    '):
     return s
 
 
-def xDemo(nPoint=24, nInp=2):
+def xDemo(nPoint: int=24, nInp: int=2) -> np.ndarray:
     """
     Args:
-        nPoint (int, optional):
+        nPoint:
             number of data points
 
-        nInp (int, optional):
+        nInp:
             number of input
 
     Returns:

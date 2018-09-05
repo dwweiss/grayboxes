@@ -17,10 +17,12 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-09-04 DWW
 """
 
 import numpy as np
+from typing import Any, Optional, Tuple
+
 from grayboxes.base import Base
 from grayboxes.boxmodel import BoxModel
 from grayboxes.white import White
@@ -56,71 +58,71 @@ class Forward(Base):
 
 
     Note:
-        Forward.__call__() returns 2-tuple of 2D arrays of float
+        - Forward.__call__() returns 2-tuple of 2D arrays of float
+        
+        - Forward has no self._x or self._y attribute and employs 
+          model.x and model. y for storing input and output
+
     """
 
-    def __init__(self, model, identifier='Forward'):
+    def __init__(self, model: BoxModel, identifier: str='Forward') -> None:
         """
         Args:
-            model (BoxModel):
-                box type model
+            model:
+                Box type model
 
-            identifier (str, optional):
-                object identifier
+            identifier:
+                Unique object identifier
         """
         super().__init__(identifier)
         self.model = model
 
     @property
-    def model(self):
+    def model(self) -> BoxModel:
         """
         Returns:
-            (BoxModel):
-                box type model
+            Box type model
         """
         return self._model
 
     @model.setter
-    def model(self, value):
+    def model(self, value: Optional[BoxModel]) -> None:
         """
         Sets box type model
 
         Args:
-            value (BoxModel):
-                box type model
+            value:
+                Box type model
         """
         self._model = value
         if self._model is not None:
             assert issubclass(type(value), BoxModel), \
                 'invalid model type: ' + str(type(value))
 
-    def pre(self, **kwargs):
+    def pre(self, **kwargs: Any) -> None:
         """
         - Assigns box type model
         - Assigns training input and target (X, Y)
         - Assigns prediction input x
         - Trains model if (X, Y) are not None
 
-        Args:
-            kwargs (dict, optional):
-                keyword arguments:
+        Kwargs:
+            XY (2-tuple of 2D array_like of float):
+                input and target of training, this argument
+                supersedes X, Y
 
-                XY (2-tuple of 2D array_like of float, optional):
-                    input and target of training, this argument 
-                    supersedes X, Y
+            X (2D or 1D array_like of float):
+                training input, shape: (nPoint, nInp) or (nPoint,)
+                default: self._X
 
-                X (2D or 1D array_like of float, optional):
-                    training input, shape: (nPoint, nInp) or (nPoint,)
-                    default: self._X
+            Y (2D or 1D array_like of float):
+                training target, shape: (nPoint, nOut) or (nPoint,)
+                default: self._Y
 
-                Y (2D or 1D array_like of float, optional):
-                    training target, shape: (nPoint, nOut) or (nPoint,)
-                    default: self._Y
-
-                x (2D or 1D array_like of float, optional):
-                    input to forward prediction or to sensitivity analysis
-                    shape: (nPoint, nInp) or (nInp,)
-                    default: self._x
+            x (2D or 1D array_like of float):
+                input to forward prediction or to sensitivity analysis
+                shape: (nPoint, nInp) or (nInp,)
+                default: self._x
         """
         super().pre(**kwargs)
 
@@ -141,14 +143,14 @@ class Forward(Base):
         else:
             self.model.x = np.atleast_2d(x) if x is not None else None
 
-    def task(self, **kwargs):
+    def task(self, **kwargs: Any) -> Tuple[np.ndarray, np.ndarray]:
         """
-        This task() method is only for Forward and Sensitivity.
-        Minimum, Maximum and Inverse have a different implementation of task()
+        This task() method is only for Forward and Sensitivity. Minimum, 
+        Maximum and Inverse have a different implementations of task()
 
-        Args:
-            kwargs (dict, optional):
-                keyword arguments passed to super.task()
+        Kwargs:
+            Keyword arguments passed to super.task() and to 
+            model.predict()
 
         Return:
             x, y (2-tuple of 2D arrays of float):
@@ -164,16 +166,15 @@ class Forward(Base):
                                        **self.kwargsDel(kwargs, 'x')))
         return self.model.x, self.model.y
 
-    def post(self, **kwargs):
+    def post(self, **kwargs: Any) -> None:
         """
-        Args:
-            kwargs (dict, optional):
-                keyword arguments passed to super.post()
+        Kwargs:
+            Keyword arguments passed to super.post()
         """
         super().post(**kwargs)
 
         if not self.silent:
             self.plot()
 
-    def plot(self):
+    def plot(self) -> None:
         pass

@@ -17,10 +17,12 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-20 DWW
+      2018-09-04 DWW
 """
 
 import numpy as np
+from typing import Any, Callable, Dict, Optional
+
 from grayboxes.black import Black
 from grayboxes.boxmodel import BoxModel
 
@@ -50,7 +52,7 @@ class DarkGray(BoxModel):
             y = DarkGray(f)(X=X, Y=Y, x=x, neurons=[5])
     """
 
-    def __init__(self, f, identifier='DarkGray'):
+    def __init__(self, f: Callable, identifier: str='DarkGray') -> None:
         """
         Args:
             f (method or function):
@@ -63,17 +65,32 @@ class DarkGray(BoxModel):
         self._black = Black()
 
     @property
-    def silent(self):
+    def silent(self) -> bool:
         return self._silent
 
     @silent.setter
-    def silent(self, value):
+    def silent(self, value: bool) -> None:
         self._silent = value
         self._black._silent = value
 
-    def train(self, X, Y, **kwargs):
+    def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) \
+            -> Optional[Dict[str, Any]]:
         """
-        see BoxModel.train()
+        Args:
+            X (2D or 1D array_like of float):
+                training input, shape: (nPoint, nInp) or (nInp,)
+
+            Y (2D or 1D array_like of float):
+                training target, shape: (nPoint, nOut) or (nOut,)
+
+        Kwargs:
+            Keyword arguments to be passed to train () of this object
+            and of black box model
+
+        Returns:
+            best result, see BoxModel.train() 
+            or 
+            None if X and Y are None
         """
         if X is None or Y is None:
             return None
@@ -84,7 +101,7 @@ class DarkGray(BoxModel):
 
         return self.best
 
-    def predict(self, x, **kwargs):
+    def predict(self, x: np.ndarray, **kwargs: Any) -> Optional[np.ndarray]:
         """
         Executes box model, stores input x as self.x and output as self.y
 
@@ -92,12 +109,15 @@ class DarkGray(BoxModel):
             x (2D or 1D array_like of float):
                 prediction input, shape: (nPoint, nInp) or (nInp,)
 
-            kwargs (dict, optional):
-                keyword arguments
+        Kwargs:
+            Keyword arguments to be passed to predict() of this object
+            and of black box model
 
         Returns:
             (2D array of float):
                 prediction output, shape: (nPoint, nOut)
+            or 
+            None if x is None
         """
         if x is None:
             return None

@@ -17,18 +17,20 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-09-03 DWW
 
   Acknowledgements:
       Neurolab is a contribution by E. Zuev (pypi.python.org/pypi/neurolab)
 """
 
-__all__ = ['Neural', 'proposeHiddenNeurons']
+__all__ = ['Neural', 'propose_hidden_neurons']
 
 from collections import OrderedDict
 import inspect
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 try:
     import neurolab as nl
     _hasNeurolab = True
@@ -37,7 +39,8 @@ except ImportError:
     _hasNeurolab = False
 
 
-def proposeHiddenNeurons(X, Y, alpha=2, silent=False):
+def propose_hidden_neurons(X: np.ndarray, Y: np.ndarray, alpha: float=2,
+                           silent: bool=False) -> List[int]:
     """
     Proposes optimal number of hidden neurons for given training data set
 
@@ -52,19 +55,17 @@ def proposeHiddenNeurons(X, Y, alpha=2, silent=False):
         Y (2D array_like of float):
             training target, shape: (nPoint, nOut)
 
-        alpha (float, optional):
+        alpha:
             tuning parameter, alpha = 2..10 (2 reduces over-fitting)
             default: 2
 
-        silent (bool, optional):
+        silent:
             if True then suppress printed messages
             deafult: False
 
     Returns:
-        (list of int):
-            Estimate of optimal number of neurons of a single hidden layer
+        Estimate of optimal number of neurons of a single hidden layer
     """
-    alpha = 2
     xShape, yShape = np.atleast_2d(X).shape, np.atleast_2d(Y).shape
 
     assert xShape[0] > xShape[1], str(xShape)
@@ -121,15 +122,15 @@ class Neural(object):
         - http://neupy.com/docs/tutorials.html#tutorials
     """
 
-    def __init__(self, f=None):
+    def __init__(self, f: Optional[Callable]=None) -> None:
         """
         Args:
-            f (method or function, optional):
+            f:
                 theoretical submodel as method f(self, x) or function f(x)
                 default: None
 
-                note: if f is not None, genetic training or training with
-                    derivative dE/dy and dE/dw is employed
+        Note: if f is not None, genetic training or training with
+            derivative dE/dy and dE/dw is employed
         """
         self.f = f               # theoretical submodel for single data point
 
@@ -154,7 +155,9 @@ class Neural(object):
         self._best = {'method': None, 'L2': np.inf, 'abs': np.inf,
                       'iAbs': -1, 'epochs': -1}   # results of best train trial
 
-    def __call__(self, X=None, Y=None, x=None, **kwargs):
+    def __call__(self, X: Optional[np.ndarray]=None, Y: Optional[np.ndarray]=None,
+                 x: Optional[np.ndarray]=None, **kwargs: Any) \
+            -> Union[np.ndarray, Dict[str, Any], None]:
         """
         - Trains neural network if X is not None and Y is not None
         - Sets self.ready to True if training is successful
@@ -177,7 +180,7 @@ class Neural(object):
             (2D array of float):
                 prediction of network net(x) if x is not None and self.ready
             or
-            (dict {str: float/str/int}):
+            (dictionary):
                 result of best training trial if X and Y are not None
                     'method' (str): best method
                     'L2'   (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
@@ -202,11 +205,11 @@ class Neural(object):
         return best
 
     @property
-    def f(self):
+    def f(self) -> Callable:
         return self._f
 
     @f.setter
-    def f(self, value):
+    def f(self, value: Callable) -> None:
         if value is not None:
             firstArg = list(inspect.signature(value).parameters.keys())[0]
             if firstArg == 'self':
@@ -214,44 +217,44 @@ class Neural(object):
         self._f = value
 
     @property
-    def silent(self):
+    def silent(self) -> bool:
         return self._silent
 
     @silent.setter
-    def silent(self, value):
+    def silent(self, value: bool) -> None:
         self._silent = value
 
     @property
-    def X(self):
+    def X(self) -> np.ndarray:
         return self._X
 
     @property
-    def Y(self):
+    def Y(self) -> np.ndarray:
         return self._Y
 
     @property
-    def x(self):
+    def x(self) -> np.ndarray:
         return self._x
 
     @property
-    def y(self):
+    def y(self) -> np.ndarray:
         return self._y
 
     @property
-    def ready(self):
+    def ready(self) -> bool:
         return self._ready
 
     @property
-    def best(self):
+    def best(self) -> Dict[str, Any]:
         """
         Returns:
-            (dict {str : float/str/int}):
-                results for best training trial
-                [see self.train()]
+            results for best training trial
+            [see self.train()]
         """
         return self._best
 
-    def importDataFrame(self, df, xKeys, yKeys):
+    def importDataFrame(self, df: pd.DataFrame, xKeys: Sequence[str],
+                        yKeys: Sequence[str]) -> None:
         """
         Imports training input X and training target Y
         self.Y is the normalized target after import, but 'df' stays unchanged
@@ -278,7 +281,9 @@ class Neural(object):
         self._norm_y = nl.tool.Norm(self._Y)
         self._Y = self._norm_y(self._Y)
 
-    def setArrays(self, X, Y, xKeys=None, yKeys=None):
+    def setArrays(self, X: np.ndarray, Y: np.ndarray,
+                  xKeys: Optional[Sequence[str]]=None,
+                  yKeys: Optional[Sequence[str]]=None) -> None:
         """
         - Imports training input X and training target Y
         - converts X and Y to 2D arrays
@@ -286,18 +291,18 @@ class Neural(object):
           but argument 'Y' stays unchanged)
 
         Args:
-           X (2D or 1D array_like of float, optional):
+            X (2D or 1D array_like of float):
                 training input, shape: (nPoint, nInp) or (nPoint,)
 
-            Y (2D or 1D array_like of float, optional):
+            Y (2D or 1D array_like of float):
                 training target, shape: (nPoint, nOut) or (nPoint,)
 
-            xKeys (1D array_like of str, optional):
+            xKeys:
                 list of column keys for data selection
                 use self._xKeys keys if xKeys is None
                 default: ['x0', 'x1', ... ]
 
-            yKeys (1D array_like of str, optional):
+            yKeys:
                 list of column keys for data selection
                 use self._yKeys keys if yKeys is None
                 default: ['y0', 'y1', ... ]
@@ -327,99 +332,99 @@ class Neural(object):
         self._norm_y = nl.tool.Norm(self._Y)
         self._Y = self._norm_y(self._Y)
 
-    def train(self, X=None, Y=None, **kwargs):
+    def train(self, X: Optional[np.ndarray]=None, Y: Optional[np.ndarray]=None,
+              **kwargs: Any) -> Dict[str, Any]:
         """
         Trains model, stores X and Y as self.X and self.Y, and stores result of
         best training trial as self.best
 
         Args:
-            X (2D or 1D array_like of float, optional):
+            X (2D or 1D array_like of float):
                 training input, shape: (nPoint, nInp) or (nPoint,)
                 default: self.X
 
-            Y (2D or 1D array_like of float, optional):
+            Y (2D or 1D array_like of float):
                 training target, shape: (nPoint, nOut) or (nPoint,)
                 default: self.Y
 
-            kwargs (dict, optional):
-                keyword arguments:
+        Kwargs:
+            alpha (float):
+                factor for autodefinition of number of hidden neurons,
+                see: propose_hidden_neurons()
+                default: 2.0
 
-                alpha (float):
-                    factor for autodefinition of number of hidden neurons,
-                    see: proposeHiddenNeurons()
-                    default: 2.0
+            epochs (int):
+                max number of iterations of single trial
+                default: 1000
 
-                epochs (int):
-                    max number of iterations of single trial
-                    default: 1000
+            errorf (function)
+                error function: (nl.error.MSE() or nl.error.SSE())
+                default: MSE
 
-                errorf (function)
-                    error function: (nl.error.MSE() or nl.error.SSE())
-                    default: MSE
+            goal (float):
+                limit of 'errorf' for stop of training (0. < goal < 1.)
+                default: 1e-3
+                [note: MSE of 1e-3 corresponds to L2-norm of 1e-6]
 
-                goal (float):
-                    limit of 'errorf' for stop of training (0. < goal < 1.)
-                    default: 1e-3
-                    [note: MSE of 1e-3 corresponds to L2-norm of 1e-6]
+            methods (str or list of str):
+                if string, then space separated string is converted to list
+                if 'all' or None, then all training methods are assigned
+                default: 'bfgs'
 
-                methods (str or list of str):
-                    if string, then space separated string is converted to list
-                    if 'all' or None, then all training methods are assigned
-                    default: 'bfgs'
+            method (str or list of str):
+                [same as 'methods']
 
-                method (str or list of str):
-                    [same as 'methods']
+            neurons (int or array_like of int):
+                array of number of neurons in hidden layers
+                default: [] ==> use estimate of propose_hidden_neurons()
 
-                neurons (int or array_like of int):
-                    array of number of neurons in hidden layers
-                    default: [] ==> use estimate of proposeHiddenNeurons()
+            outputf (function):
+                activation function of output layer
+                default: TanSig()
 
-                outputf (function):
-                    activation function of output layer
-                    default: TanSig()
+            plot (int):
+                controls frequency of plotting progress of training
+                default: 0 (no plot)
 
-                plot (int):
-                    controls frequency of plotting progress of training
-                    default: 0 (no plot)
+            regularization (float):
+                regularization rate (sum of all weights is added to
+                cost function of training, 0. <= regularization <= 1.
+                default: 0. (no effect of sum of all weights)
+                [same as 'rr']
 
-                regularization (float):
-                    regularization rate (sum of all weights is added to
-                    cost function of training, 0. <= regularization <= 1.
-                    default: 0. (no effect of sum of all weights)
-                    [same as 'rr']
+            rr (float):
+                [same as 'regularization']
 
-                rr (float):
-                    [same as 'regularization']
+            show (int):
+                control of information about training, if show=0: no print
+                default: epochs // 10
+                [argument 'show' superseds 'silent' if show > 0]
 
-                show (int):
-                    control of information about training, if show=0: no print
-                    default: epochs // 10
-                    [argument 'show' superseds 'silent' if show > 0]
+            silent (bool):
+                if True then no information is sent to console
+                default: self.silent
+                [argument 'show' superseds 'silent' if show > 0]
 
-                silent (bool):
-                    if True then no information is sent to console
-                    default: self.silent
-                    [argument 'show' superseds 'silent' if show > 0]
+            smartTrials (bool):
+                if False, perform all trials even if goal has been reached
+                default: True
 
-                smartTrials (bool):
-                    if False, perform all trials even if goal has been reached
-                    default: True
+            transf (function):
+                activation function of hidden layers
+                default: TanSig()
 
-                transf (function):
-                    activation function of hidden layers
-                    default: TanSig()
-
-                trials (int):
-                    maximum number of training trials
-                    default: 3
+            trials (int):
+                maximum number of training trials
+                default: 3
 
         Returns:
-            result of best training trial:
-                'method'  (str): best method
-                'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
-                'abs'   (float): max{|net(x) - Y|} of best training
-                'iAbs'    (int): index of Y where absolute error is maximum
-                'epochs'  (int): number of epochs of best training
+            (dictionary)
+                result of best training trial:
+                'method' (str): best method
+                'L2'   (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
+                'abs'  (float): max{|net(x) - Y|} of best training
+                'iAbs'   (int): index of Y where abs. error is maximum
+                'epochs' (int): number of epochs of best training
 
         Note:
             - If training fails then self.best['method']=None
@@ -483,11 +488,13 @@ class Neural(object):
         if self.silent:
             plot = False
 
+        if neurons is None:
+            neurons = [1]
         if isinstance(neurons, (int, float)):
             neurons = list([int(neurons)])
         if not neurons or len(neurons) == 0 or not all(neurons):
-            neurons = proposeHiddenNeurons(X=self._X, Y=self._Y, alpha=alpha,
-                                           silent=self.silent)
+            neurons = propose_hidden_neurons(X=self._X, Y=self._Y, alpha=alpha,
+                                             silent=self.silent)
         if not isinstance(neurons, list):
             neurons = list(neurons)
         assert all(x > 0 for x in neurons), str(neurons)
@@ -614,7 +621,7 @@ class Neural(object):
                       'epochs': self._bestEpochs[iBest]}
         return self.best
 
-    def predict(self, x, **kwargs):
+    def predict(self, x: np.ndarray, **kwargs: Any) -> Optional[np.ndarray]:
         """
         Executes network, stores x as self.x
 
@@ -622,12 +629,10 @@ class Neural(object):
             x (2D or 1D array_like of float):
                 prediction input, shape: (nPoint, nInp) or (nInp,)
 
-            kwargs (dict, optional):
-                keyword arguments
-
-                silent (bool):
-                    if True then no printing
-                    default: self.silent
+        Kwargs:
+            silent (bool):
+                if True then no printing
+                default: self.silent
 
         Returns:
             (2D array of float):
@@ -657,10 +662,10 @@ class Neural(object):
 
         return self._y
 
-    def plot(self):
+    def plot(self) -> None:
         self.plotTestWithTrainData()
 
-    def plotTestWithTrainData(self):
+    def plotTestWithTrainData(self) -> None:
         for method, error, epochs in zip(self._methods, self._finalErrors,
                                          self._bestEpochs):
             y = self.predict(x=self._X)        # prediction

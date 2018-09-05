@@ -17,10 +17,12 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-20 DWW
+      2018-09-03 DWW
 """
 
 import numpy as np
+from typing import Any, Dict, Optional
+
 from grayboxes.boxmodel import BoxModel
 from grayboxes.neural import Neural
 
@@ -52,27 +54,28 @@ class Black(BoxModel):
         Implement multivariant splines
     """
 
-    def __init__(self, identifier='Black'):
+    def __init__(self, identifier: str='Black') -> None:
         """
         Args:
-            identifier (str, optional):
-                object identifier
+            identifier:
+                Object identifier
         """
         super().__init__(f=None, identifier=identifier)
         self._empirical = None   # holds instance of Neural, splines etc
         self.best = None
 
     @property
-    def silent(self):
+    def silent(self) -> bool:
         return self._silent
 
     @silent.setter
-    def silent(self, value):
+    def silent(self, value: bool) -> None:
         self._silent = value
         if self._empirical is not None:
             self._empirical._silent = value
 
-    def train(self, X, Y, **kwargs):
+    def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) \
+            -> Optional[Dict[str, Any]]:
         """
         Trains model, stores X and Y as self.X and self.Y, and stores 
         result of best training trial as self.best
@@ -84,19 +87,20 @@ class Black(BoxModel):
             Y (2D or 1D array_like of float):
                 training target, shape: (nPoint, nOut) or (nPoint,)
 
-            kwargs (dict, optional):
-                keyword arguments:
+        Kwargs:
+            neurons (int or 1D array_like of int):
+                number of neurons in hidden layers of neural network
 
-                neurons (int or 1D array_like of int):
-                    number of neurons in hidden layers of neural network
+            splines (1D array_like of float):
+                not specified yet
 
-                splines (1D array_like of float):
-                    not specified yet
-
-                ... additional training options, see Neural.train()
+            ... additional training options, see Neural.train()
 
         Returns:
-            see BoxModel.train()
+            results:
+                see BoxModel.train()
+            or
+                None
         """
         if X is None or Y is None:
             return None
@@ -142,7 +146,7 @@ class Black(BoxModel):
 
         return self.best
 
-    def predict(self, x, **kwargs):
+    def predict(self, x: np.ndarray, **kwargs: Any) -> np.ndarray:
         """
         Executes box model, stores input as self.x and output as self.y
 
@@ -150,8 +154,8 @@ class Black(BoxModel):
             x (2D or 1D array_like of float):
                 prediction input, shape: (nPoint, nInp) or (nInp,)
 
-            kwargs (dict, optional):
-                keyword arguments
+        Kwargs:
+            Keyword arguments
 
         Returns:
             (2D array of float):

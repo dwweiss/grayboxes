@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-09-05 DWW
 """
 
 __all__ = ['plot1', 'plotCurves', 'plotSurface', 'plotWireframe',
@@ -31,7 +31,7 @@ from matplotlib import mlab, cm
 from mpl_toolkits.mplot3d import Axes3D          # for "projection='3d'"
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as AA
-from typing import Iterable, Optional, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 
 def isIrregularMesh(x: np.ndarray, y: np.ndarray, z: np.ndarray) -> bool:
@@ -39,14 +39,14 @@ def isIrregularMesh(x: np.ndarray, y: np.ndarray, z: np.ndarray) -> bool:
     Checks if all three arrays are 1D and of the same length
 
     Args:
-        x (array of float):
-            arrays of coordinates and dependent variable
+        x:
+            array of coordinates
 
-        y (array of float):
-            arrays of coordinates and dependent variable
+        y:
+            array of coordinates
 
-        z (array of float):
-            arrays of coordinates and dependent variable
+        z:
+            array of dependent variable
 
     Returns:
         True if all arrays are 1D and of same length
@@ -62,17 +62,17 @@ def isRegularMesh(x: np.ndarray, y: np.ndarray, z: np.ndarray,
     Checks if all three arrays are of dimension 'dim' and of same length
 
     Args:
-        x (array of float):
-            arrays of coordinates and dependent variable
+        x:
+            array of coordinate
 
-        y (array of float):
-            arrays of coordinates and dependent variable
+        y:
+            array of coordinate
 
-        z (array of float):
-            arrays of coordinates and dependent variable
+        z:
+            array of dependent variable
 
-        dim (int, optional):
-            dimension of the arrays
+        dim:
+            dimension of arrays
 
     Returns:
         True if all arrays are of dimension 'dim' and of same length
@@ -82,31 +82,38 @@ def isRegularMesh(x: np.ndarray, y: np.ndarray, z: np.ndarray,
              for arr in [y, z] for i in range(dim)])
 
 
-def toRegularMesh(x: np.ndarray, y: np.ndarray, z: np.ndarray, nx: int=50,
-                  ny: int=None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def toRegularMesh(x: np.ndarray, y: np.ndarray, z: np.ndarray,
+                  nx: Optional[int]=50, ny: Optional[int]=None) \
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Maps irregular arrays to regular 2D arrays for x, y and z
 
     Args:
-        x (array of float):
-            arrays of coordinates and dependent variable
+        x (1D or 2D array of float):
+            array of coordinate
 
-        y (array of float):
-            arrays of coordinates and dependent variable
+        y (1D or 2D array of float):
+            array of coordinate
 
-        z (array_like of float):
-            irregular 1D or 2D-array of size: len(x)*len(y)
+        z (1D or 2D array of float):
+            irregular 1D or 2D-array of dependent variable,
+             size: len(x)*len(y)
 
-        nx, ny (int, optional):
-            number of nodes along x- and y-axis
+        nx:
+            number of nodes along x-axis
+
+        ny:
+            number of nodes along y-axis
 
     Returns:
-        x, y, z (3-tuple of array of float): coordinates and independent
-            variable as regular 2D-arrays of same shape
+        x, y, z (3-tuple of array of float): coordinates and
+            independent variable as regular 2D-arrays of same
+            shape
     """
     x = np.asfarray(x)
     y = np.asfarray(y)
     z = np.asfarray(z)
+
     assert x.ndim == y.ndim and x.ndim < 3 and y.ndim < 3 and z.ndim < 3, \
         'incompatible arrays'
 
@@ -132,13 +139,15 @@ def toRegularMesh(x: np.ndarray, y: np.ndarray, z: np.ndarray, nx: int=50,
         return x, y, z
 
 
-def clip_xyz(x: Iterable[float], y: Iterable[float], z: Iterable[float],
-             z2: Optional[Iterable[float]]=None,
+def clip_xyz(x: np.ndarray,
+             y: np.ndarray,
+             z: np.ndarray,
+             z2: Optional[np.ndarray]=None,
              xrange: Optional[Tuple[float, float]]=None,
              yrange: Optional[Tuple[float, float]]=None,
-             zrange: Optional[Tuple[float, float]]=None) -> \
-             Union[Tuple[np.ndarray, np.ndarray, np.ndarray],
-                   Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+             zrange: Optional[Tuple[float, float]]=None) \
+        -> Union[Tuple[np.ndarray, np.ndarray, np.ndarray],
+                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
     """
     - Clips IRREGULAR arrays for x, y, z (1D arrays of same length)
     - Assigns array of size 2 to ranges if size is not 2
@@ -146,25 +155,25 @@ def clip_xyz(x: Iterable[float], y: Iterable[float], z: Iterable[float],
       upper bound of a range is not equal
 
     Args:
-        x (iterable of float):
+        x (1D or 2D array of float):
             array of coordinates
 
-        y (iterable of float):
+        y (1D or 2D array of float):
             array of coordinates
 
-        z (iterable of float):
+        z (1D or 2D array of float):
             array of values over (x, y)
 
-        z2 (iterable of float, optional):
+        z2 (1D or 2D array of float):
             second z-data as 1D-array
 
-        xrange: (2-tuple of float):
+        xrange:
             ranges in x-direction
 
-        yrange: (2-tuple of float):
+        yrange:
             ranges in y-direction
 
-        zrange: (2-tuple of float):
+        zrange:
             ranges in z-direction
 
     Returns:
@@ -250,37 +259,42 @@ def plt_pre(xLabel: str='x', yLabel: str='y', title: str='',
     return fig
 
 
-def plt_post(file: str='', legendPosition: Optional[Tuple[float, float]]=
-             (1.1, 1.05)) -> None:
+def plt_post(file: str='', legendPosition:
+        Optional[Tuple[float, float]]=None) -> None:
     """
-    End multiple plots
+    Ends multiple plots
     """
-    if legendPosition:
+
+    if legendPosition is None:
+        legendPosition = (1.1, 1.05)
         plt.legend(bbox_to_anchor=legendPosition, loc='upper left')
-    else:
-        if legendPosition is not None:
-            plt.legend(loc='best')
     if file:
         if not file.endswith('.png'):
             file += '.png'
         f = file
         for c in "[](){}$?#!%&^*=+,': \\":
             if len(f) > 1:
-                x = f[1]
-            f = f.replace(c, '_')
-            if len(f) > 1:
-                if x == ':':
+                f1 = f[1]
+                f = f.replace(c, '_')
+                if f1 == ':':
                     f = f[:1] + ':' + f[2:]
+            else:
+                f = f.replace(c, '_')
         plt.savefig(f)
     plt.show()
 
 
-def plot1(x: Iterable[float], y: Iterable[float], labels=['x', 'y'],
-          title: str='', xLog: bool=False, yLog: bool=False,
-          grid: Optional[bool]=True, figsize: Optional[Tuple[int, int]]=None,
+def plot1(x: np.ndarray,
+          y: np.ndarray,
+          title: str = '',
+          labels: Tuple[str, str]=('x', 'y'),
+          xLog: bool=False, yLog: bool=False,
+          grid: bool=True,
+          figsize: Optional[Tuple[int, int]]=None,
           fontsize: Optional[int]=None,
           legendPosition: Optional[Tuple[float, float]]=None,
-          file='') -> None:
+          file: str='') \
+        -> None:
     plt_pre(xLabel=labels[0], yLabel=labels[1], title=title,
             xLog=xLog, yLog=yLog, grid=grid,
             figsize=figsize, fontsize=fontsize)
@@ -290,21 +304,27 @@ def plot1(x: Iterable[float], y: Iterable[float], labels=['x', 'y'],
 
 def plotCurves(x,
                y1, y2=[], y3=[], y4=[],
-               labels=None,             # axis labels
-               title='',                # title of plot
-               styles=['', '', ''],     # curve styles ('-:')
-               marker='',               # plot markers ('<>*+')
-               linestyle='-',           # line style ['-','--',':'']
-               units=None,              # axis units
-               offsetAxis2=90,          # space to first right-hand axis
-               offsetAxis3=180,         # space to second right-hand axis
-               xrange=[0, 0],
-               y1range=[0, 0], y2range=[0, 0], y3range=[0, 0], y4range=[0, 0],
-               xLog=False, yLog=False, grid=False,
-               figsize=(6, 3.5),
-               fontsize=14,
-               legendPosition=None,     # dimensionless leg pos in (1,1)-space
-               file='',                 # file name of image (no save if empty)
+               labels: Optional[List[str]]=None,  # axis labels
+               title: str='',                     # title of plot
+               styles: List[str]=['', '', ''],    # curve styles ('-:')
+               marker: str='',                    # plot markers ('<>*+')
+               linestyle: str='-',                # line style ['-','--',':'']
+               units: Optional[List[str]]=None,   # axis units
+               offsetAxis2: int=90,               # space to 1st right-hand axis
+               offsetAxis3: int=180,              # space to 2sn right-hand axis
+               xrange: Optional[Tuple[float, float]]=(0., 0.),
+               y1range: Optional[Tuple[float, float]]=(0., 0.),
+               y2range: Optional[Tuple[float, float]]=(0., 0.),
+               y3range: Optional[Tuple[float, float]]=(0., 0.),
+               y4range: Optional[Tuple[float, float]]=(0., 0.),
+               xLog: bool=False,
+               yLog: bool=False,
+               grid: bool=False,
+               figsize: Optional[Tuple[float, float]]=(6, 3.5),
+               fontsize: int=14,
+               legendPosition: Optional[Tuple[float, float]]=None,
+                                        # dimensionless leg pos in (1,1)-space
+               file: str='',                 # file name of image (no save if empty)
                ):
     plt.figure(figsize=figsize)
     plt.rcParams.update({'font.size': fontsize})
@@ -324,9 +344,9 @@ def plotCurves(x,
 
     par1 = host_subplot(111, axes_class=AA.Axes)
     if xrange[0] != xrange[1]:
-        plt.set_xlim(xrange[0], xrange[1])
+        par1.set_xlim(xrange[0], xrange[1])
     if y1range[0] != y1range[1]:
-        plt.ylim(y1range[0], y1range[1])
+        par1.ylim(y1range[0], y1range[1])
     if len(y2):
         par2 = par1.twinx()
         if y2range[0] != y2range[1]:
@@ -412,19 +432,19 @@ def plotCurves(x,
     plt_post(file=file, legendPosition=legendPosition)
 
 
-def plotSurface(x, y, z,
-                labels=['x', 'y', 'z'],  # axis labels
-                units=['[/]', '[/]', '[/]'],  # axis units
-                title='',
-                xrange=[0., 0.],  # axis range
-                yrange=[0., 0.],  # axis range
-                zrange=[0., 0.],  # axis range
-                xLog=False,
-                yLog=False,
-                grid=False,
-                figsize=(8, 6),  # figure size in inch
-                fontsize=10,
-                legendPosition='',
+def plotSurface(x: np.ndarray, y: np.ndarray, z: np.ndarray,
+                labels: Tuple[str, str, str]=('x', 'y', 'z'),  # axis labels
+                units: List[str]=['[/]', '[/]', '[/]'],  # axis units
+                title: str='',
+                xrange: Tuple[float, float]=(0., 0.),  # axis range
+                yrange: Tuple[float, float]=(0., 0.),  # axis range
+                zrange: Tuple[float, float]=(0., 0.),  # axis range
+                xLog: bool=False,
+                yLog: bool=False,
+                grid: bool=False,
+                figsize: Optional[Tuple[float, float]]=(8, 6),
+                fontsize: int=10,
+                legendPosition: Optional[Tuple[float, float]]=None,
                 file='',
                 ):
     """
@@ -442,7 +462,7 @@ def plotSurface(x, y, z,
 
     for i in range(len(units)):
         if not units[i].startswith('['):
-            units[i] = '[' + units[i] + ']'
+            units[i] = '(' + units[i] + ')'
     ax = fig.add_subplot(1, 1, 1, projection='3d')
     if len(labels) > 0 and labels[0] != '[ ]':
         ax.set_xlabel(labels[0] + ' ' + units[0])
@@ -458,20 +478,20 @@ def plotSurface(x, y, z,
     plt_post(file=file, legendPosition=legendPosition)
 
 
-def plotWireframe(x, y, z,
-                  labels=['x', 'y', 'z'],
-                  units=['[/]', '[/]', '[/]'],
-                  title='',
-                  xrange=[0., 0.],
-                  yrange=[0., 0.],
-                  zrange=[0., 0.],
-                  xLog=False,
-                  yLog=False,
-                  grid=False,
-                  figsize=(7, 6),
-                  fontsize=14,
-                  legendPosition='',
-                  file='',
+def plotWireframe(x : np.ndarray, y : np.ndarray, z : np.ndarray,
+                  labels: List[str]=['x', 'y', 'z'],
+                  units: List[str]=['[/]', '[/]', '[/]'],
+                  title: str='',
+                  xrange: Optional[Tuple[float, float]]=(0., 0.),
+                  yrange: Optional[Tuple[float, float]]=(0., 0.),
+                  zrange: Optional[Tuple[float, float]]=(0., 0.),
+                  xLog: bool=False,
+                  yLog: bool=False,
+                  grid: bool=False,
+                  figsize: Tuple[float, float]=(7., 6.),
+                  fontsize: int=14,
+                  legendPosition: Optional[Tuple[float, float]]=None,
+                  file: str='',
                   ):
     """
     Plots one z(x,y) array as 3D wiremesh surface
@@ -505,9 +525,9 @@ def plotWireframe(x, y, z,
 
     ax.plot_wireframe(x2, y2, z2, rstride=2, cstride=2)
     if xrange[0] != xrange[1]:
-        plt.set_xlim3d(xrange[0], xrange[1])
+        ax.set_xlim3d(xrange[0], xrange[1])
     if yrange[0] != yrange[1]:
-        plt.set_ylim3d(yrange[0], yrange[1])
+        ax.set_ylim3d(yrange[0], yrange[1])
 
     plt_post(file=file, legendPosition=legendPosition)
 
@@ -752,19 +772,19 @@ def plotTrajectory(x, y, z,                   # trajectory to be plotted
     plt.show()
 
 
-def plotBarArrays(x=None,
-                  yArrays=None,                      # (2D array_like of float)
-                  labels=None,
-                  units=None,                                      # axis units
-                  title='',
-                  yrange=None,
-                  grid=False,
-                  figsize=None,
-                  fontsize=14,
-                  legendPosition=None,
-                  showYLabel=True,
-                  width=0.15,
-                  file=''):
+def plotBarArrays(x: Optional[np.ndarray]=None,
+                  yArrays: Optional[np.ndarray]=None,
+                  labels: Optional[List[str]]=None,
+                  units: Optional[List[str]]=None,
+                  title: str='',
+                  yrange: Optional[Tuple[float, float]]=None,
+                  grid: bool=False,
+                  figsize: Optional[Tuple[float, float]]=None,
+                  fontsize: int=14,
+                  legendPosition: Optional[str]=None,
+                  showYLabel: bool=True,
+                  width: float=0.15,
+                  file: str=''):
     """
     Plots bars without errorbars if yArrays is 2D array of float
     """
@@ -800,7 +820,7 @@ def plotBars(x=[],
              y5=[], y5Error=[],
              y6=[], y6Error=[],
              labels=[],
-             units=[],                                             # axis units
+             units=[],
              title='',
              yrange=[],
              grid=False,
@@ -959,7 +979,8 @@ def plotBars(x=[],
     plt_post(file='', legendPosition=None)
 
 
-def plot_X_Y_Yref(X, Y, Y_ref, labels=['X', 'Y', 'Y_{ref}']):
+def plot_X_Y_Yref(X: np.ndarray, Y: np.ndarray, Y_ref: np.ndarray,
+                  labels:  List[str]=['X', 'Y', 'Y_{ref}']) -> None:
     """
     Plots Y(X). Y_ref(X) and the difference Y-Y_ref(X) as isoMap and surface
     """

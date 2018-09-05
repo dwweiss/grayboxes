@@ -17,10 +17,12 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-09-04 DWW
 """
 
 import numpy as np
+from typing import Any
+
 from grayboxes.minimum import Minimum
 
 
@@ -48,7 +50,7 @@ class Inverse(Minimum):
         x, y = Inverse(LightGray(f))(XY=(X, Y), c0=1, x=xIni, y=yInv)
     """
 
-    def objective(self, x, **kwargs):
+    def objective(self, x: np.ndarray, **kwargs: Any) -> float:
         """
         Defines objective function for inverse problem
 
@@ -57,12 +59,11 @@ class Inverse(Minimum):
                 input of multiple or single data points,
                 shape: (nPoint, nInp) or (nInp,)
 
-            kwargs (dict, optional):
-                keyword arguments for predict()
+        Kwargs:
+            keyword arguments to be passed to model.predict()
 
         Returns:
-            (float):
-                L2-norm as measure of difference between prediction and target
+            L2-norm as measure of difference between prediction and target
         """
         # x is input of prediction, x.shape: (nInp,)
         yInv = self.model.predict(np.asfarray(x),

@@ -17,12 +17,14 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-09-04 DWW
 """
 
 from math import isclose
 import numpy as np
+from typing import Optional, Sequence, Union
 import matplotlib.pyplot as plt
+
 from grayboxes.loop import Loop
 from grayboxes.xyz import xyz, xyzt
 
@@ -47,7 +49,7 @@ class Move(Loop):
     position but different times should be defined.
     """
 
-    def __init__(self, identifier='Move'):
+    def __init__(self, identifier: str='Move') -> None:
         super().__init__(identifier=identifier)
 
         self._wayPoints = None          # array of wayPoints [m,m,m,s]
@@ -58,25 +60,29 @@ class Move(Loop):
         self._iLastWayPoint = 0         # index of last passed way point
         self._trajectoryHistory = None  # plot data
 
-    def setTrajectory(self, way, rot=None, speed=None, tBegin=0, tEnd=None):
+    def setTrajectory(self, way: Sequence[Union[xyz, xyzt]],
+                      rot: Optional[Sequence[xyz]]=None,
+                      speed: Optional[float]=None,
+                      tBegin: float=0,
+                      tEnd: Optional[float]=None) -> None:
         """
         Defines list of waypoints
 
         Args:
-            way (array_like of xyz or xyzt):
+            way:
                 way points in 3D space [m, m, m] or [m, m, m, s]
 
-            rot (array_like of xyz):
+            rot:
                 rotation of waypoints in 3D space [rad], size can be 0, 
                 1, or length of wayPoints
 
-            speed (float, optional):
+            speed:
                 constant magnitude of object velocity [m/s]
 
-            tBegin (float, optional):
+            tBegin:
                 start time [s]
 
-            tEnd (float, optional):
+            tEnd:
                 end time [s]
         """
         self._wayPoints = list(way)
@@ -115,21 +121,20 @@ class Move(Loop):
 
         del way
 
-    def iWayPointAhead(self, t=None, iStart=0):
+    def iWayPointAhead(self, t: Optional[float]=None, iStart: int=0) -> int:
         """
         Finds index of way-point AHEAD of current object position
 
         Args:
-            t (float, optional):
+            t:
                 time [s]. If None, 't' is set to actual time 'self.t'
 
-            iStart (int, optional):
+            iStart:
                 index of way-point where search should start
 
         Returns:
-            (int):
-                Waypoint index ahead of current object position. 
-                Index is greater 0
+            Waypoint index ahead of current object position.
+            Index is greater 0
         """
         if t is None:
             t = self.t
@@ -159,7 +164,7 @@ class Move(Loop):
                 break
         return iNext
 
-    def initialCondition(self):
+    def initialCondition(self) -> None:
         """
         Initializes object positionm velocity and rotation
         """
@@ -182,7 +187,7 @@ class Move(Loop):
                  [self._velocity.x], [self._velocity.y], [self._velocity.z],
                  [self._rotation.x], [self._rotation.y], [self._rotation.z]]
 
-    def updateTransient(self):
+    def updateTransient(self) -> None:
         """
         Updates object position, velocity and rotation
 
@@ -208,10 +213,10 @@ class Move(Loop):
             self._trajectoryHistory[7].append(self._rotation.y)
             self._trajectoryHistory[8].append(self._rotation.z)
 
-    def position(self, t=None):
+    def position(self, t: Optional[float]=None) -> xyz:
         """
         Args:
-            t (float, optional):
+            t:
                 time [s]
 
         Returns:
@@ -241,7 +246,7 @@ class Move(Loop):
         P = self._wayPoints[iAhead-1] + DP * (dt / Dt)
         return xyz(P.x, P.y, P.z)
 
-    def rotation(self, t=None):
+    def rotation(self, t: Optional[float]=None) -> xyz:
         """
         Args:
             t (float, optional):
@@ -272,17 +277,16 @@ class Move(Loop):
         Dt = self._wayPoints[iAhead].t - self._wayPoints[iAhead-1].t
         return self._rotations[iAhead-1] + DR * (dt / Dt)
 
-    def way(self, t=None):
+    def way(self, t: Optional[float]=None) -> float:
         """
         Args:
-            t (float, optional, default: None):
+            t:
                 time [s]
 
         Returns:
-            (float):
-                Way from start position to stop position defined by the 
-                given time [m]. If t is None, the length of the full 
-                trajectory is returned
+            Way from start position to stop position defined by the
+            given time [m]. If t is None, the length of the full
+            trajectory is returned
         """
         if t is None:
             # way from start to stop point
@@ -309,17 +313,16 @@ class Move(Loop):
         # way from start position to current position
         return w
 
-    def velocity(self, t=None):
+    def velocity(self, t: Optional[float]=None) -> xyz:
         """
         Args:
-            t (float, optional, default: None):
-                time [s]
+            t:
+                time [s] or None
 
         Returns:
-            (xyz):
-                Value of self._velocity if t is None and self._velocity 
-                is not None. Otherwise the actual velocity is calculated 
-                as function of time [m/s]
+            Value of self._velocity if t is None and self._velocity
+            is not None. Otherwise the actual velocity is calculated
+            as function of time [m/s]
 
         Note:
             The calculated velocity is NOT stored as 'self._velocity'
@@ -336,14 +339,11 @@ class Move(Loop):
 
         return DP * (1 / Dt)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str([str(P) for P in self._wayPoints]) + ' ' + \
             str(self._rotations)
 
-    def plot(self, title=None):
-        if title is None:
-            title = 'trajectory (x, y)'
-
+    def plot(self) -> None:
         assert len(self._rotations) == len(self._wayPoints)
 
         X = [P.x for P in self._wayPoints]

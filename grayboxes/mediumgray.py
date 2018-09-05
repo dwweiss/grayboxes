@@ -17,10 +17,12 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-09-04 DWW
 """
 
 import numpy as np
+from typing import Any, Callable, Dict, List
+
 from grayboxes.boxmodel import BoxModel
 from grayboxes.lightgray import LightGray
 from grayboxes.black import Black
@@ -36,10 +38,10 @@ class MediumGray(BoxModel):
         X = X_com + X_unq
     """
 
-    def __init__(self, f, identifier='MediumGray'):
+    def __init__(self, f: Callable, identifier: str='MediumGray') -> None:
         """
         Args:
-            f (method or function):
+            f:
                 theoretical submodel f(self, x, *args, **kwargs) or
                 f(x, *args, **kwargs) for single data point
 
@@ -48,8 +50,8 @@ class MediumGray(BoxModel):
                 - model input is x_prc (x_prc = x_com + x_unq)
                 - in f() the subset x_unq of x_prc is unused
 
-            identifier (str, optional):
-                object identifier
+            identifier:
+                Unique object identifier
         """
         super().__init__(identifier=identifier, f=f)
 
@@ -58,64 +60,63 @@ class MediumGray(BoxModel):
         self._black = Black()
 
     @property
-    def silent(self):
+    def silent(self) -> bool:
         return self._silent
 
     @silent.setter
-    def silent(self, value):
+    def silent(self, value: bool) -> None:
         self._silent = value
         self._lightGray._silent = value
         if self._black is not None:
             self._black._silent = value
 
-    def train(self, X, Y, **kwargs):
+    def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) \
+            -> Dict[str, Any]:
         """
         Trains model, stores X and X as self.X and self.Y, and stores 
         result of best training trial as self.best
 
         Args:
-            X (2D or 1D array_like of float):
+            X (2D or 1D array of float):
                 training input X_prc, shape: (nPoint, nInp) or (nPoint,)
 
-            Y (2D or 1D array_like of float):
+            Y (2D or 1D array of float):
                 training target Y_com, shape: (nPoint, nOut) or (nPoint,)
 
-            kwargs (dict, optional):
-                keyword arguments:
+        Kwargs:
+            bounds (2-tuple of float or 2-tuple of 1D array of float):
+                list of pairs (xMin, xMax) limiting tuning parameters
 
-                bounds (2-tuple of float or 2-tuple of 1D array_like of float):
-                    list of pairs (xMin, xMax) limiting tuning parameters
+            local (int or None):
+                size of subset sizes if local training type of medium gray
+                    box model
+                if 'local' is None, False or 0, a single global network is
+                    trained without local tuning and data collection
 
-                local (int or None):
-                    size of subset sizes if local training type of medium gray
-                        box model
-                    if 'local' is None, False or 0, a single global network is
-                        trained without local tuning and data collection
+            methods (str or list of str):
+                optimizer method of
+                    - scipy.optimizer.minimize or
+                    - genetic algorithm
+                see LightGray.validMethods
+                default: 'BFGS'
 
-                methods (str or list of str):
-                    optimizer method of
-                        - scipy.optimizer.minimize or
-                        - genetic algorithm
-                    see LightGray.validMethods
-                    default: 'BFGS'
+            shuffle (bool):
+                if 'local' is geater 1 and 'shuffled' is True, then
+                x- and y-datasets are shuffled before split to local
+                datasets
+                default: True
 
-                shuffle (bool):
-                    if 'local' is geater 1 and 'shuffled' is True, then 
-                    x- and y-datasets are shuffled before split to local 
-                    datasets
-                    default: True
+            tun0 (2D or 1D array_like of float):
+                sequence of initial guess of tuning parameter set.
+                If missing, then initial values will be all 1.0
+                tun0.shape[1] is the number of tuning parameters
+                    if tun0 is an 2D array
+                see LightGray.train()
 
-                tun0 (2D or 1D array_like of float):
-                    sequence of initial guess of tuning parameter set.
-                    If missing, then initial values will be all 1.0
-                    tun0.shape[1] is the number of tuning parameters 
-                        if tun0 is an 2D array
-                    see LightGray.train()
-
-                ... network options, see class Neural
+            ... network options, see class Neural
 
         Returns:
-            see BoxModel.train()
+            best reult, see BoxModel.train()
 
         Example:
             Method f(self, x) or function f(x) is assigned to self.f, example:
@@ -163,7 +164,7 @@ class MediumGray(BoxModel):
                 np.random.shuffle(xyRnd2d)
             xyAll3d = np.array_split(xyRnd2d, nSub)   # list of 2d array
 
-            xTunAll2d = []
+            xTunAll2d: List[np.ndarray] = []
             nInp = self.X.shape[1]
             for xy in xyAll3d:
                 XY = np.hsplit(xy, [nInp])
@@ -184,7 +185,7 @@ class MediumGray(BoxModel):
                 # constant weights if local == X.shape[0], (1 group)
                 self.weights = xTunAll2d[0]
 
-            # TODO remove next line after release test of this module
+            # TODO remove next line after final release of this module
             self.__weightsForPresentation = xTunAll2d
 
         else:
@@ -202,16 +203,17 @@ class MediumGray(BoxModel):
         self.best = self.error(self.X, self.Y, **opt)
         return self.best
 
-    def predict(self, x, **kwargs):
+    def predict(self, x: np.ndarray, **kwargs: Any) -> np.ndarray:
         """
         Executes box model, stores input x as self.x and output as self.y
 
         Args:
-            x (2D or 1D array_like of float):
+            x (2D or 1D array of float):
                 prediction input, shape: (nPoint, nInp) or (nInp,)
 
-            kwargs (dict, optional):
-                keyword arguments
+        Kwargs:
+            Keyword arguments to be passed to BoxModel.predict() and to
+            self._black.predict()
 
         Returns:
             (2D array of float):

@@ -17,8 +17,11 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-09-03 DWW
 """
+
+from typing import Any, Callable
+import numpy as np
 
 from grayboxes.boxmodel import BoxModel
 
@@ -28,33 +31,30 @@ class White(BoxModel):
     White box model y=f(x)
     """
 
-    def __init__(self, f, identifier='White'):
+    def __init__(self, f: Callable, identifier: str='White') -> None:
         """
         Args:
-            f (method or function):
-                theoretical submodel f(self, x) or f(x) for single data point
+            f:
+                Theoretical submodel f(self, x) or f(x) for single data point
 
-            identifier (str, optional):
-                object identifier
+            identifier:
+                Object identifier
         """
         super().__init__(f=f, identifier=identifier)
 
-    def train(self, X, Y, **kwargs):
+    def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) -> None:
         """
         Sets self.ready to True, no further actions
 
         Args:
-            X (2D array_like of float):
-                training input, not used
+            X:
+                2D array training input, not used
 
-            Y (2D array_like of float):
-                training target, not used
+            Y:
+                2D training target, not used
 
-            kwargs (dict, optional):
-                keyword arguments, not used
-
-        Returns:
-            None
+        Kwargs:
+            Keyword arguments, not used 
         """
         self.ready = True
         return None

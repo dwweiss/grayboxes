@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-29 DWW
+      2018-09-04 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -26,6 +26,8 @@
 import sys
 import numpy as np
 import scipy.optimize
+from typing import Any, Callable, Dict, Sequence
+
 from grayboxes.boxmodel import BoxModel
 try:
     import modestga
@@ -92,16 +94,16 @@ class LightGray(BoxModel):
         y = model(X=X, Y=Y, tun0=4, x=x)             # train and predict
     """
 
-    def __init__(self, f, identifier='LightGray') -> None:
+    def __init__(self, f: Callable, identifier: str='LightGray') -> None:
         """
         Args:
-            f (method or function):
-                theoretical submodel f(self, x, *args, **kwargs) or
+            f:
+                Theoretical submodel f(self, x, *args, **kwargs) or
                 f(x, *args, **kwargs) for single data point
                 x is common parameter set and args is tuning param. set
 
-            identifier (str, optional):
-                object identifier
+            identifier:
+                Unique object identifier
         """
         super().__init__(identifier=identifier, f=f)
 
@@ -139,18 +141,21 @@ class LightGray(BoxModel):
             self.scipyEquationMinimizers + self.geneticMinimizers
 
     # function wrapper for scipy minimize
-    def meanSquareErrror(self, weights, **kwargs):
+    def meanSquareErrror(self, weights: Sequence[float], **kwargs: Any) \
+            -> np.ndarray:
         y = BoxModel.predict(self, self.X, *weights,
                              **self.kwargsDel(kwargs, 'x'))
         return np.mean((y - self.Y)**2)
 
     # function wrapper for scipy least_square and leastsq
-    def difference(self, weights, **kwargs):
+    def difference(self, weights: Sequence[float], **kwargs: Any) \
+            -> np.ndarray:
         return (BoxModel.predict(self, self.X, *weights,
                                  **self.kwargsDel(kwargs, 'x')) -
                 self.Y).ravel()
 
-    def minimizeLeastSquares(self, method, tun0, **kwargs):
+    def minimizeLeastSquares(self, method: str, tun0: np.ndarray,
+                             **kwargs: Any) -> Dict[str, Any]:
         """
         Minimizes least squares: sum(self.f(self.X)-self.Y)^2) / X.size
             for a SINGLE initial tuning parameter set
@@ -158,24 +163,22 @@ class LightGray(BoxModel):
             optimizer
 
         Args:
-            method (str):
+            method:
                 optimizing method for minimizing objective function
                 [recommendation: 'BFGS' or 'L-BFGS-B' if ill-conditioned.
                  'Nelder-Mead' or 'Powell' if noisy data]
 
-            tun0 (Iterable[float]:
+            tun0:
                 initial guess of tuning parameter set
 
-            kwargs (Dict[str, Any], optional):
-                keyword arguments:
+        Kwargs:
+            bounds (2-tuple of float or 2-tuple of sequence of float):
+                list of pairs (xMin, xMax) limiting x
 
-                bounds (2-tuple of float or 2-tuple of iterable of float):
-                    list of pairs (xMin, xMax) limiting x
-
-                ... specific optimizer options
+            ... specific optimizer options
 
         Returns:
-            (Dict[str, Union[float, int, str]]):
+            (dictionary):
                 results, see BoxModel.train()
 
         """
@@ -227,9 +230,8 @@ class LightGray(BoxModel):
                     if method == 'Nelder-Mead':
                         kw['options']['xatol'] = kwargs.get('goal', 1e-4)
                 try:
-                    res = scipy.optimize.minimize(
-                        fun=self.meanSquareErrror, x0=tun0, method=method,
-                        **kw)
+                    res = scipy.optimize.minimize(fun=self.meanSquareErrror,
+                                                  x0=tun0, method=method, **kw)
                     if res.success:
                         results['weights'] = np.atleast_1d(res.x)
                         results['iterations'] = res.nit \
@@ -308,40 +310,39 @@ class LightGray(BoxModel):
 
         return results
 
-    def train(self, X, Y, **kwargs):
+    def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) \
+            -> Dict[str, Any]:
         """
         Trains model, stores X and Y as self.X and self.Y, and stores 
         result of best training trial as self.best.
         The tuning parameter set is stored as self._weights
 
         Args:
-            X (2D or 1D array_like of float):
+            X (2D or 1D array of float):
                 training input, shape: (nPoint, nInp) or (nPoint,)
 
-            Y (2D or 1D array_like of float):
+            Y (2D or 1D array of float):
                 training target, shape: (nPoint, nOut) or (nPoint,)
 
-            kwargs (Any, optional):
-                keyword arguments:
+        Kwargs:
+            tun0 (2D or 1D array of float):
+                sequence of initial guess of the tuning parameter sets,
+                If missing, then initial values will be all 1
+                tun0.shape[1] is the number of tuning parameters
+                [IS PASSED IN KWARGS to be compatible to parallel.py]
 
-                tun0 (2D or 1D array_like of float, optional):
-                    sequence of initial guess of the tuning parameter sets,
-                    If missing, then initial values will be all 1
-                    tun0.shape[1] is the number of tuning parameters
-                    [IS PASSED IN KWARGS to be compatible to parallel.py]
+            methods (Union[str, Sequence[str]]):
+                optimizer method of
+                - scipy.optimizer.minimize or
+                - genetic algorithm
+                see: self.validMethods
+                default: 'BFGS'
 
-                methods (Union[str, Iterable[str]]):
-                    optimizer method of
-                    - scipy.optimizer.minimize or
-                    - genetic algorithm
-                    see: self.validMethods
-                    default: 'BFGS'
-
-                bounds (2-tuple of float or 2-tuple of iterable of float):
-                    list of pairs (xMin, xMax) limiting x
+            bounds (2-tuple of float or 2-tuple of iterable of float):
+                list of pairs (xMin, xMax) limiting x
 
         Returns:
-            (Dict[str, Union[float, int, str]]):
+            (dictionary):
                 results, see BoxModel.train()
 
         Note:
@@ -378,6 +379,7 @@ class LightGray(BoxModel):
 
         # loop over all methods
         self.best = self.initResults()
+        message = ''
         for method in methods:
             self.write(4 * ' ' + method)
 
@@ -435,19 +437,19 @@ class LightGray(BoxModel):
 
         return self.best
 
-    def predict(self, x, *args, **kwargs):
+    def predict(self, x: np.ndarray, *args: float, **kwargs) -> np.ndarray:
         """
         Executes box model,stores input x as self.x and output as self.y
 
         Args:
-            x (2D or 1D array_like of float):
+            x (2D or 1D array of float):
                 prediction input, shape: (nPoint, nInp) or (nInp,)
 
-            args(float, optional):
-                tuning parameter set if self._weights is None
+        Args:
+            Tuning parameter set if self._weights is None
 
-            kwargs (Any], optional):
-                keyword arguments
+        Kwargs:
+            Keyword arguments
 
         Returns:
             (2D array of float):

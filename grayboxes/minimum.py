@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-29 DWW
+      2018-09-04 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -28,8 +28,11 @@ import numpy as np
 import scipy.optimize
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D          # needed for "projection='3d'"
+from mpl_toolkits.mplot3d import Axes3D   # needed for "projection='3d'"
+from typing import Any, List, Optional, Sequence, Tuple
+
 from grayboxes.base import Base
+from grayboxes.boxmodel import BoxModel
 from grayboxes.forward import Forward
 try:
     import modestga as mg
@@ -54,41 +57,57 @@ class Minimum(Forward):
         x, y = op(x=rand(9, [0, 1], [1, 2]))   # generate random x and optimize
         norm = op(XY=(X, Y, xKeys, yKeys))                         # train only
 
-    Note:
-        - for single target (Inverse: norm(y - Y), Optimum: one of y)
+    Notes:
+        - Limited to single target (Inverse: norm(y - Y), Optimum: one of y)
+             
+        - At the end of every evolution of objective(), the single 
+          point input array x, the single point output array y, and 
+          the scalar result of the objective function is appended to 
+          self._trialHistory
+             
+        - The list of single point input, output and objective 
+          function result is stored self._history             
+
+        - Parent class Forward has no self._x or self._y attribute
     """
 
-    def __init__(self, model, identifier='Minimum'):
+    def __init__(self, model: BoxModel, identifier: str='Minimum') -> None:
         """
         Args:
-            model (BoxModel_like):
-                box type model object
+            model:
+                Box type model object
 
-            identifier (str, optional):
-                object identifier
+            identifier:
+                Unique object identifier
         """
         super().__init__(identifier=identifier, model=model)
 
-        self._bounds = None                                     # x-constraints
-        self._x = None                       # 1D array of initial or optimal x
-        self._y = None                        # 1D array of target or optimal y
-        self._history = None       # history[iTrial][jStep] = (x, y, objective)
-        self._trialHistory = None     # trialHistory[jStep] = (x, y, objective)
+        self._bounds: Sequence[Tuple[float, float]] = None                              
+                                                         # x-constraints
+        self._x: np.ndarray = None    # 1D array of initial or optimal x
+        self._y: np.ndarray = None     # 1D array of target or optimal y
+        
+        SINGLE_EVALUATION = Tuple[np.ndarray, np.ndarray, float]
+                                                     # [x, y, objective]
+        self._trialHistory: List[SINGLE_EVALUATION] = []  
+                            # _trialHistory[jEvaluation]=(x,y,objective)
+        self._history: List[List[SINGLE_EVALUATION]] = []  
+                       # _history[iTrial][jEvaluation] = (x,y,objective)
 
         # three leading chars are significant, case-insensitive
         self._validMethods = ['Nelder-Mead',
                               'Powell',
                               'CG',
                               'BFGS',
-                              # 'Newton-CG',                # requires Jacobian
+                              # 'Newton-CG',         # requires Jacobian
                               'L-BFGS-B',
                               'TNC',
-                              # 'COBYLA',       # failed in grayBoxes test case
+                              # 'COBYLA',# failed in grayBoxes test case
                               'SLSQP',
-                              # 'dogleg',                   # requires Jacobian
-                              # 'trust-ncg',                # requires Jacobian
-                              'basinhopping',                  # GLOBAL optimum
-                              'differential_evolution',        # GLOBAL optimum
+                              # 'dogleg',            # requires Jacobian
+                              # 'trust-ncg',         # requires Jacobian
+                              'basinhopping',           # GLOBAL optimum
+                              'differential_evolution',    # GLOBAL opt.
                               ]
         if 'modestga' in sys.modules:
             self._validMethods += ['ga']
@@ -96,25 +115,27 @@ class Minimum(Forward):
         self._method = self._validMethods[0]
 
     @property
-    def x(self):
+    def x(self) -> np.ndarray:
         """
         1) Gets initial input before optimization
         2) Gets input at best optimum after optimization
 
         Returns:
             (2D array of float):
-                input initial or input at optimum, index is parameter index
+                input initial or input at optimum, 
+                index is parameter index
         """
         return self._x
 
     @x.setter
-    def x(self, value):
+    def x(self, value: Optional[np.ndarray]) -> None:
         """
         Sets x-array
 
         Args:
-            value (float or 1D or 2D array_like of float):
-                input initial or input at optimum, index is parameter index
+            value (1D or 2D array of float):
+                input initial or input at optimum, 
+                index is parameter index
         """
         if value is None:
             self._x = None
@@ -122,7 +143,7 @@ class Minimum(Forward):
             self._x = np.atleast_2d(value)
 
     @property
-    def y(self):
+    def y(self) -> np.ndarray:
         """
         1) Gets target to class Inverse before optimization
         2) Gets best output at optimum after optimization
@@ -134,12 +155,12 @@ class Minimum(Forward):
         return self._y
 
     @y.setter
-    def y(self, value):
+    def y(self, value: Optional[np.ndarray]) -> None:
         """
         Sets y-array
 
         Args:
-            value (1D array_like of float):
+            value (1D array of float):
                 target or output at optimum, index is parameter index
         """
         if value is None:
@@ -148,22 +169,21 @@ class Minimum(Forward):
             self._y = np.atleast_1d(value)
 
     @property
-    def method(self):
+    def method(self) -> str:
         """
         Returns:
-            (str):
-                optimization method
+            Optimization method
         """
         return str(self._method)
 
     @method.setter
-    def method(self, value):
+    def method(self, value: Optional[str]) -> None:
         """
-        Sets optimization method(s), corrects too short strings and assigns
-        default if value is unknown method
+        Sets optimization method(s), corrects strings which are too short 
+        and assigns default if value is unknown method
 
         Args:
-            value (str):
+            value:
                 optimization method
         """
         if value is None:
@@ -185,49 +205,47 @@ class Minimum(Forward):
         else:
             self._method = self._validMethods[valids.index(True)]
 
-    def objective(self, x, **kwargs):
+    def objective(self, x: np.ndarray, **kwargs: Any) -> float:
         """
         Objective function to be minimized
 
         Args:
-            x (2D or 1D array_like of float):
+            x (2D or 1D array of float):
                 input of multiple or single data points,
                 shape: (nPoint, nInp) or (nInp,)
 
-            kwargs (dict, optional):
-                keyword arguments
+        Kwargs:
+            Keyword arguments to be passed to model.predict()
 
         Returns:
-            (float):
-                objective
+            Result of objective function (least sqaures sum)
+
         Note:
-            If maximum is wanted, use minus sign in objective: max(x) = -min(x)
+            If maximum is wanted, use minus sign in objective: 
+                max(x) = -min(x)
         """
         assert np.atleast_2d(x).shape[0] == 1, str(np.atleast_2d(x).shape[0])
 
         y = self.model.predict(x, **self.kwargsDel(kwargs, 'x'))
-        out = y[0]                                           # first data point
-        obj = out[0]                                             # first output
+        out = y[0]                                    # first data point
+        obj = out[0]                                  # first output
 
-        self._trialHistory.append([x, out, obj])
+        self._trialHistory.append((x, out, obj))
 
         return obj
 
-    def task(self, **kwargs):
+    def task(self, **kwargs: Any) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Args:
-            kwargs (Dict[str, Any], optional):
-                keyword arguments:
+        Kwargs:
+            bounds (Sequence[Tuple[float, float]]):
+                array of min/max pairs for optimization constraints etc
 
-                bounds (2D array_like of float):
-                    array of min/max pairs for optimization constraints etc
+            method (str):
+                optimization method
 
-                method (str):
-                    optimization method
-
-                y (1D array_like of float):
-                    target of inverse problem (only if 'self' is of type
-                    Inverse), shape: (nOut)
+            y (1D array_like of float):
+                target of inverse problem (only if 'self' is of type
+                Inverse), shape: (nOut)
 
         Returns:
             (2-tuple of 1D array of float):
@@ -255,18 +273,19 @@ class Minimum(Forward):
 
         xIni = self.x.copy()
         self._history = []
-        for x0 in xIni:
+        success = False
+        for x0 in xIni:              # xIni.shape[0] is number of trials
+            #
+            # Note: self._trialHistory list is populated in objective()
+            #
             self._trialHistory = []
-
-            success = None
 
             if self.method.startswith('bas'):
                 res = scipy.optimize.basinhopping(
                     func=self.objective, x0=x0, niter=100, T=1.0, stepsize=0.5,
                     minimizer_kwargs=None, take_step=None, accept_test=None,
                     callback=None, interval=50, disp=False, niter_success=None)
-                x = np.atleast_1d(res.x)
-                y = np.atleast_1d(res.fun)
+                # x, y = np.atleast_1d(res.x), np.atleast_1d(res.fun)
                 success = 'success' in res.message[0]
 
             elif self.method.startswith('dif'):
@@ -277,7 +296,7 @@ class Minimum(Forward):
                     maxiter=None, popsize=15, tol=0.01, mutation=(0.5, 1),
                     recombination=0.7, seed=None, disp=False, polish=True,
                     init='latinhypercube')
-                x, y = res.x, res.fun
+                # x, y = res.x, res.fun
                 success = res.success
 
             elif self.method == 'ga':
@@ -286,28 +305,33 @@ class Minimum(Forward):
                 res = mg.minimize(fun=self.objective, x0=x0,
                                   # method=self.method, # TODO .
                                   **kw)
-                x, y = np.atleast_1d(res.x), np.atleast_1d(res.fx)
+                # x, y = np.atleast_1d(res.x), np.atleast_1d(res.fx)
                 success = True  # TODO .
             else:
                 res = scipy.optimize.minimize(fun=self.objective, x0=x0,
                                               method=self.method,)
-                x = np.atleast_1d(res.x)
-                kw = self.kwargsDel(kwargs, 'x')
-                y = self.model.predict(x=res.x, **kw)[0]
+                # x = np.atleast_1d(res.x)
+                # kw = self.kwargsDel(kwargs, 'x')
+                # y = self.model.predict(x=res.x, **kw)[0]
                 success = res.success
 
+            # Note: length of self._history equals number of trials
             self._history.append(self._trialHistory)
+        else:
+            success, res = None, None
 
         if not success:
-            self.write('+++ error message: ' + str(res.message))
-            x = [None] * x.size
-            y = [None] * y.size
+            message = res.message if res is not None else '---'
+            self.write("+++ error message: '" + message + "'")
+            if type(self).__name__ in ('Inverse'):
+                self.x = [None] * self.x.size
+                self.y = [None] * self.y.size
 
         nTrial = len(self._history[0])
         if nTrial > 1:
             self.write('+++ Optima of all trials:')
             for iTrial, history in enumerate(self._history):
-                s = ' ' if iTrial < 10 else ''
+                s = ' ' if nTrial < 10 else ''
                 self.write('    ['+s+str(iTrial)+'] x: '+str(history[-1][0]))
                 self.write('         y: ' + str(history[-1][1]))
                 self.write('         objective: ' + str(history[-1][2]))
@@ -316,26 +340,27 @@ class Minimum(Forward):
             finalObjectives = [hist[-1][2] for hist in self._history]
             if self.__class__.__name__ == 'Inverse':
                 absFinalObj = np.abs(finalObjectives)
-                iTrialBest = finalObjectives.index(min(absFinalObj))
+                iBestTrial = finalObjectives.index(min(absFinalObj))
             else:
-                iTrialBest = finalObjectives.index(min(finalObjectives))
+                iBestTrial = finalObjectives.index(min(finalObjectives))
 
         else:
-            iTrialBest = 0
+            iBestTrial = 0
 
-        # y: self._history[iTrialBest][iLast=-1][jY=1]
-        historyBest = self._history[iTrialBest]
+        # y: self._history[iBestTrial][iLastEvaluation=-1][jY=1]
+        historyBest = self._history[iBestTrial]
         finalBest = historyBest[-1]
         self.x, self.y = finalBest[0], finalBest[1]
         objectiveBest = finalBest[2]
         self.write('+++ Best trial:')
-        s = ' ' if iTrial < 10 else ''
-        self.write('    [' + s + str(iTrialBest) + '] x: ' + str(self.x))
+        s = ' ' if iBestTrial < 10 else ''
+        self.write('    [' + s + str(iBestTrial) + '] x: ' + str(self.x))
         self.write('         y: ' + str(self.y)) 
         self.write('         objective: ' + str(objectiveBest))
+
         return self.x, self.y
 
-    def plot(self, select=None):
+    def plot(self, select: Optional[str]=None) -> None:
         if select is None or not isinstance(select, str):
             select = 'all'
         select = select.lower()
@@ -346,22 +371,23 @@ class Minimum(Forward):
         if select.startswith(('tra', 'trj', 'all')):
             self.plotTrajectory()
 
-    def plotHistory(self):
-        for iTrial, trialHist in enumerate(self._history):
+    def plotHistory(self) -> None:
+        
+        # type(trial) = List[Tuple[x: np.ndarray, y: np.ndarray, obj: float]]
+        for iTrial, trial in enumerate(self._history):
             self.write('    Plot[iTrial: ' + str(iTrial) + '] ' + 
-                       str(trialHist[-1][1]) + ' = f(' + 
-                       str(trialHist[-1][0]) + ')')
-            assert len(trialHist[0]) > 1
+                       str(trial[-1][1]) + ' = f(' + 
+                       str(trial[-1][0]) + ')')
+            assert len(trial[0]) > 1
 
-            # self._history[iTrial][ [x0..nInp-1], [y0..nOut-1], obj ]
-            nInp, nOut = len(trialHist[0][0]), len(trialHist[0][1])
+            nInp, nOut = len(trial[0][0]), len(trial[0][1])
             x_seq = []
             for jInp in range(nInp):
-                x_seq.append([P[0][jInp] for P in trialHist])
+                x_seq.append([P[0][jInp] for P in trial])
             y_seq = []
             for jOut in range(nOut):
-                x_seq.append([P[1][jOut] for P in trialHist])
-            obj = [P[2] for P in trialHist]
+                x_seq.append([P[1][jOut] for P in trial])
+            obj = [P[2] for P in trial]
 
             for jInp in range(nInp):
                 plt.title('objective (x'+str(jInp)+'), trial: '+str(iTrial))
@@ -422,16 +448,22 @@ class Minimum(Forward):
                                loc='upper left')
                     plt.show()
 
-    def plotObjective(self):
-        nInp = len(self._history[0][0][0])
+    def plotObjective(self) -> None:
+
+        # type(self._history) = List[List[
+        #              Tuple[x: np.ndarray, y: np.ndarray, obj: float]]]
+        nInp = len(self._history[0][0][0])  # trial:0, evaluation:0, x:0
         nTrial = len(self._history)
 
         plt.title('Objective (x0..x' + str(nInp-1)+', trial[0..' +
                   str(nTrial-1) + '])')
-        for iTrial, trialHist in enumerate(self._history):
-            obj = [P[2] for P in trialHist]
+
+        # type(trial) = List[Tuple[x: np.ndarray, y: np.ndarray, 
+        #                          obj: float]]
+        for iTrial, trial in enumerate(self._history):
+            obj = [P[2] for P in trial]
             for jInp in range(nInp):
-                x = [P[0][jInp] for P in trialHist]
+                x = [P[0][jInp] for P in trial]
 
                 plt.plot(obj, x, label='x'+str(jInp)+'['+str(iTrial)+']')
                 plt.scatter([obj[0]], [x[0]], color='r', marker='o',
@@ -444,9 +476,9 @@ class Minimum(Forward):
         plt.legend(bbox_to_anchor=(1.1, 1.025), loc='upper left')
         plt.show()
 
-    def plotTrajectory(self):
-        nInp = len(self._history[0][0][0])
-        nOut = len(self._history[0][0][1])
+    def plotTrajectory(self) -> None:
+        nInp = len(self._history[0][0][0])  # trial:0, evaluation:0, x-index=0
+        nOut = len(self._history[0][0][1])  # trial:0, evaluation:0, y-index=0
 
         if nInp >= 2:
             self.write('    Trajectory of objective vs (x0, x1), all trials')
@@ -456,13 +488,16 @@ class Minimum(Forward):
             ax.set_xlabel('x0')
             ax.set_ylabel('x1')
             ax.set_zlabel('obj')
-            for iTrial, trialHist in enumerate(self._history):
+
+            # type(trial) = List[Tuple[x: np.ndarray, y: np.ndarray, 
+            #                          obj: float]]
+            for iTrial, trial in enumerate(self._history):
                 x_seq = []
                 for jInp in range(nInp):
-                    x_seq.append([P[0][jInp] for P in trialHist])
+                    x_seq.append([P[0][jInp] for P in trial])
                 for jOut in range(nOut):
-                    x_seq.append([P[1][jOut] for P in trialHist])
-                obj = [P[2] for P in trialHist]
+                    x_seq.append([P[1][jOut] for P in trial])
+                obj = [P[2] for P in trial]
                 x0, x1 = x_seq[0], x_seq[1]
 
                 ax.plot(x0, x1, obj, label='trial '+str(iTrial))
@@ -482,10 +517,13 @@ class Minimum(Forward):
                 ax.set_xlabel('x0')
                 ax.set_ylabel('x1')
                 ax.set_zlabel('x'+str(jInpZ))
-                for iTrial, history in enumerate(self._history):
+
+                # type(trial) = List[Tuple[x: np.ndarray, y: np.ndarray, 
+                #                          obj: float]]
+                for iTrial, trial in enumerate(self._history):
                     x_seq = []
                     for jInp in range(nInp):
-                        x_seq.append([P[0][jInp] for P in history])
+                        x_seq.append([P[0][jInp] for P in trial])
                     x0, x1, xZ = x_seq[0], x_seq[1], x_seq[jInpZ]
 
                     ax.plot(x0, x1, xZ, label='trial '+str(iTrial))
