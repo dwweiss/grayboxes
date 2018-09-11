@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-04 DWW
+      2018-09-11 DWW
 """
 
 import numpy as np
@@ -33,7 +33,7 @@ class MediumGray(BoxModel):
     """
     Medium gray box model comprising light gray and black box submodels
 
-    Training input self.X (process input) is union of common and unique 
+    Training input self.X (process input) is union of common and unique
     input:
         X = X_com + X_unq
     """
@@ -45,7 +45,7 @@ class MediumGray(BoxModel):
                 theoretical submodel f(self, x, *args, **kwargs) or
                 f(x, *args, **kwargs) for single data point
 
-                - argument 'x' to function f() corresponds to test input 
+                - argument 'x' to function f() corresponds to test input
                   x_prc
                 - model input is x_prc (x_prc = x_com + x_unq)
                 - in f() the subset x_unq of x_prc is unused
@@ -55,8 +55,8 @@ class MediumGray(BoxModel):
         """
         super().__init__(identifier=identifier, f=f)
 
-        self._local = None
-        self._lightGray = LightGray(f=f)
+        self._local_size = None
+        self._light_gray = LightGray(f=f)
         self._black = Black()
 
     @property
@@ -66,7 +66,7 @@ class MediumGray(BoxModel):
     @silent.setter
     def silent(self, value: bool) -> None:
         self._silent = value
-        self._lightGray._silent = value
+        self._light_gray._silent = value
         if self._black is not None:
             self._black._silent = value
 
@@ -78,10 +78,10 @@ class MediumGray(BoxModel):
 
         Args:
             X (2D or 1D array of float):
-                training input X_prc, shape: (nPoint, nInp) or (nPoint,)
+                training input X_prc, shape: (n_point, n_inp) or (n_point,)
 
             Y (2D or 1D array of float):
-                training target Y_com, shape: (nPoint, nOut) or (nPoint,)
+                training target Y_com, shape: (n_point, nOut) or (n_point,)
 
         Kwargs:
             bounds (2-tuple of float or 2-tuple of 1D array of float):
@@ -106,7 +106,7 @@ class MediumGray(BoxModel):
                 datasets
                 default: True
 
-            tun0 (2D or 1D array_like of float):
+            tun0 (2D or 1D array of float):
                 sequence of initial guess of tuning parameter set.
                 If missing, then initial values will be all 1.0
                 tun0.shape[1] is the number of tuning parameters
@@ -116,7 +116,7 @@ class MediumGray(BoxModel):
             ... network options, see class Neural
 
         Returns:
-            best reult, see BoxModel.train()
+            best result, see BoxModel.train()
 
         Example:
             Method f(self, x) or function f(x) is assigned to self.f, example:
@@ -146,47 +146,48 @@ class MediumGray(BoxModel):
         self.X = X if X is not None else self.X
         self.Y = Y if Y is not None else self.Y
 
-        opt = self.kwargsDel(kwargs, ['X', 'Y', 'local'])
+        opt = self.kwargs_del(kwargs, ['X', 'Y', 'local'])
         self.silent = kwargs.get('silent', self.silent)
-        self._local = kwargs.get('local', None)
+        self._local_size = kwargs.get('local', None)
         neurons = kwargs.get('neurons', [])
 
-        if self._local:
-            self.write('+++ Medium gray (local tun: ' + str(self._local) + ')')
+        if self._local_size:
+            self.write('+++ Medium gray (local size: ' +
+                       str(self._local_size) + ')')
 
-            shuffle = kwargs.get('shuffle', self._local > 1)
+            shuffle = kwargs.get('shuffle', self._local_size > 1)
             methods = kwargs.get('methods', ['bfgs', 'rprop'])
-            nPoint = self.X.shape[0]
-            nSub = nPoint // np.clip(self._local, 1, nPoint)
+            n_point = self.X.shape[0]
+            n_sub = n_point // np.clip(self._local_size, 1, n_point)
 
-            xyRnd2d = np.c_[self.X, self.Y]
+            xy_rnd2d = np.c_[self.X, self.Y]
             if shuffle:
-                np.random.shuffle(xyRnd2d)
-            xyAll3d = np.array_split(xyRnd2d, nSub)   # list of 2d array
+                np.random.shuffle(xy_rnd2d)
+            xy_all3d = np.array_split(xy_rnd2d, n_sub)   # list of 2d array
 
-            xTunAll2d: List[np.ndarray] = []
-            nInp = self.X.shape[1]
-            for xy in xyAll3d:
-                XY = np.hsplit(xy, [nInp])
+            x_tun_all2d: List[np.ndarray] = []
+            n_inp = self.X.shape[1]
+            for xy in xy_all3d:
+                XY = np.hsplit(xy, [n_inp])
                 X, Y = XY[0], XY[1]
-                self._lightGray.Y = None
-                res = self._lightGray.train(X=X, Y=Y, **opt)
-                xTun1d = res['weights']
-                if xTun1d is not None:
+                self._light_gray.Y = None
+                res = self._light_gray.train(X=X, Y=Y, **opt)
+                x_tun1d = res['weights']
+                if x_tun1d is not None:
                     for i in range(xy.shape[0]):
-                        xTunAll2d.append(xTun1d)
+                        x_tun_all2d.append(x_tun1d)
 
-            if len(xyAll3d) > 1:
+            if len(xy_all3d) > 1:
                 self.write('            (generalization)')
-                res = self._black.train(X=xyRnd2d[:, :nInp], Y=xTunAll2d,
+                res = self._black.train(X=xy_rnd2d[:, :n_inp], Y=x_tun_all2d,
                                         neurons=neurons, methods=methods)
                 self.weights = None
             else:
                 # constant weights if local == X.shape[0], (1 group)
-                self.weights = xTunAll2d[0]
+                self.weights = x_tun_all2d[0]
 
             # TODO remove next line after final release of this module
-            self.__weightsForPresentation = xTunAll2d
+            self.__weightsForPresentation = x_tun_all2d
 
         else:
             self.write('+++ Medium gray (global training)')
@@ -220,18 +221,18 @@ class MediumGray(BoxModel):
                 prediction output, shape: (nPoint, nOut)
         """
         assert self._black is not None and self._black.ready
-        opt = self.kwargsDel(kwargs, 'x')
+        opt = self.kwargs_del(kwargs, 'x')
         self.x = x
 
-        if self._local is not None:
+        if self._local_size is not None:
             if self.weights is None:
-                yAll = []
-                for xPrc in self.x:
-                    if xPrc[0] is not None:
-                        xTun = self._black.predict(x=xPrc, **opt)[0]
-                        yAll.append(BoxModel.predict(self, xPrc, *xTun, 
-                                                     **opt)[0])
-                self.y = yAll
+                y_all = []
+                for x_prc in self.x:
+                    if x_prc[0] is not None:
+                        x_tun = self._black.predict(x=x_prc, **opt)[0]
+                        y_all.append(BoxModel.predict(self, x_prc, *x_tun,
+                                                      **opt)[0])
+                self.y = y_all
             else:
                 # local==X.shape[0]: const w
                 self.y = BoxModel.predict(self, self.x, *self.weights, **opt)

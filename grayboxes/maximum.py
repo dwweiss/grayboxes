@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-04 DWW
+      2018-09-11 DWW
 """
 
 import numpy as np
@@ -38,7 +38,7 @@ class Maximum(Minimum):
         Args:
             x (2D or 1D array of float):
                 input of multiple or single data points,
-                shape: (nPoint, nInp) or (nInp,)
+                shape: (nPoint, nInp) or (nInp, )
 
         Kwargs:
             Keyword arguments to be passed to objective() of parent

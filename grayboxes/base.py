@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-05 DWW
+      2018-09-11 DWW
 
   Note on program arguments:
     - no arguments          : program starts in default mode
@@ -33,8 +33,6 @@
 from datetime import datetime
 from getpass import getpass
 from hashlib import sha224
-import logging
-logger = logging.getLogger(__name__)
 import numpy as np
 import os
 from pathlib import Path
@@ -53,36 +51,39 @@ except ImportError:
     print("\n!!! Wrong Python interpreter (version: '" +
           str(sys.version_info.major) + '.' + str(sys.version_info.major) +
           '.' + str(sys.version_info.micro) + "') or 'tkinter' not imported")
+import logging
+logger = logging.getLogger(__name__)
+
 try:
     import grayboxes.parallel as parallel
 except ImportError:
     try:
         import parallel as parallel
     except ImportError:
-        print("!!! Module 'parallel' not imported")
+        print('!!! Module parallel not imported')
 
 
 class Base(object):
     """
     Connects model objects and controls their execution
 
-    The objects are organized in overlapping tree structures. The 
-    concept of conservative leader-follower relationships 
-    (authoritarian) is extended by leader-cooperator relationships 
-    (partnership). The differentiation into leader-follower and 
-    leader-cooperator relationships allows the creation of complex 
-    object structures which can coexist in space, time or abstract 
+    The objects are organized in overlapping tree structures. The
+    concept of conservative leader-follower relationships
+    (authoritarian) is extended by leader-cooperator relationships
+    (partnership). The differentiation into leader-follower and
+    leader-cooperator relationships allows the creation of complex
+    object structures which can coexist in space, time or abstract
     contexts.
 
     The implementation supports:
 
-    - Distributed development of objects derived from the connecting 
+    - Distributed development of objects derived from the connecting
       Base class
 
     - Object specialization in "vertical" and "horizontal" direction
         - leader-type objects implementing alternative control of tasks
         - peer-type objects implement empirical submodels (data-driven),
-          theoretical submodels, knowledge objects (e.g. properties of 
+          theoretical submodels, knowledge objects (e.g. properties of
           matter) and generic service objects (e.g. plotting)
 
      - Uniform interface to code execution of objects derived from the
@@ -91,9 +92,9 @@ class Base(object):
         - main task:    task() which is called by control()
         - post-process: post() which calls save()
 
-      The __call__() method calls pre(), control() and post() 
-      recursively. Iterative or transient repetition of the task() 
-      method will be controlled in derived classes by a overloaded 
+      The __call__() method calls pre(), control() and post()
+      recursively. Iterative or transient repetition of the task()
+      method will be controlled in derived classes by a overloaded
       control(), see class Loop
 
 
@@ -115,12 +116,12 @@ class Base(object):
       |-> follower/cooperator.__call__()
       :
 
-      The execution sequence in a tree of objects is outlined in the 
-      figure below: recursive call of pre() for object (1) and its 
-      followers (11), (12), (111), (112) and its cooperators (21) and 
+      The execution sequence in a tree of objects is outlined in the
+      figure below: recursive call of pre() for object (1) and its
+      followers (11), (12), (111), (112) and its cooperators (21) and
       (211).
 
-      Execution of methods task() and post() is similar. Note that 
+      Execution of methods task() and post() is similar. Note that
       method pre() of object (2) is not executed.
 
        -----------                                   -----------
@@ -161,7 +162,7 @@ class Base(object):
        -----------            -----------           ------------
     """
 
-    def __init__(self, identifier: str='Base', 
+    def __init__(self, identifier: str='Base',
                  argv: Optional[List[str]]=None) -> None:
         """
         Initializes object
@@ -195,13 +196,12 @@ class Base(object):
         self._task_done: bool = False          # True if task() done
         self._post_done: bool = False          # True if post() done
 
-        self._leader: Base = None              # leader object
-        self._followers: List[Optional['Base']] = []
-                                               # follower object list
+        self._leader: 'Base' = None            # leader object
+        self._followers: List[Optional['Base']] = []  # follower list
 
         self._data: Any = None                 # data sets etc
-        self._csv_separator = ','              # separator in csv-files
-        
+        self._csv_separator: str = ','         # separator in csv-files
+
     def __call__(self, **kwargs: Any) -> float:
         """
         Executes object
@@ -230,12 +230,12 @@ class Base(object):
         return res
 
     def __str__(self) -> str:
-        s: str = ''
+        s = ''
         if not self.leader:
             s += "@root: '" + self.identifier + "', \n"
         s += "{identifier: '" + self.identifier + "'"
         if self.leader:
-            s += ", level: '" + str(self.treeLevel()) + "'"
+            s += ", level: '" + str(self.tree_level()) + "'"
             s += ", leader: '" + self.leader.identifier + "'"
             if self.identifier != self.leader:
                 s += ' (follower)'
@@ -260,50 +260,50 @@ class Base(object):
     def destruct(self) -> bool:
         """
         Destructs all followers. Cooperators will be kept
-        
+
         Returns:
             True on success
         """
         if self._data:
             del self._data
-        if self.isRoot():
+        if self.is_root():
             logging.shutdown()
 
-        return self.destructDownwards(fromNode=self)
+        return self.destruct_downwards(from_node=self)
 
-    def destructDownwards(self, fromNode: 'Base') -> bool:
+    def destruct_downwards(self, from_node: 'Base') -> bool:
         """
-        Destructs all followers downwards from 'fromNode'. 
+        Destructs all followers downwards from 'from_node'.
         Cooperators will be kept
-        
+
         Args:
-            fromNode:
+            from_node:
                 start node of search
 
         Returns:
             True on success
         """
-        if not fromNode:
+        if not from_node:
             return False
-        for i in range(len(fromNode.followers)):
-            node = fromNode.followers[i]
+        for i in range(len(from_node.followers)):
+            node = from_node.followers[i]
             if node:
-                if id(node.leader) == id(fromNode):
-                    self.destructDownwards(node)
-        if fromNode.leader:
-            fromNode.leader._destructFollower(fromNode)
+                if id(node.leader) == id(from_node):
+                    self.destruct_downwards(node)
+        if from_node.leader:
+            from_node.leader._destruct_follower(from_node)
         return True
 
-    def _destructFollower(self, node: 'Base') -> bool:
+    def _destruct_follower(self, node: 'Base') -> bool:
         """
         Destructs the followers of 'node'. Cooperators will be kept
-        
+
         Args:
             node:
                 actual node
-                
+
         Returns:
-            False if this node has no followers
+            False if this node has not followers
         """
         if not node:
             return False
@@ -314,13 +314,13 @@ class Base(object):
                 break
         if i == -1:
             return False
-        if self.isCooperator(node):
+        if self.is_cooperator(node):
             return False
         del node._data
         self._followers[i] = None
         return True
 
-    def isRoot(self) -> bool:
+    def is_root(self) -> bool:
         return not self.leader
 
     def root(self) -> 'Base':
@@ -333,7 +333,7 @@ class Base(object):
             p = p.leader
         return p
 
-    def treeLevel(self) -> int:
+    def tree_level(self) -> int:
         """
         Returns:
             Level of this node in tree, relative to root (root is 0)
@@ -346,7 +346,7 @@ class Base(object):
         return n
 
     def indent(self) -> str:
-        return (4 * ' ') * self.treeLevel()
+        return (4 * ' ') * self.tree_level()
 
     @property
     def identifier(self) -> str:
@@ -364,11 +364,11 @@ class Base(object):
         return self._argv
 
     @argv.setter
-    def argv(self, value: Optional[List[str]]):
+    def argv(self, value: Optional[Sequence[str]]):
         if value is None:
             self._argv = sys.argv
         else:
-            self._argv = value
+            self._argv = list(value)
 
     @property
     def gui(self) -> bool:
@@ -414,7 +414,7 @@ class Base(object):
         return self._path
 
     @path.setter
-    def path(self, value: Union[str, Path]):
+    def path(self, value: Optional[Union[str, Path]]):
         if not value:
             self._path = gettempdir()
         else:
@@ -425,7 +425,7 @@ class Base(object):
         return str(self._extension)
 
     @extension.setter
-    def extension(self, value: str):
+    def extension(self, value: Optional[str]):
         if not value:
             self._extension = ''
         else:
@@ -435,11 +435,11 @@ class Base(object):
                 self._extension = str(value)
 
     @property
-    def csvSeparator(self) -> str:
+    def csv_separator(self) -> str:
         return str(self._csv_separator)
 
-    @csvSeparator.setter
-    def csvSeparator(self, value: str):
+    @csv_separator.setter
+    def csv_separator(self, value: Optional[str]):
         if value is None:
             self._csv_separator = ' '
         else:
@@ -450,24 +450,25 @@ class Base(object):
         return self._leader
 
     @leader.setter
-    def leader(self, other: 'Base'):
+    def leader(self, other: Optional['Base']):
         if other:
-            other.setFollower(self)
+            other.set_follower(self)
 
     @property
     def followers(self) -> List['Base']:
         return self._followers
 
     @followers.setter
-    def followers(self, other: Union['Base', Sequence['Base']]) -> None:
-        self.setFollower(other)
+    def followers(self, other: Optional[Union['Base', Sequence['Base']]]) \
+            -> None:
+        self.set_follower(other)
 
     @property
     def data(self) -> Any:
         return self._data
 
     @data.setter
-    def data(self, other: Any):
+    def data(self, other: Optional[Any]):
         if self._data is not None:
             if not self.silent:
                 print("+++ data.setter: delete 'data'")
@@ -487,9 +488,9 @@ class Base(object):
         Returns:
             Node with given identifier or None if node not found
         """
-        return self.getFollower(identifier)
+        return self.get_follower(identifier)
 
-    def getFollower(self, identifier: str) -> Optional['Base']:
+    def get_follower(self, identifier: str) -> Optional['Base']:
         """
         Search for node with 'identifier' starts downwards from root
 
@@ -500,20 +501,20 @@ class Base(object):
         Returns:
             Node with given identifier or None if node not found
         """
-        return self.getFollowerDownwards(identifier, fromNode=None)
+        return self.get_follower_downwards(identifier)
 
-    def getFollowerDownwards(self, identifier: str, fromNode: 
-                             Optional['Base']=None) -> Optional['Base']:
+    def get_follower_downwards(self, identifier: str, from_node:
+                               Optional['Base']=None) -> Optional['Base']:
         """
         Search for node with given 'identifier', start search downwards
-        from 'fromNode'
+        from 'from_node'
 
         Args:
             identifier:
                 Identifier of wanted node
 
-            fromNode:
-                Start node for downward search. If 'fromNode' is None, 
+            from_node:
+                Start node for downward search. If 'from_node' is None,
                 search starts from root
 
         Returns:
@@ -521,24 +522,24 @@ class Base(object):
         """
         if self.identifier == identifier:
             return self
-        if fromNode:
-            if fromNode._identifier == identifier:
-                return fromNode
+        if from_node:
+            if from_node._identifier == identifier:
+                return from_node
         else:
-            fromNode = self.root()
-            if not fromNode:
+            from_node = self.root()
+            if not from_node:
                 return None
-        if fromNode.identifier == identifier:
-            return fromNode
-        for i in range(len(fromNode.followers)):
-            node = fromNode.followers[i]
+        if from_node.identifier == identifier:
+            return from_node
+        for i in range(len(from_node.followers)):
+            node = from_node.followers[i]
             if node:
-                node = self.getFollowerDownwards(identifier, node)
+                node = self.get_follower_downwards(identifier, node)
                 if node:
                     return node
         return None
 
-    def setFollower(self, other: Union['Base', Sequence['Base']]) \
+    def set_follower(self, other: Optional[Union['Base', Sequence['Base']]]) \
             -> Union['Base', Sequence['Base']]:
         """
         Adds other node(s)
@@ -563,20 +564,21 @@ class Base(object):
                         self._followers.append(obj)
         return other
 
-    def isFollower(self, other: 'Base') -> bool:
+    def is_follower(self, other: 'Base') -> bool:
         """
         Args:
             other:
                 Other node
 
         Returns:
-                True if 'other' is a follower of this node 
+                True if 'other' is a follower of this node
         """
         return other._leader == self and other in self._followers
 
-    def setCooperator(self, other: Union['Base', Sequence['Base']]) -> 'Base':
+    def set_cooperator(self, other: Optional[Union['Base', Sequence['Base']]])\
+            -> 'Base':
         """
-        Adds other node as cooperator. 
+        Adds other node as cooperator.
         'other' keep(s) its/their original leader(s)
 
         Args:
@@ -596,30 +598,30 @@ class Base(object):
                         self._followers.append(obj)
         return other
 
-    def isCooperator(self, other: 'Base') -> bool:
+    def is_cooperator(self, other: 'Base') -> bool:
         """
         Returns:
-            True if 'other' is a cooperator of this node 
+            True if 'other' is a cooperator of this node
         """
         return other._leader != self and other in self._followers
 
-    def cleanString(self, s: str) -> str:
+    def clean_string(self, s: str) -> str:
         return sub('[ \t\n\v\f\r]', '', s)
 
-    def reverseString(self, s: str) -> str:
+    def reverse_string(self, s: str) -> str:
         rs = list(s)
         rs.reverse()
         return ''.join(rs)
 
-    def kwargsDel(self, _kwargs: Dict[str, Any],
-                  remove: Union[str, Sequence[str]]) -> Dict[str, Any]:
+    def kwargs_del(self, _kwargs: Dict[str, Any],
+                   remove: Union[str, Sequence[str]]) -> Dict[str, Any]:
         """
         Makes copy of keyword dictionary and removes given key(s)
 
         Args:
             _kwargs:
                 Dictionary with keywords
-            
+
             remove:
                 Keyword(s) of items to be removed
 
@@ -632,20 +634,20 @@ class Base(object):
                 del dic[key]
         return dic
 
-    def kwargsGet(self, _kwargs: Any,
-                  keys: Union[str, Sequence[str]], default: Any=None) -> Any:
+    def kwargs_get(self, _kwargs: Any,
+                   keys: Union[str, Sequence[str]], default: Any=None) -> Any:
         """
-        Returns value of _kwargs for first matching key or 'default' if 
+        Returns value of _kwargs for first matching key or 'default' if
         all keys are invalid
 
         Args:
             _kwargs:
                 Dictionay with keyword arguments
 
-            keys (str or iterable of str):
+            keys:
                 Keyword or list of alternative keywords
 
-            default(Any, optional):
+            default:
                 Value to be returned if none of the keys is in '_kwargs'
 
         Returns:
@@ -668,20 +670,20 @@ class Base(object):
                                  message)
         logger.critical(self.identifier + ' : ' + message)
         self.destruct()
-            
+
         sys.exit()
 
     def warn(self, message: str='', wait: bool=False) -> None:
         """
-        - Sends message to logger
-        - Sends message to TKinter widget if in GUI mode, otherwise to console
+        - Message to logger
+        - Message to TKinter widget if self.gui, otherwise to console
 
         Args:
             message:
                 Warning to be written to log file and console
 
             wait:
-                Wait with program execution
+                Wait with program execution if True
         """
         if not self.silent:
             print("!!! '" + self.program + "', warning: '" + message + "'")
@@ -694,8 +696,8 @@ class Base(object):
 
     def write(self, message: str) -> None:
         """
-        - Sends message to logger with file handler
-        - Sends message to console if not in silent mode
+        - Message to logger with file handler
+        - Message to console if not in silent mode
 
         Args:
             message:
@@ -764,16 +766,16 @@ class Base(object):
             handler = logging.FileHandler(f, mode='w')
             handler.setLevel(logging.DEBUG)
             logger.addHandler(handler)
- 
-        if self.isRoot():
+
+        if self.is_root():
             if authenticate:
-                self._authenticate()                
-                
+                self._authenticate()
+
             message = "*** This is: '" + self.program + "'"
             if self.identifier and self.identifier != self.program:
                 message += ", id: '" + self.identifier + "'"
-            message += ", version: '" + self.version + "'"            
-            self.write(message)            
+            message += ", version: '" + self.version + "'"
+            self.write(message)
             self.write('    Date: ' + str(datetime.now().date()) +
                        ' ' + str(datetime.now().time())[:8])
             self.write('    Path: ' + "'" + str(self.path) + "'")
@@ -784,7 +786,7 @@ class Base(object):
         for x in self.followers:
             x.epilog()
 
-        if self.isRoot():
+        if self.is_root():
             message = "'" + self.program + "' is successfully completed\n"
             exe_time = time() - self._exe_time_start
             if exe_time >= self._min_exe_time_shown:
@@ -805,16 +807,16 @@ class Base(object):
     def save(self) -> bool:
         return True
 
-    def initialCondition(self) -> bool:
-        # super().initialCondition()         # use it in derived classes
+    def initial_condition(self) -> bool:
+        # super().initial_condition()        # use it in derived classes
         pass
 
-    def updateNonLinear(self) -> bool:
-        # super().updateNonLinear()          # use it in derived classes
+    def update_nonlinear(self) -> bool:
+        # super().update_nonlinear()         # use it in derived classes
         pass
 
-    def updateTransient(self) -> bool:
-        # super().updateTransient()          # use it in derived classes
+    def update_transient(self) -> bool:
+        # super().update_transient()         # use it in derived classes
         pass
 
     def pre(self, **kwargs: Any) -> bool:
@@ -828,7 +830,7 @@ class Base(object):
         ok = True
         for x in self.followers:
             x.pre(**kwargs)
-            if self.isCooperator(x):
+            if self.is_cooperator(x):
                 self.write(self.indent() + "    ['" + x.identifier +
                            "' is cooperator]")
         if self.root().followers:
@@ -850,7 +852,7 @@ class Base(object):
         """
         for x in self.followers:
             x.task(**kwargs)
-            if self.isCooperator(x):
+            if self.is_cooperator(x):
                 self.write(self.indent() + "    ['" + x.identifier +
                            "' is cooperator]")
         if self.root().followers:
@@ -870,7 +872,7 @@ class Base(object):
         ok = True
         for x in self.followers:
             x.post(**kwargs)
-            if self.isCooperator(x):
+            if self.is_cooperator(x):
                 self.write(self.indent() + "    ['" + x.identifier +
                            "' is cooperator]")
         if self.root().followers:
@@ -889,18 +891,18 @@ class Base(object):
         Returns:
             Residuum from range [0., 1.], indicating error of task
         """
-        if self.isRoot():
+        if self.is_root():
             exe_time = time() - self._exe_time_start
             if exe_time >= self._min_exe_time_shown:
                 self.write('    Execution time: {:2f} s'.format(round(exe_time,
                                                                       2)))
             self._exe_time_start = time()
 
-        if self.isRoot():
+        if self.is_root():
             self.write('=== Task-processing')
         res = self.task(**kwargs)
 
-        if self.isRoot():
+        if self.is_root():
             exe_time = time() - self._exe_time_start
             if exe_time >= self._min_exe_time_shown:
                 self.write('    Execution time: {:2f} s'.format(round(exe_time,

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-03 DWW
+      2018-09-11 DWW
 """
 
 import numpy as np
@@ -26,7 +26,7 @@ from typing import Any, Optional, Tuple
 
 from grayboxes.boxmodel import BoxModel
 from grayboxes.forward import Forward
-from grayboxes.plotarrays import plotBarArrays
+from grayboxes.plotarrays import plot_bar_arrays
 
 
 class Sensitivity(Forward):
@@ -48,17 +48,17 @@ class Sensitivity(Forward):
     def __init__(self, model: BoxModel, identifier: str='Sensitivity') -> None:
         """
         Args:
-            model (BoxModel_like):
+            model (BoxModel):
                 Box type model
 
             identifier:
-                Object identifier
+                unique object identifier
         """
         super().__init__(model=model, identifier=identifier)
 
-        self.axisIndices = None  # point indices for which x[j] is equal
+        self.axis_indices = None  # point indices for which x[j] is equal
         self.dy_dx = None
-        self.indicesWithEqualXj = None
+        self.indices_with_equal_Xj = None
 
     def task(self, **kwargs: Any) \
             -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
@@ -66,17 +66,17 @@ class Sensitivity(Forward):
         Analyzes sensitivity
 
         Kwargs:
-            X (2D or 1D array_like of float, optional):
-                training input, shape: (nPoint, nInp) or (nPoint,)
-                default: self._X
+            X (2D or 1D array of float, optional):
+                training input, shape: (n_point, n_inp) or (n_point,)
+                default: self.model.X
 
-            Y (2D or 1D array_like of float, optional):
-                training target, shape: (nPoint, nOut) or (nPoint,)
-                default: self._Y
+            Y (2D or 1D array of float, optional):
+                training target, shape: (n_point, n_out) or (n_point,)
+                default: self.model.Y
 
-            x (2D array_like of float):
+            x (2D array of float):
                 cross-type input points, see BoxModel.cross()
-                default: self._x
+                default: self.model.x
 
         Returns:
             2-tuple:
@@ -86,43 +86,43 @@ class Sensitivity(Forward):
                     gradient of y with respect to x in reference point
         """
         # trains (if X and Y not None) and predicts self.y = f(self.x)
-        super().task(**self.kwargsDel(kwargs, 'x'))
+        super().task(**self.kwargs_del(kwargs, 'x'))
 
         if self.model.x is None:
             return None, None
 
         # ref point (x, y)_ref is stored as: (self.model.x[0], self.model.y[0])
         x, y = self.model.x, self.model.y
-        xRef = x[0]
-        nPoint, nInp, nOut = x.shape[0], x.shape[1], y.shape[1]
+        x_ref = x[0]
+        n_point, n_inp, n_out = x.shape[0], x.shape[1], y.shape[1]
 
-        self.indicesWithEqualXj = [[] for _ in range(nInp)]
+        self.indices_with_equal_Xj = [[] for _ in range(n_inp)]
 
         # i is point index, j is input index and k is output index
-        for i in range(1, nPoint):
-            for j in range(nInp):
+        for i in range(1, n_point):
+            for j in range(n_inp):
                 if np.isclose(x[0, j], x[i, j]):
-                    self.indicesWithEqualXj[j].append(i)
+                    self.indices_with_equal_Xj[j].append(i)
 
-        self.dy_dx = np.full((nInp, nOut), np.inf)
-        jCenter = nInp // 2
-        for k in range(nOut):
-            for j in range(nInp):
+        self.dy_dx = np.full((n_inp, n_out), np.inf)
+        j_center = n_inp // 2
+        for k in range(n_out):
+            for j in range(n_inp):
                 xx, yy = [], []
-                for i in range(nPoint):
-                    if i not in self.indicesWithEqualXj[j]:
+                for i in range(n_point):
+                    if i not in self.indices_with_equal_Xj[j]:
                         xx.append(x[i, j])
                         yy.append(y[i, k])
                     yy = [a for _, a in sorted(zip(xx, yy))]
                     xx = sorted(xx)
-                dx = (xx[jCenter+1] - xx[jCenter-1]) * 0.5
+                dx = (xx[j_center+1] - xx[j_center-1]) * 0.5
                 grad = np.gradient(yy, dx)
-                self.dy_dx[j, k] = grad[jCenter]
+                self.dy_dx[j, k] = grad[j_center]
         s = np.array2string(self.dy_dx).replace(' ', '').replace('\n',
                                                                  '\n' + ' '*22)
         self.write('    grad: ' + str(s[1:-1]))
 
-        return xRef, self.dy_dx
+        return x_ref, self.dy_dx
 
     def plot(self) -> None:
         """
@@ -131,17 +131,17 @@ class Sensitivity(Forward):
         if self.silent:
             return
 
-        nPoint, nInp = self.model.x.shape
-        nOut = self.model.y.shape[1]
+        n_point, n_inp = self.model.x.shape
+        n_out = self.model.y.shape[1]
 
-        for k in range(nOut):
-            for j in range(nInp):
+        for k in range(n_out):
+            for j in range(n_inp):
                 plt.title('y' + str(k) + ' (x' + str(j) + ')')
                 plt.xlabel('x' + str(j))
                 plt.ylabel('y' + str(k))
                 xx, yy = [], []
-                for i in range(nPoint):
-                    if i not in self.indicesWithEqualXj[j]:
+                for i in range(n_point):
+                    if i not in self.indices_with_equal_Xj[j]:
                         xx.append(self.model.x[i, j])
                         yy.append(self.model.y[i, k])
                     yy = [a for _, a in sorted(zip(xx, yy))]
@@ -151,14 +151,14 @@ class Sensitivity(Forward):
                 plt.legend(bbox_to_anchor=(1.1, 1.03), loc='upper left')
                 plt.show()
 
-        for k in range(nOut):
-            plt.title('y' + str(k) + ' (x0..' + str(nInp-1) + ')')
-            for j in range(nInp):
-                plt.xlabel('x0..' + str(nInp-1))
+        for k in range(n_out):
+            plt.title('y' + str(k) + ' (x0..' + str(n_inp-1) + ')')
+            for j in range(n_inp):
+                plt.xlabel('x0..' + str(n_inp-1))
                 plt.ylabel('y' + str(k))
                 xx, yy = [], []
-                for i in range(nPoint):
-                    if i not in self.indicesWithEqualXj[j]:
+                for i in range(n_point):
+                    if i not in self.indices_with_equal_Xj[j]:
                         xx.append(self.model.x[i, j])
                         yy.append(self.model.y[i, k])
                     yy = [a for _, a in sorted(zip(xx, yy))]
@@ -168,15 +168,15 @@ class Sensitivity(Forward):
             plt.legend(bbox_to_anchor=(1.1, 1.04), loc='upper left')
             plt.show()
 
-        if nOut > 1:
-            for j in range(nInp):
-                plt.title('y0..' + str(nOut-1) + ' (x' + str(j) + ')')
-                for k in range(nOut):
+        if n_out > 1:
+            for j in range(n_inp):
+                plt.title('y0..' + str(n_out-1) + ' (x' + str(j) + ')')
+                for k in range(n_out):
                     plt.xlabel('x' + str(j))
-                    plt.ylabel('y0..' + str(nOut-1))
+                    plt.ylabel('y0..' + str(n_out-1))
                     xx, yy = [], []
-                    for i in range(nPoint):
-                        if i not in self.indicesWithEqualXj[j]:
+                    for i in range(n_point):
+                        if i not in self.indices_with_equal_Xj[j]:
                             xx.append(self.model.x[i, j])
                             yy.append(self.model.y[i, k])
                         yy = [a for _, a in sorted(zip(xx, yy))]
@@ -187,6 +187,6 @@ class Sensitivity(Forward):
                 plt.legend(bbox_to_anchor=(1.1, 1.04), loc='upper left')
                 plt.show()
 
-        plotBarArrays(yArrays=self.dy_dx.T, legendPosition=(1.1, 1.03),
-                      title=r'Gradient $d y_k \ / \ d x_j$', grid=True,
-                      figsize=(6, 4))
+        plot_bar_arrays(yarrays=self.dy_dx.T, legend_position=(1.1, 1.03),
+                        title=r'Gradient $d y_k \ / \ d x_j$', grid=True,
+                        figsize=(6, 4))

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-05 DWW
+      2018-09-11 DWW
 """
 
 __all__ = ['mpi', 'communicator', 'rank', 'predict_scatter', 'split', 'merge']
@@ -130,32 +130,32 @@ def predict_scatter(f: Callable, x: np.ndarray, *args: float, **kwargs: Any) \
     if comm is None:
         return np.atleast_2d(np.inf)
 
-    nProc = comm.Get_size()
-    nCore = psutil.cpu_count(logical=False)
+    n_proc = comm.Get_size()
+    n_core = psutil.cpu_count(logical=False)
 
     if not silent:
         print('+++ predict_scatter(), rank: ', rank(),
-              ' (nProc: ', nProc, ', nCore: ', nCore, ')', sep='')
+              ' (n_proc: ', n_proc, ', n_core: ', n_core, ')', sep='')
 
     # splits single 2D input array to a list of 2D sub-arrays
     if rank() == 0:
-        xAll = split(x, nProc)
+        x_all = split(x, n_proc)
     else:
-        xAll = None
+        x_all = None
 
     # distributes groups of 2D inputs to multiple cores
-    xProc = comm.scatter(xAll, 0)
+    x_proc = comm.scatter(x_all, 0)
 
-    yProc = []
-    for xPoint in xProc:
-        yPoint = np.atleast_1d(f(xPoint, *args)) if xPoint[0] != np.inf \
-                                                 else [np.inf]
-        yProc.append(yPoint)
+    y_proc = []
+    for x_point in x_proc:
+        y_point = np.atleast_1d(f(x_point, *args)) if x_point[0] != np.inf \
+                                                   else [np.inf]
+        y_proc.append(y_point)
 
-    yAll = comm.gather(yProc, 0)
+    y_all = comm.gather(y_proc, 0)
 
     # merges array of 2D group outputs to single 2D output array
-    y = merge(yAll)
+    y = merge(y_all)
     return y
 
 
@@ -228,63 +228,63 @@ def predict_scatter(f: Callable, x: np.ndarray, *args: float, **kwargs: Any) \
 #    return y
 
 
-def split(x2D: np.ndarray, nProc: int) -> np.ndarray:
+def split(x2d: np.ndarray, n_proc: int) -> np.ndarray:
     """
     - Fills up given 2D array with 'np.inf' to a size of multiple of 'nProc'
     - Splits the 2D array into an 3D array
 
     Args:
-        x2D (2D or 1D array_like of float):
-            input array, shape: (nProc, nInp) or (nInp,)
+        x2d (2D or 1D array_like of float):
+            input array, shape: (n_proc, n_inp) or (n_inp,)
 
-        nProc:
+        n_proc:
             number of x-segments to be sent to multiple processes
 
     Returns:
         (3D array of float):
-            array of 2D arrays, shape: (nProc, nPointPerProc, nInp)
+            array of 2D arrays, shape: (n_proc, n_point_per_proc, n_inp)
         or 
-            np.atleast_3d(np.inf) if x2D is None
+            np.atleast_3d(np.inf) if x2d is None
     """
-    if x2D is None:
+    if x2d is None:
         return np.atleast_3d(np.inf)
 
-    x2D = np.atleast_2d(x2D)
-    nPoint, nInp = x2D.shape
-    if nPoint % nProc != 0:
-        nFillUp = (nPoint // nProc + 1) * nProc - nPoint
-        x2D = np.r_[x2D, [[np.inf] * nInp] * nFillUp]
-    return np.array(np.split(x2D, nProc))
+    x2d = np.atleast_2d(x2d)
+    n_point, n_inp = x2d.shape
+    if n_point % n_proc != 0:
+        n_fill_up = (n_point // n_proc + 1) * n_proc - n_point
+        x2d = np.r_[x2d, [[np.inf] * n_inp] * n_fill_up]
+    return np.array(np.split(x2d, n_proc))
 
 
-def merge(y3D: np.ndarray) -> np.ndarray:
+def merge(y3d: np.ndarray) -> np.ndarray:
     """
     - Merges output from predictions of all processes to single 2D output array
     - Excludes output points with first element equaling np.inf
 
     Args:
-        y3D (3D array of float):
-            output array, shape: (nProc, nPointPerProc, nOut)
+        y3d (3D array of float):
+            output array, shape: (n_proc, n_point_per_proc, n_out)
 
     Returns:
         (2D array of float):
-            array of output, shape: (nPoint, nOut)
-            or 
+            array of output, shape: (n_point, n_out)
+        or
             np.atleast_2d(np.inf) if y3D is None
     """
-    if y3D is None:
+    if y3d is None:
         return np.atleast_2d(np.inf)
 
-    y3D = np.array(y3D)
-    if y3D.ndim == 2:
-        return y3D
+    y3d = np.array(y3d)
+    if y3d.ndim == 2:
+        return y3d
 
-    y2D = []
-    for yProc in y3D:
+    y2d = []
+    for yProc in y3d:
         for yPoint in yProc:
             if yPoint[0] != np.inf:
-                y2D.append(yPoint)
-    return np.array(y2D)
+                y2d.append(yPoint)
+    return np.array(y2d)
 
 
 def x3d_to_str(data: np.ndarray, indent: Union[str, int]='    ') -> str:
@@ -292,7 +292,7 @@ def x3d_to_str(data: np.ndarray, indent: Union[str, int]='    ') -> str:
     Creates string matrix with of MPI input or output
 
     Args:
-        data (3D array_like of float):
+        data (3D array of float):
             input or output array, shape: (nProc, nPointPerProc, nInp)
 
         indent:
@@ -308,28 +308,28 @@ def x3d_to_str(data: np.ndarray, indent: Union[str, int]='    ') -> str:
     if isinstance(indent, int):
         indent = indent * ' '
     s = ''
-    for iProc, yProc in enumerate(data):
-        s += indent + 'process ' + str(iProc) + ': '
-        for yPoint in yProc:
+    for i_proc, y_proc in enumerate(data):
+        s += indent + 'process ' + str(i_proc) + ': '
+        for y_point in y_proc:
             s += ' [ '
-            for val in yPoint:
+            for val in y_point:
                 s += '*' if val != np.inf else '-'
             s += ' ] '
         s += '\n'
     return s
 
 
-def xDemo(nPoint: int=24, nInp: int=2) -> np.ndarray:
+def x_demo(n_point: int=24, n_inp: int=2) -> np.ndarray:
     """
     Args:
-        nPoint:
+        n_point:
             number of data points
 
-        nInp:
+        n_inp:
             number of input
 
     Returns:
         (2D array of float):
             demo input array, shape: (nPoint, nInp)
     """
-    return np.array([[i+j for j in range(nInp)] for i in range(nPoint)])
+    return np.array([[i + j for j in range(n_inp)] for i in range(n_point)])

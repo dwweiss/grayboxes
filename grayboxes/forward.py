@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-04 DWW
+      2018-09-11 DWW
 """
 
 import numpy as np
@@ -30,7 +30,7 @@ from grayboxes.white import White
 
 class Forward(Base):
     """
-    Predicts $y = \phi(x)$ for series of data points, 
+    Predicts $y = \phi(x)$ for series of data points,
     x.shape: (nPoint, nInp)
 
     Examples:
@@ -59,8 +59,8 @@ class Forward(Base):
 
     Note:
         - Forward.__call__() returns 2-tuple of 2D arrays of float
-        
-        - Forward has no self._x or self._y attribute and employs 
+
+        - Forward has no self._x or self._y attribute and employs
           model.x and model. y for storing input and output
 
     """
@@ -75,7 +75,7 @@ class Forward(Base):
                 Unique object identifier
         """
         super().__init__(identifier)
-        self.model = model
+        self._model: BoxModel = model
 
     @property
     def model(self) -> BoxModel:
@@ -134,7 +134,7 @@ class Forward(Base):
             X, Y = kwargs.get('X', None), kwargs.get('Y', None)
         if not isinstance(self.model, White):
             if X is not None and Y is not None:
-                self.best = self.model.train(X, Y, **self.kwargsDel(kwargs,
+                self.best = self.model.train(X, Y, **self.kwargs_del(kwargs,
                                              ['X', 'Y']))
 
         x = kwargs.get('x', None)
@@ -145,11 +145,11 @@ class Forward(Base):
 
     def task(self, **kwargs: Any) -> Tuple[np.ndarray, np.ndarray]:
         """
-        This task() method is only for Forward and Sensitivity. Minimum, 
+        This task() method is only for Forward and Sensitivity. Minimum,
         Maximum and Inverse have a different implementations of task()
 
         Kwargs:
-            Keyword arguments passed to super.task() and to 
+            Keyword arguments passed to super.task() and to
             model.predict()
 
         Return:
@@ -163,7 +163,7 @@ class Forward(Base):
             self.model.y = None
         else:
             self.model.y = np.asfarray(self.model.predict(x=self.model.x,
-                                       **self.kwargsDel(kwargs, 'x')))
+                                       **self.kwargs_del(kwargs, 'x')))
         return self.model.x, self.model.y
 
     def post(self, **kwargs: Any) -> None:

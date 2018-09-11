@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-03 DWW
+      2018-09-11 DWW
 """
 
 import numpy as np
@@ -49,7 +49,7 @@ class Black(BoxModel):
 
         # black box, neural network, compact variant:
         y = Black()(XY=(X, Y), neurons=[2, 3], x=x)
-        
+
     Todo:
         Implement multivariant splines
     """
@@ -58,7 +58,7 @@ class Black(BoxModel):
         """
         Args:
             identifier:
-                Object identifier
+                Unique object identifier
         """
         super().__init__(f=None, identifier=identifier)
         self._empirical = None   # holds instance of Neural, splines etc
@@ -77,21 +77,21 @@ class Black(BoxModel):
     def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) \
             -> Optional[Dict[str, Any]]:
         """
-        Trains model, stores X and Y as self.X and self.Y, and stores 
+        Trains model, stores X and Y as self.X and self.Y, and stores
         result of best training trial as self.best
 
         Args:
-            X (2D or 1D array_like of float):
+            X (2D or 1D array of float):
                 training input, shape: (nPoint, nInp) or (nPoint,)
 
-            Y (2D or 1D array_like of float):
+            Y (2D or 1D array of float):
                 training target, shape: (nPoint, nOut) or (nPoint,)
 
         Kwargs:
-            neurons (int or 1D array_like of int):
+            neurons (int or 1D array of int):
                 number of neurons in hidden layers of neural network
 
-            splines (1D array_like of float):
+            splines (1D array of float):
                 not specified yet
 
             ... additional training options, see Neural.train()
@@ -151,8 +151,8 @@ class Black(BoxModel):
         Executes box model, stores input as self.x and output as self.y
 
         Args:
-            x (2D or 1D array_like of float):
-                prediction input, shape: (nPoint, nInp) or (nInp,)
+            x (2D or 1D array of float):
+                prediction input, shape: (nPoint, nInp) or (nInp, )
 
         Kwargs:
             Keyword arguments

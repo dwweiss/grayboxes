@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-05 DWW
+      2018-09-10 DWW
 """
 
 __all__ = ['xyz', 'xyzt']
@@ -27,9 +27,9 @@ from typing import Optional, Sequence, Tuple, Union
 
 
 def _rotate2d(phi_rad: Union[float, Sequence[float]],
-              XX: Union[float, Sequence[float], np.ndarray],
-              YY: Union[float, Sequence[float], np.ndarray],
-              XX0: float = 0., YY0: float = 0.) \
+              xx: Union[float, Sequence[float], np.ndarray],
+              yy: Union[float, Sequence[float], np.ndarray],
+              xx0: float = 0., yy0: float = 0.) \
         -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
     """
     Helper method for rotation of (XX,YY) point in 2D plane
@@ -38,24 +38,24 @@ def _rotate2d(phi_rad: Union[float, Sequence[float]],
         phi_rad:
             angle in [rad]
 
-        XX:
+        xx:
             x-coordinates [m]
 
-        YY:
+        yy:
             y-coordinates [m]
 
-        XX0:
+        xx0:
             x-coordinate of center of rotation [m]
 
-        YY0:
+        yy0:
             y-coordinate of center of rotation [m]
 
     Returns:
         Transformed 2D coordinates [m]
     """
-    xx = XX0 + (XX-XX0) * np.cos(phi_rad) - (YY-YY0) * np.sin(phi_rad)
-    yy = YY0 + (XX-XX0) * np.sin(phi_rad) + (YY-YY0) * np.cos(phi_rad)
-    return xx, yy
+    xx_trans = xx0 + (xx-xx0) * np.cos(phi_rad) - (yy-yy0) * np.sin(phi_rad)
+    yy_trans = yy0 + (xx-xx0) * np.sin(phi_rad) + (yy-yy0) * np.cos(phi_rad)
+    return xx_trans, yy_trans
 
 
 class xyz(object):
@@ -135,7 +135,7 @@ class xyz(object):
     def magnitude(self) -> float:
         return np.sqrt(self.x**2 + self.y**2 + self.z**2)
 
-    def unitVector(self) -> 'xyz':
+    def unit_vector(self) -> 'xyz':
         magn = self.magnitude()
         if magn < 1e-20:
             return xyz(0., 0., 1.)
@@ -160,86 +160,86 @@ class xyz(object):
             self.y += offset[1]
             self.z += offset[2]
 
-    def rotate(self, phiRad: Sequence[float],
-               rotAxis: Sequence[float]) -> None:
+    def rotate(self, phi_rad: Sequence[float],
+               rot_axis: Sequence[float]) -> None:
         """
         Coordinate transformation: rotate this point in Cartesian system
 
         Args:
-            phiRad:
+            phi_rad:
                 Angle(s) of counter-clockwise rotation [rad]
 
-            rotAxis:
+            rot_axis:
                 Coordinate(s) of rotation axis, one and only one component
                 is None; this component indicates the rotation axis.
-                e.g. 'rotAxis.y is None' forces rotation around y-axis,
+                e.g. 'rot_axis.y is None' forces rotation around y-axis,
                 rotation center is (P0.x, P0.z) [m]
         """
-        if rotAxis[0] is None:
-            self.y, self.z = _rotate2d(phiRad, self.y, self.z, rotAxis[1],
-                                       rotAxis[2])
-        elif rotAxis[1] is None:
-            self.z, self.x = _rotate2d(phiRad, self.z, self.x, rotAxis[2],
-                                       rotAxis[0])
-        elif rotAxis[2] is None:
-            self.x, self.y = _rotate2d(phiRad, self.x, self.y, rotAxis[0],
-                                       rotAxis[1])
+        if rot_axis[0] is None:
+            self.y, self.z = _rotate2d(phi_rad, self.y, self.z, rot_axis[1],
+                                       rot_axis[2])
+        elif rot_axis[1] is None:
+            self.z, self.x = _rotate2d(phi_rad, self.z, self.x, rot_axis[2],
+                                       rot_axis[0])
+        elif rot_axis[2] is None:
+            self.x, self.y = _rotate2d(phi_rad, self.x, self.y, rot_axis[0],
+                                       rot_axis[1])
         else:
-            print('??? invalid definition of rotation axis', rotAxis)
+            print('??? invalid definition of rotation axis', rot_axis)
             assert 0
 
-    def rotateDeg(self, phiDeg: Sequence[float],
-                  rotAxis: Sequence[float]) -> None:
+    def rotate_deg(self, phi_deg: Sequence[float],
+                   rot_axis: Sequence[float]) -> None:
         """
         Coordinate transformation: rotate this point in Cartesian system
 
         Args:
-            phiDeg:
+            phi_deg:
                 Angle(s) of counter-clockwise rotation [degrees]
 
-            rotAxis:
+            rot_axis:
                 Coordinate(s) of rotation axis, one and only one component
                 is None; this component indicates the rotation axis.
                 e.g. 'rotAxis.y is None' forces rotation around y-axis,
                 rotation center is (P0.x, P0.z)
         """
-        self.rotate(np.asfarray(phiDeg) / 180. * np.pi, rotAxis)
+        self.rotate(np.asfarray(phi_deg) / 180. * np.pi, rot_axis)
 
-    def scale(self, scalingFactor: 
+    def scale(self, scaling_factor:
               Union[int, float, Sequence[float], 'xyz']) -> None:
-        if isinstance(scalingFactor, (int, float)):
+        if isinstance(scaling_factor, (int, float)):
             if self.x is not None:
-                self.x *= float(scalingFactor)
+                self.x *= float(scaling_factor)
             if self.y is not None:
-                self.y *= float(scalingFactor)
+                self.y *= float(scaling_factor)
             if self.z is not None:
-                self.z *= float(scalingFactor)
-        elif isinstance(scalingFactor, xyz):
+                self.z *= float(scaling_factor)
+        elif isinstance(scaling_factor, xyz):
             if self.x is not None:
-                self.x *= float(scalingFactor.x)
+                self.x *= float(scaling_factor.x)
             if self.y is not None:
-                self.y *= float(scalingFactor.y)
+                self.y *= float(scaling_factor.y)
             if self.z is not None:
-                self.z *= float(scalingFactor.z)
-        elif isinstance(scalingFactor, (list, tuple)) and \
-                len(scalingFactor) == 3:
+                self.z *= float(scaling_factor.z)
+        elif isinstance(scaling_factor, (list, tuple)) and \
+                len(scaling_factor) == 3:
             if self.x is not None:
-                self.x *= float(scalingFactor[0])
+                self.x *= float(scaling_factor[0])
             if self.y is not None:
-                self.y *= float(scalingFactor[1])
+                self.y *= float(scaling_factor[1])
             if self.z is not None:
-                self.z *= float(scalingFactor[2])
-        elif isinstance(scalingFactor, list) and len(scalingFactor) == 1:
+                self.z *= float(scaling_factor[2])
+        elif isinstance(scaling_factor, list) and len(scaling_factor) == 1:
             if self.x is not None:
-                self.x *= float(scalingFactor[0])
+                self.x *= float(scaling_factor[0])
             if self.y is not None:
-                self.y *= float(scalingFactor[0])
+                self.y *= float(scaling_factor[0])
             if self.z is not None:
-                self.z *= float(scalingFactor[0])
+                self.z *= float(scaling_factor[0])
         else:
             print('??? invalid definition of scaling')
-            print('??? scaling:', scalingFactor, ' type(scalingFactor):',
-                  type(scalingFactor))
+            print('??? scaling:', scaling_factor, ' type(scaling_factor):',
+                  type(scaling_factor))
             assert 0
 
     def __str__(self) -> str:
@@ -286,7 +286,7 @@ class xyzt(xyz):
                   type(point))
             self.x, self.y, self.z, self.t = None, None, None, None
 
-    def at(self, i: int) -> int:
+    def at(self, i: int) -> float:
         """
         Accesses point components by index
 

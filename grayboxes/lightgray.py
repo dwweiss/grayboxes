@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-04 DWW
+      2018-09-11 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -48,17 +48,17 @@ class LightGray(BoxModel):
           this value when called as self.f(x=None)
 
         - The number of outputs (y.shape[1]) is limited to 1, see 
-          self._nMaxOut
+          self._n_max_out
 
     Examples:
-        def function(x, *args, **kwargs):
+        def func(x, *args, **kwargs):
             if x is None:
                 return np.ones(4)
             tun = args if len(args) == 4 else np.ones(4)
             return [tun[0] + tun[1] * (tun[2] * np.sin(x[0]) +
                     tun[3] * (x[1] - 1)**2)]
 
-        def method(self, x, *args, **kwargs):
+        def meth(self, x, *args, **kwargs):
             if x is None:
                 return np.ones(4)
             tun = args if len(args) == 4 else np.ones(4)
@@ -66,16 +66,16 @@ class LightGray(BoxModel):
                     tun[3] * (x[1] - 1)**2)]
 
         ### compact form:
-        y = LightGray(function)(X=X, Y=Y, x=x, tun0=4, methods='lm')
+        y = LightGray(func)(X=X, Y=Y, x=x, tun0=4, methods='lm')
 
         ### expanded form:
         # assign theoretical submodel as function or method
-        model = LightGray(function)  or
-        model = LightGray(method)
+        model = LightGray(func)  or
+        model = LightGray(meth)
 
         # (X, Y): training data
         X = [(1,2), (2,3), (4,5), (6,7), (7,8)]
-        Y = [(1,), (2,), (3,), (4,), (5,)]    # or with: [1, 2, 3, 4, 5]
+        Y = [(1,), (2,), (3,), (4,), (5,)]    # or Y = [1, 2, 3, 4, 5]
 
         # x: test data
         x = [(1, 4), (6, 6)]
@@ -90,7 +90,7 @@ class LightGray(BoxModel):
         y = model(x=x)               # predict with light gray box model
 
         # alternatively: combined train and prediction, single initial 
-        # tunining parameter set tun0
+        # tuning parameter set tun0
         y = model(X=X, Y=Y, tun0=4, x=x)             # train and predict
     """
 
@@ -107,55 +107,57 @@ class LightGray(BoxModel):
         """
         super().__init__(identifier=identifier, f=f)
 
-        self._nMaxOut = 1        # max nOut is '1' due to implementation limits
+        self._n_max_out = 1  # max n_out is '1' due to implementation
 
-        # populate 'validmethods' list
-        self.scipyMinimizers = ['BFGS',
+        # populate 'valid_methods' list
+        self.scipy_minimizers = ['BFGS',
                                 'L-BFGS-B',      # BFGS with less memory
                                 'Nelder-Mead',   # gradient-free simplex
                                 'Powell',       # gradient-free shooting
                                 'CG',
-                                # 'Newton-CG',       # requires Jacobian
+                                 # 'Newton-CG',      # requires Jacobian
                                 'TNC',
-                                # 'COBYLA',   # failed in grayBoxes test
+                                 # 'COBYLA',  # failed in grayBoxes test
                                 'SLSQP',
-                                # 'dogleg',          # requires Jacobian
-                                # 'trust-ncg',       # requires Jacobian
-                                'basinhopping',    # global (brute) opt.
-                                'differential_evolution',  # global opt.
-                                ]
-        self.scipyRootFinders = ['lm',
-                                 # 'hybr', 'broyden1', 'broyden2', 
-                                 # 'anderson', 'linearmixing', 
-                                 # 'diagbroyden', 'excitingmixing', 
-                                 # 'krylov', 'df-sane'
+                                 # 'dogleg',         # requires Jacobian
+                                 # 'trust-ncg',      # requires Jacobian
+                                 'basinhopping',   # global (brute) opt.
+                                 'differential_evolution',  # global opt
                                  ]
-        self.scipyEquationMinimizers = ['least_squares',  
-                                                   # Levenberg-Marquardt
+        self.scipy_root_finders = ['lm',
+                                   # 'hybr', 'broyden1', 'broyden2',
+                                   # 'anderson', 'linearmixing',
+                                   # 'diagbroyden', 'excitingmixing',
+                                   # 'krylov', 'df-sane'
+                                   ]
+        self.scipy_equ_minimizers = ['least_squares',
+                                     # Levenberg-Marquardt
                                         'leastsq',
-                                        ]
-        self.geneticMinimizers = ['genetic', 'ga'] if 'modestga' \
-            in sys.modules else []
+                                     ]
+        self.genetic_minimizers = ['genetic', 'ga'] if 'modestga' \
+                                                       in sys.modules else []
 
-        self.validMethods = self.scipyMinimizers + self.scipyRootFinders + \
-            self.scipyEquationMinimizers + self.geneticMinimizers
+        self.valid_methods = self.scipy_minimizers + \
+                             self.scipy_root_finders + \
+                             self.scipy_equ_minimizers + \
+                             self.genetic_minimizers
 
     # function wrapper for scipy minimize
-    def meanSquareErrror(self, weights: Sequence[float], **kwargs: Any) \
+    def _mean_square_errror(self, weights: Sequence[float], **kwargs: Any) \
             -> np.ndarray:
         y = BoxModel.predict(self, self.X, *weights,
-                             **self.kwargsDel(kwargs, 'x'))
+                             **self.kwargs_del(kwargs, 'x'))
         return np.mean((y - self.Y)**2)
 
     # function wrapper for scipy least_square and leastsq
-    def difference(self, weights: Sequence[float], **kwargs: Any) \
+    def _difference(self, weights: Sequence[float], **kwargs: Any) \
             -> np.ndarray:
         return (BoxModel.predict(self, self.X, *weights,
-                                 **self.kwargsDel(kwargs, 'x')) -
+                                 **self.kwargs_del(kwargs, 'x')) -
                 self.Y).ravel()
 
-    def minimizeLeastSquares(self, method: str, tun0: np.ndarray,
-                             **kwargs: Any) -> Dict[str, Any]:
+    def _minimize_least_squares(self, method: str, tun0: np.ndarray,
+                                **kwargs: Any) -> Dict[str, Any]:
         """
         Minimizes least squares: sum(self.f(self.X)-self.Y)^2) / X.size
             for a SINGLE initial tuning parameter set
@@ -182,16 +184,16 @@ class LightGray(BoxModel):
                 results, see BoxModel.train()
 
         """
-        results = self.initResults('method', method)
+        results = self.init_results('method', method)
         self.weights = None             # required by BoxModel.predict()
         self.ready = True               # required by BoxModel.predict()
 
-        if method in self.scipyMinimizers:
+        if method in self.scipy_minimizers:
             if method.startswith('bas'):
-                nItMax = kwargs.get('nItMax', 100)
+                n_it_max = kwargs.get('n_it_max', 100)
 
                 res = scipy.optimize.basinhopping(
-                    func=self.meanSquareErrror, x0=tun0, niter=nItMax,
+                    func=self._mean_square_errror, x0=tun0, niter=n_it_max,
                     T=1.0,
                     stepsize=0.5, minimizer_kwargs=None,
                     take_step=None, accept_test=None, callback=None,
@@ -204,11 +206,11 @@ class LightGray(BoxModel):
                     self.write(4 * ' ' + res.message)
 
             elif method.startswith('dif'):
-                nItMax = kwargs.get('nItMax', None)
+                n_it_max = kwargs.get('n_it_max', None)
 
                 res = scipy.optimize.differential_evolution(
-                    func=self.meanSquareErrror, bounds=[[-10, 10]]*tun0.size,
-                    strategy='best1bin', maxiter=nItMax, popsize=15,
+                    func=self._mean_square_errror, bounds=[[-10, 10]] * tun0.size,
+                    strategy='best1bin', maxiter=n_it_max, popsize=15,
                     tol=0.01, mutation=(0.5, 1), recombination=0.7,
                     seed=None, disp=False, polish=True,
                     init='latinhypercube')
@@ -219,18 +221,18 @@ class LightGray(BoxModel):
                 else:
                     self.write(4 * ' ' + '!!! ' + res.message)
             else:
-                validKeys = ['nItMax', 'adaptive', 'goal']
+                valid_keys = ['n_it_max', 'adaptive', 'goal']
                 kw = {}
-                if any(k in kwargs for k in validKeys):
+                if any(k in kwargs for k in valid_keys):
                     kw['options'] = {}
                     if method in ('SLSQP', 'Nelder-Mead', 'L-BFGS-B'):
-                        kw['options']['maxiter'] = kwargs.get('nItMax', 100)
+                        kw['options']['maxiter'] = kwargs.get('n_it_max', 100)
                     else:
-                        kw['options']['maxiter'] = kwargs.get('nItMax', None)
+                        kw['options']['maxiter'] = kwargs.get('n_it_max', None)
                     if method == 'Nelder-Mead':
                         kw['options']['xatol'] = kwargs.get('goal', 1e-4)
                 try:
-                    res = scipy.optimize.minimize(fun=self.meanSquareErrror,
+                    res = scipy.optimize.minimize(fun=self._mean_square_errror,
                                                   x0=tun0, method=method, **kw)
                     if res.success:
                         results['weights'] = np.atleast_1d(res.x)
@@ -243,17 +245,17 @@ class LightGray(BoxModel):
                     results['weights'] = None
                     self.write(4 * ' ' + '!!! ' + res.message)
 
-        elif method in self.scipyRootFinders:
-            nItMax = kwargs.get('nItMax', 0)
+        elif method in self.scipy_root_finders:
+            n_it_max = kwargs.get('n_it_max', 0)
 
             if method.startswith('lm'):
                 res = scipy.optimize.root(
-                    fun=self.difference, x0=tun0, args=(), method='lm',
+                    fun=self._difference, x0=tun0, args=(), method='lm',
                     jac=None, tol=None, callback=None,
                     options={  # 'func': None,mesg:_root_leastsq() got multiple
                              #                       values for argument 'func'
                              'col_deriv': 0, 'xtol': 1.49012e-08,
-                             'ftol': 1.49012e-8, 'gtol': 0., 'maxiter': nItMax,
+                             'ftol': 1.49012e-8, 'gtol': 0., 'maxiter': n_it_max,
                              'eps': 0.0, 'factor': 100, 'diag': None})
                 if res.success:
                     results['weights'] = np.atleast_1d(res.x)
@@ -264,10 +266,10 @@ class LightGray(BoxModel):
             else:
                 print("\n??? method:'" + str(method) + "' not implemented")
 
-        elif method in self.scipyEquationMinimizers:
+        elif method in self.scipy_equ_minimizers:
             if method.startswith('leastsq'):
                 x, cov_x, infodict, mesg, ier = scipy.optimize.leastsq(
-                    self.difference, tun0, full_output=True)
+                    self._difference, tun0, full_output=True)
                 if ier in [1, 2, 3, 4]:
                     results['weights'] = np.atleast_1d(x)
                     results['iterations'] = -1
@@ -276,7 +278,7 @@ class LightGray(BoxModel):
                     self.write(4 * ' ' + '!!! ' + mesg)
 
             elif method == 'least_squares':
-                res = scipy.optimize.least_squares(self.difference, tun0)
+                res = scipy.optimize.least_squares(self._difference, tun0)
                 if res.success:
                     results['weights'] = np.atleast_1d(res.x)
                     results['iterations'] = -1
@@ -284,16 +286,16 @@ class LightGray(BoxModel):
                 else:
                     self.write(4 * ' ' + '!!! ' + res.message)
 
-        elif method in self.geneticMinimizers:
+        elif method in self.genetic_minimizers:
             if 'modestga' in sys.modules and method in ('genetic', 'ga'):
-                validKeys = ['tol', 'options', 'bounds']
+                valid_keys = ['tol', 'options', 'bounds']
                 # see scipy's minimize
-                kw = {k: kwargs[k] for k in validKeys if k in kwargs}
+                kw = {k: kwargs[k] for k in valid_keys if k in kwargs}
                 if 'bounds' not in kw:
                     kw['bounds'] = [[0, 2]]*np.atleast_2d(tun0).shape[1]
                     self.write(4 * ' ' + '!!! bounds is missing ==> ' + 
                                str(kw['bounds']))
-                res = modestga.minimize(fun=self.meanSquareErrror, x0=tun0,
+                res = modestga.minimize(fun=self._mean_square_errror, x0=tun0,
                                         # TODO method=method,
                                         **kw)
                 if True:  # TODO replace 'if true' with 'if res.success'
@@ -353,7 +355,7 @@ class LightGray(BoxModel):
         self.Y = Y if X is not None and Y is not None else self.Y
 
         # get series of initial tun par sets from 'tun0' or self.f(None)
-        tun0seq = self.kwargsGet(kwargs, ('tun0', 'c0', 'C0'), None)
+        tun0seq = self.kwargs_get(kwargs, ('tun0', 'c0', 'C0'), None)
         if tun0seq is None:
             tun0seq = self.f(None)
             print(4 * ' ' + '!!! tun0 is None, from f(x=None) ==> tun0:', 
@@ -362,23 +364,23 @@ class LightGray(BoxModel):
         tun0seq = np.atleast_2d(tun0seq)         # shape: (nTrial, nTun)
 
         # get methods from kwargs
-        methods = self.kwargsGet(kwargs, ('methods', 'method'))
+        methods = self.kwargs_get(kwargs, ('methods', 'method'))
         if methods is None:
-            methods = self.validMethods[0]
+            methods = self.valid_methods[0]
         methods = np.atleast_1d(methods)
         if methods[0].lower() == 'all':
-            methods = self.validMethods
-        if any([tr not in self.validMethods for tr in methods]):
-            methods = self.validMethods[0]
+            methods = self.valid_methods
+        if any([tr not in self.valid_methods for tr in methods]):
+            methods = self.valid_methods[0]
             self.write("!!! correct method: '" + methods + "' ==> " + methods)
         methods = np.atleast_1d(methods)
 
         # set detailed print (only if not silent)
         self.silent = kwargs.get('silent', self.silent)
-        printDetails = kwargs.get('detailed', False) and not self.silent
+        print_details = kwargs.get('detailed', False) and not self.silent
 
         # loop over all methods
-        self.best = self.initResults()
+        self.best = self.init_results()
         message = ''
         for method in methods:
             self.write(4 * ' ' + method)
@@ -388,11 +390,12 @@ class LightGray(BoxModel):
                 tun0seq = [tun0seq[0]]
 
             for iTrial, tun0 in enumerate(tun0seq):
-                if printDetails:
+                if print_details:
                     message = (4+4) * ' ' + 'tun0: ' + str(np.round(tun0, 2))
 
-                results = self.minimizeLeastSquares(
-                    method, tun0, **self.kwargsDel(kwargs, ('method', 'tun0')))
+                results = self._minimize_least_squares(
+                    method, tun0, **self.kwargs_del(kwargs, ('method', 
+                                                             'tun0')))
 
                 if results['weights'] is not None:
                     self.weights = results['weights']  
@@ -403,14 +406,14 @@ class LightGray(BoxModel):
                         self.best.update(results)
                         self.best.update(err)
                         self.best['iTrial'] = iTrial
-                        if printDetails:
+                        if print_details:
                             message += ' +++'
-                    if printDetails:
+                    if print_details:
                         message += ' L2: ' + str(round(err['L2'], 6))
                 else:
-                    if printDetails:
+                    if print_details:
                         message += ' ---'
-                if printDetails:
+                if print_details:
                     self.write(message)
 
         self.weights = self.best['weights']
@@ -456,4 +459,4 @@ class LightGray(BoxModel):
                 prediction output, shape: (nPoint, nOut)
         """
         args = self.weights if self.weights is not None else args
-        return BoxModel.predict(self, x, *args, **self.kwargsDel(kwargs, 'x'))
+        return BoxModel.predict(self, x, *args, **self.kwargs_del(kwargs, 'x'))

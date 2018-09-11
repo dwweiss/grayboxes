@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-04 DWW
+      2018-09-11 DWW
 """
 
 import numpy as np
@@ -55,10 +55,10 @@ class DarkGray(BoxModel):
     def __init__(self, f: Callable, identifier: str='DarkGray') -> None:
         """
         Args:
-            f (method or function):
+            f:
                 theoretical submodel f(self, x) or f(x) for single data point
 
-            identifier (str, optional):
+            identifier:
                 object identifier
         """
         super().__init__(identifier=identifier, f=f)
@@ -77,10 +77,10 @@ class DarkGray(BoxModel):
             -> Optional[Dict[str, Any]]:
         """
         Args:
-            X (2D or 1D array_like of float):
+            X (2D or 1D array of float):
                 training input, shape: (nPoint, nInp) or (nInp,)
 
-            Y (2D or 1D array_like of float):
+            Y (2D or 1D array of float):
                 training target, shape: (nPoint, nOut) or (nOut,)
 
         Kwargs:
@@ -88,15 +88,15 @@ class DarkGray(BoxModel):
             and of black box model
 
         Returns:
-            best result, see BoxModel.train() 
-            or 
+            best result, see BoxModel.train()
+            or
             None if X and Y are None
         """
         if X is None or Y is None:
             return None
 
         self.X, self.Y = X, Y
-        y = BoxModel.predict(self, self.X, **self.kwargsDel(kwargs, 'x'))
+        y = BoxModel.predict(self, self.X, **self.kwargs_del(kwargs, 'x'))
         self.best = self._black.train(np.c_[self.X, y], y-self.Y, **kwargs)
 
         return self.best
@@ -106,7 +106,7 @@ class DarkGray(BoxModel):
         Executes box model, stores input x as self.x and output as self.y
 
         Args:
-            x (2D or 1D array_like of float):
+            x (2D or 1D array of float):
                 prediction input, shape: (nPoint, nInp) or (nInp,)
 
         Kwargs:
@@ -116,7 +116,7 @@ class DarkGray(BoxModel):
         Returns:
             (2D array of float):
                 prediction output, shape: (nPoint, nOut)
-            or 
+            or
             None if x is None
         """
         if x is None:

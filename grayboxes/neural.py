@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-03 DWW
+      2018-09-11 DWW
 
   Acknowledgements:
       Neurolab is a contribution by E. Zuev (pypi.python.org/pypi/neurolab)
@@ -33,10 +33,10 @@ import matplotlib.pyplot as plt
 from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 try:
     import neurolab as nl
-    _hasNeurolab = True
+    _has_neurolab = True
 except ImportError:
     print('??? Package neurolab not imported')
-    _hasNeurolab = False
+    _has_neurolab = False
 
 
 def propose_hidden_neurons(X: np.ndarray, Y: np.ndarray, alpha: float=2,
@@ -44,16 +44,16 @@ def propose_hidden_neurons(X: np.ndarray, Y: np.ndarray, alpha: float=2,
     """
     Proposes optimal number of hidden neurons for given training data set
 
-                   nPoint
+                   n_point
     hidden = ---------------------        with: 2 <= alpha <= 10
-             alpha * (nInp + nOut)
+             alpha * (n_inp + n_out)
 
     Args:
-        X (2D array_like of float):
-            training input, shape: (nPoint, nInp)
+        X (2D array of float):
+            training input, shape: (n_point, n_inp)
 
-        Y (2D array_like of float):
-            training target, shape: (nPoint, nOut)
+        Y (2D array of float):
+            training target, shape: (n_point, n_out)
 
         alpha:
             tuning parameter, alpha = 2..10 (2 reduces over-fitting)
@@ -61,25 +61,25 @@ def propose_hidden_neurons(X: np.ndarray, Y: np.ndarray, alpha: float=2,
 
         silent:
             if True then suppress printed messages
-            deafult: False
+            default: False
 
     Returns:
         Estimate of optimal number of neurons of a single hidden layer
     """
-    xShape, yShape = np.atleast_2d(X).shape, np.atleast_2d(Y).shape
+    x_shape, y_shape = np.atleast_2d(X).shape, np.atleast_2d(Y).shape
 
-    assert xShape[0] > xShape[1], str(xShape)
-    assert xShape[0] > 2, str(xShape)
-    assert xShape[0] == yShape[0], str(xShape) + str(yShape)
+    assert x_shape[0] > x_shape[1], str(x_shape)
+    assert x_shape[0] > 2, str(x_shape)
+    assert x_shape[0] == y_shape[0], str(x_shape) + str(y_shape)
 
-    nPoint, nInp, nOut = xShape[0], xShape[1], yShape[1]
+    n_point, n_inp, n_out = x_shape[0], x_shape[1], y_shape[1]
     try:
-        nHidden = max(1, round(nPoint / (alpha * (nInp + nOut))))
+        n_hidden = max(1, round(n_point / (alpha * (n_inp + n_out))))
     except ZeroDivisionError:
-        nHidden = max(nInp, nOut) + 2
+        n_hidden = max(n_inp, n_out) + 2
     if not silent:
-        print("+++ auto definition of 'nHidden': " + str(nHidden))
-    hidden = [nHidden]
+        print("+++ auto definition of 'n_hidden': " + str(n_hidden))
+    hidden = [n_hidden]
 
     return hidden
 
@@ -140,12 +140,12 @@ class Neural(object):
         self._x = None           # input of prediction
         self._y = None           # prediction y = net(x)
         self._norm_y = None      # data from normalization of target
-        self._xKeys = None       # xKeys for import from data frame
-        self._yKeys = None       # yKeys for import from data frame
+        self._x_keys = None       # xKeys for import from data frame
+        self._y_keys = None       # yKeys for import from data frame
         self._methods = ''       # list of training algorithms
-        self._finalErrors = []   # error(SSE,MSE) of best trial of each method
+        self._final_errors = []   # error(SSE,MSE) of best trial of each method
         self._finalL2norms = []  # L2-norm of best trial of each method
-        self._bestEpochs = []    # epochs of best trial of each method
+        self._best_epochs = []    # epochs of best trial of each method
         self._ready = False      # flag indicating successful training
 
         self._silent = False
@@ -173,8 +173,8 @@ class Neural(object):
             x (2D or 1D array_like of float, optional, default: self.x):
                 prediction input, shape: (nPoint, nInp) or (nInp,)
 
-            kwargs (dict, optional):
-                keyword arguments, see: train() and predict()
+        Kwargs:
+            keyword arguments, see: train() and predict()
 
         Returns:
             (2D array of float):
@@ -211,8 +211,8 @@ class Neural(object):
     @f.setter
     def f(self, value: Callable) -> None:
         if value is not None:
-            firstArg = list(inspect.signature(value).parameters.keys())[0]
-            if firstArg == 'self':
+            first_arg = list(inspect.signature(value).parameters.keys())[0]
+            if first_arg == 'self':
                 value = value.__get__(self, self.__class__)
         self._f = value
 
@@ -253,37 +253,37 @@ class Neural(object):
         """
         return self._best
 
-    def importDataFrame(self, df: pd.DataFrame, xKeys: Sequence[str],
-                        yKeys: Sequence[str]) -> None:
+    def import_dataframe(self, df: pd.DataFrame, x_keys: Sequence[str],
+                         y_keys: Sequence[str]) -> None:
         """
         Imports training input X and training target Y
         self.Y is the normalized target after import, but 'df' stays unchanged
 
         Args:
-            df (pandas.DataFrame):
+            df:
                 data object
 
-            xKeys (list of str):
+            x_keys:
                 input  keys for data selection
 
-            yKeys (list of str):
+            y_keys:
                 output keys for data selection
         """
-        self._xKeys = np.atleast_1d(xKeys)
-        self._yKeys = np.atleast_1d(yKeys)
-        assert all(k in df for k in xKeys), "unknown x-keys: '" + str(xKeys) +\
+        self._x_keys = np.atleast_1d(x_keys)
+        self._y_keys = np.atleast_1d(y_keys)
+        assert all(k in df for k in x_keys), "unknown x-keys: '" + str(x_keys) +\
             "', valid keys: '" + df.columns + "'"
-        assert all(k in df for k in yKeys), "unknown y-keys: '" + str(yKeys) +\
+        assert all(k in df for k in y_keys), "unknown y-keys: '" + str(y_keys) +\
             "', valid keys: '" + df.columns + "'"
-        self._X = np.asfarray(df.loc[:, xKeys])
-        self._Y = np.asfarray(df.loc[:, yKeys])
+        self._X = np.asfarray(df.loc[:, x_keys])
+        self._Y = np.asfarray(df.loc[:, y_keys])
 
         self._norm_y = nl.tool.Norm(self._Y)
         self._Y = self._norm_y(self._Y)
 
-    def setArrays(self, X: np.ndarray, Y: np.ndarray,
-                  xKeys: Optional[Sequence[str]]=None,
-                  yKeys: Optional[Sequence[str]]=None) -> None:
+    def set_arrays(self, X: np.ndarray, Y: np.ndarray,
+                   x_keys: Optional[Sequence[str]]=None,
+                   y_keys: Optional[Sequence[str]]=None) -> None:
         """
         - Imports training input X and training target Y
         - converts X and Y to 2D arrays
@@ -297,14 +297,14 @@ class Neural(object):
             Y (2D or 1D array_like of float):
                 training target, shape: (nPoint, nOut) or (nPoint,)
 
-            xKeys:
+            x_keys:
                 list of column keys for data selection
-                use self._xKeys keys if xKeys is None
+                use self._x_keys keys if xKeys is None
                 default: ['x0', 'x1', ... ]
 
-            yKeys:
+            y_keys:
                 list of column keys for data selection
-                use self._yKeys keys if yKeys is None
+                use self._y_keys keys if y_keys is None
                 default: ['y0', 'y1', ... ]
         """
         self._X = np.atleast_2d(X)
@@ -320,14 +320,14 @@ class Neural(object):
             'self._X: ' + str(self._X) + '\nself._Y: ' + str(self._Y)
         assert not np.isclose(self._Y.max(), self._Y.min()), str(self._Y)
 
-        if xKeys is None:
-            self._xKeys = ['x' + str(i) for i in range(self._X.shape[1])]
+        if x_keys is None:
+            self._x_keys = ['x' + str(i) for i in range(self._X.shape[1])]
         else:
-            self._xKeys = xKeys
-        if yKeys is None:
-            self._yKeys = ['y' + str(i) for i in range(self._Y.shape[1])]
+            self._x_keys = x_keys
+        if y_keys is None:
+            self._y_keys = ['y' + str(i) for i in range(self._Y.shape[1])]
         else:
-            self._yKeys = yKeys
+            self._y_keys = y_keys
 
         self._norm_y = nl.tool.Norm(self._Y)
         self._Y = self._norm_y(self._Y)
@@ -339,11 +339,11 @@ class Neural(object):
         best training trial as self.best
 
         Args:
-            X (2D or 1D array_like of float):
+            X (2D or 1D array of float):
                 training input, shape: (nPoint, nInp) or (nPoint,)
                 default: self.X
 
-            Y (2D or 1D array_like of float):
+            Y (2D or 1D array of float):
                 training target, shape: (nPoint, nOut) or (nPoint,)
                 default: self.Y
 
@@ -405,7 +405,7 @@ class Neural(object):
                 default: self.silent
                 [argument 'show' superseds 'silent' if show > 0]
 
-            smartTrials (bool):
+            smart_trials (bool):
                 if False, perform all trials even if goal has been reached
                 default: True
 
@@ -433,32 +433,32 @@ class Neural(object):
             - The best network is assigned to 'self._net'
         """
         if X is not None and Y is not None:
-            self.setArrays(X, Y)
+            self.set_arrays(X, Y)
         assert self._X is not None and self._Y is not None, \
             str(self.X) + ' ' + str(self.Y)
 
-        alpha       = kwargs.get('alpha',          2.)
-        epochs      = kwargs.get('epochs',         1000)
-        errorf      = kwargs.get('errorf',         nl.error.MSE())
-        goal        = kwargs.get('goal',           1e-3)
-        methods     = kwargs.get('methods',        None)
+        alpha        = kwargs.get('alpha',          2.)
+        epochs       = kwargs.get('epochs',         1000)
+        errorf       = kwargs.get('errorf',         nl.error.MSE())
+        goal         = kwargs.get('goal',           1e-3)
+        methods      = kwargs.get('methods',        None)
         if methods is None:
-            methods = kwargs.get('method',         'bfgs rprop')
-        neurons     = kwargs.get('neurons',        None)
-        outputf     = kwargs.get('outputf',        nl.trans.TanSig())
-        plot        = kwargs.get('plot',           1)
-        rr          = kwargs.get('regularization', None)
+            methods  = kwargs.get('method',         'bfgs rprop')
+        neurons      = kwargs.get('neurons',        None)
+        outputf      = kwargs.get('outputf',        nl.trans.TanSig())
+        plot         = kwargs.get('plot',           1)
+        rr           = kwargs.get('regularization', None)
         if rr is None:
-            rr      = kwargs.get('rr',             None)
+            rr       = kwargs.get('rr',             None)
         if rr is None:
             rr = 1.
-        show        = kwargs.get('show',           0)
-        self.silent = kwargs.get('silent',         self.silent)
+        show         = kwargs.get('show',           0)
+        self.silent  = kwargs.get('silent',         self.silent)
         if show is not None and show > 0:
             self.silent = False
-        smartTrials = kwargs.get('smartTrials',    True)
-        transf      = kwargs.get('transf',         nl.trans.TanSig())
-        trials      = kwargs.get('trials',         3)
+        smart_trials = kwargs.get('smart_trials',   True)
+        transf       = kwargs.get('transf',         nl.trans.TanSig())
+        trials       = kwargs.get('trials',         3)
 
         if self.silent:
             show = 0
@@ -503,31 +503,31 @@ class Neural(object):
         size.append(self._Y.shape[1])
         assert size[-1] == self._Y.shape[1]
 
-        trainfDict = {'genetic':    nl.train.train_bfgs,   # TODO .
-                      'derivative': nl.train.train_bfgs,   # TODO .
-                      'bfgs':       nl.train.train_bfgs,
-                      'cg':         nl.train.train_cg,
-                      'gd':         nl.train.train_gd,
-                      'gda':        nl.train.train_gda,
-                      'gdm':        nl.train.train_gdm,
-                      'gdx':        nl.train.train_gdx,
-                      'rprop':      nl.train.train_rprop
-                      }
+        trainf_dict = {'genetic':    nl.train.train_bfgs,   # TODO .
+                       'derivative': nl.train.train_bfgs,   # TODO .
+                       'bfgs':       nl.train.train_bfgs,
+                       'cg':         nl.train.train_cg,
+                       'gd':         nl.train.train_gd,
+                       'gda':        nl.train.train_gda,
+                       'gdm':        nl.train.train_gdm,
+                       'gdx':        nl.train.train_gdx,
+                       'rprop':      nl.train.train_rprop
+                       }
 
-        assert all([x in trainfDict for x in self._methods]), \
+        assert all([x in trainf_dict for x in self._methods]), \
             str(self._methods)
         if not self.silent:
             print('+++ methods:', self._methods)
 
-        sequenceError = np.inf
-        bestmethod = self._methods[0]
-        self._finalErrors, self._finalL2norms, self._bestEpochs = [], [], []
+        sequence_error = np.inf
+        best_method = self._methods[0]
+        self._final_errors, self._finalL2norms, self._best_epochs = [], [], []
 
         for method in self._methods:
-            trainf = trainfDict[method]
-            methodErr = np.inf
-            methodEpochs = None
-            methodL2norm = None
+            trainf = trainf_dict[method]
+            method_err = np.inf
+            method_epochs = None
+            method_l2norm = None
 
             net = nl.net.newff(nl.tool.minmax(self._X), size)
             net.transf = transf
@@ -539,50 +539,50 @@ class Neural(object):
             if self.f is not None:
                 net.outputf = nl.trans.PureLin
 
-            for jTrial in range(trials):
+            for j_trial in range(trials):
                 if method in ('genetic'):
                     net.init()
-                    trialErrors = net.train(self._X, self._Y, f=self.f,
-                                            epochs=epochs, goal=goal, rr=rr,
-                                            show=show)
+                    trial_errors = net.train(self._X, self._Y, f=self.f,
+                                             epochs=epochs, goal=goal, rr=rr,
+                                             show=show)
                 elif method == 'rprop':
                     net.init()
-                    trialErrors = net.train(self._X, self._Y, epochs=epochs,
-                                            show=show, goal=goal)
+                    trial_errors = net.train(self._X, self._Y, epochs=epochs,
+                                             show=show, goal=goal)
                 else:
                     net.init()
-                    trialErrors = net.train(self._X, self._Y, epochs=epochs,
-                                            show=show, goal=goal, rr=rr)
-                assert len(trialErrors) >= 1, str(trialErrors)
-                if sequenceError > trialErrors[-1]:
-                    sequenceError = trialErrors[-1]
+                    trial_errors = net.train(self._X, self._Y, epochs=epochs,
+                                             show=show, goal=goal, rr=rr)
+                assert len(trial_errors) >= 1, str(trial_errors)
+                if sequence_error > trial_errors[-1]:
+                    sequence_error = trial_errors[-1]
                     del self._net
                     self._net = net.copy()
-                if (methodErr < goal and methodEpochs > len(trialErrors)) or \
-                   (methodErr >= goal and methodErr > trialErrors[-1]):
-                    methodErr = trialErrors[-1]
-                    methodEpochs = len(trialErrors)
-                    methodL2norm = np.sqrt(np.mean(np.square(
+                if (method_err < goal and method_epochs > len(trial_errors)) \
+                   or (method_err >= goal and method_err > trial_errors[-1]):
+                    method_err = trial_errors[-1]
+                    method_epochs = len(trial_errors)
+                    method_l2norm = np.sqrt(np.mean(np.square(
                       self.predict(x=self._X) - self._norm_y.renorm(self._Y))))
                 if plot:
-                    plt.plot(range(len(trialErrors)), trialErrors,
-                             label='trial: ' + str(jTrial))
-                if smartTrials:
-                    if trialErrors[-1] < goal:
+                    plt.plot(range(len(trial_errors)), trial_errors,
+                             label='trial: ' + str(j_trial))
+                if smart_trials:
+                    if trial_errors[-1] < goal:
                         break
 
-            self._finalErrors.append(methodErr)
-            self._finalL2norms.append(methodL2norm)
-            self._bestEpochs.append(methodEpochs)
-            iBest = self._methods.index(bestmethod)
-            if methodErr < self._finalErrors[iBest]:
-                bestmethod = method
+            self._final_errors.append(method_err)
+            self._finalL2norms.append(method_l2norm)
+            self._best_epochs.append(method_epochs)
+            i_best = self._methods.index(best_method)
+            if method_err < self._final_errors[i_best]:
+                best_method = method
 
             if plot:
                 plt.title("'" + method + "' mse:" +
-                          str(round(methodErr*1e3, 2)) + 'e-3 L2:' +
-                          str(round(methodL2norm, 3)) +
-                          ' [' + str(methodEpochs) + ']')
+                          str(round(method_err*1e3, 2)) + 'e-3 L2:' +
+                          str(round(method_l2norm, 3)) +
+                          ' [' + str(method_epochs) + ']')
                 plt.xlabel('epochs')
                 plt.ylabel('error')
                 plt.yscale('log', nonposy='clip')
@@ -590,21 +590,21 @@ class Neural(object):
                 plt.grid()
                 plt.show()
             if not self.silent:
-                print('    ' + method + ':' + str(round(methodErr, 5)) +
-                      '[' + str(methodEpochs) + '], ')
+                print('    ' + method + ':' + str(round(method_err, 5)) +
+                      '[' + str(method_epochs) + '], ')
         if plot:
-            self.plotTestWithTrainData()
+            self._plot_test_with_train_data()
 
-        iBest = self._methods.index(bestmethod)
+        i_best = self._methods.index(best_method)
         if not self.silent:
             if len(self._methods) > 1:
-                print("    best method: '" + self._methods[iBest] +
+                print("    best method: '" + self._methods[i_best] +
                       "' out of: [" + ' '.join(self._methods) +
-                      '], error:', round(self._finalErrors[iBest], 5))
-                if len(self._finalErrors) > 1:
+                      '], error:', round(self._final_errors[i_best], 5))
+                if len(self._final_errors) > 1:
                     print("    (method:err): [", end='')
                     s = ''
-                    for method, err in zip(self._methods, self._finalErrors):
+                    for method, err in zip(self._methods, self._final_errors):
                         s += method + ':' + str(round(err, 5)) + ' '
                     print(s[:-2] + ']')
 
@@ -613,12 +613,12 @@ class Neural(object):
         # assign results of best trial to return value
         Y = self._norm_y.renorm(self._Y)
         dy = self.predict(self._X) - Y
-        iAbsMax = np.abs(dy).argmax()
-        self._best = {'method': self._methods[iBest],
+        i_abs_max = np.abs(dy).argmax()
+        self._best = {'method': self._methods[i_best],
                       'L2': np.sqrt(np.mean(np.square(dy))),
-                      'abs': Y.ravel()[iAbsMax],
-                      'iAbs': iAbsMax,
-                      'epochs': self._bestEpochs[iBest]}
+                      'abs': Y.ravel()[i_abs_max],
+                      'iAbs': i_abs_max,
+                      'epochs': self._best_epochs[i_best]}
         return self.best
 
     def predict(self, x: np.ndarray, **kwargs: Any) -> Optional[np.ndarray]:
@@ -663,11 +663,11 @@ class Neural(object):
         return self._y
 
     def plot(self) -> None:
-        self.plotTestWithTrainData()
+        self._plot_test_with_train_data()
 
-    def plotTestWithTrainData(self) -> None:
-        for method, error, epochs in zip(self._methods, self._finalErrors,
-                                         self._bestEpochs):
+    def _plot_test_with_train_data(self) -> None:
+        for method, error, epochs in zip(self._methods, self._final_errors,
+                                         self._best_epochs):
             y = self.predict(x=self._X)        # prediction
             Y = self._norm_y.renorm(self._Y)   # target
 
@@ -675,31 +675,31 @@ class Neural(object):
                 str(round(error * 1e3, 2)) + 'e-3 [' + str(epochs) + ']'
 
             plt.title(title)
-            for j, yTrainSub in enumerate(Y.T):
-                dy = np.subtract(y.T[j], yTrainSub)
-                for i, xTrainSub in enumerate(self._X.T):
-                    label = self._xKeys[i] + ' & ' + self._yKeys[j]
-                    plt.plot(xTrainSub, dy, label=label)
+            for j, y_train_sub in enumerate(Y.T):
+                dy = np.subtract(y.T[j], y_train_sub)
+                for i, x_train_sub in enumerate(self._X.T):
+                    label = self._x_keys[i] + ' & ' + self._y_keys[j]
+                    plt.plot(x_train_sub, dy, label=label)
             plt.xlabel('$x$')
             plt.ylabel('$y_{pred} - y_{train}$')
             plt.legend(bbox_to_anchor=(1.1, 1), loc='upper left')
             plt.show()
 
             plt.title(title)
-            for j, yTrainSub in enumerate(Y.T):
-                for i, xTrainSub in enumerate(self._X.T):
-                    label = self._xKeys[i] + ' & ' + self._yKeys[j]
-                    plt.plot(xTrainSub, y.T[j], label=label)
-                    plt.plot(xTrainSub, yTrainSub, label=label +
+            for j, y_train_sub in enumerate(Y.T):
+                for i, x_train_sub in enumerate(self._X.T):
+                    label = self._x_keys[i] + ' & ' + self._y_keys[j]
+                    plt.plot(x_train_sub, y.T[j], label=label)
+                    plt.plot(x_train_sub, y_train_sub, label=label +
                              ' (target)', linestyle='', marker='*')
             plt.xlabel('$x$')
             plt.ylabel('$y$')
             plt.legend(bbox_to_anchor=(1.1, 1), loc='upper left')
             plt.show()
 
-        x = range(len(self._finalErrors))
-        y = self._finalErrors
-        y2 = np.asfarray(self._bestEpochs) * 1e-5
+        x = range(len(self._final_errors))
+        y = self._final_errors
+        y2 = np.asfarray(self._best_epochs) * 1e-5
         f = plt.figure()
         ax = f.add_axes([.1, .1, .8, .8])
         ax.plot(np.asfarray(x)+0.01, y2, color='b', label='epochs*1e-5')

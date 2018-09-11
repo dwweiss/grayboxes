@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-03 DWW
+      2018-09-11 DWW
 """
 
 from typing import Any, Callable
@@ -38,7 +38,7 @@ class White(BoxModel):
                 Theoretical submodel f(self, x) or f(x) for single data point
 
             identifier:
-                Object identifier
+                Unique object identifier
         """
         super().__init__(f=f, identifier=identifier)
 
@@ -54,7 +54,7 @@ class White(BoxModel):
                 2D training target, not used
 
         Kwargs:
-            Keyword arguments, not used 
+            Keyword arguments, not used
         """
         self.ready = True
         return None
