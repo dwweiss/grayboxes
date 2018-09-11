@@ -30,8 +30,8 @@ import neurolab as nl
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.neural import Neural
-from grayboxes.plotarrays import plotSurface, plotIsolines, plotIsoMap, \
-    plotWireframe
+from grayboxes.plotarrays import plot_surface, plot_isolines, plot_isomap, \
+    plot_wireframe
 
 
 def L2(y, Y):
@@ -92,9 +92,9 @@ class TestUM(unittest.TestCase):
             y = net(x=x)
             if 1:
                 plt.plot(x, y, '-',
-                         label='tst:'+str_L2(net(x=x), f(x)) + ' ' + \
+                         label='tst:'+str_L2(net(x=x), f(x)) + ' ' +
                                'trn:'+str_L2(net(x=X), Y))
-        plt.title('Test (' + net.best['method'] + ') ' + \
+        plt.title('Test (' + net.best['method'] + ') ' +
                   'L2_trn: ' + str(round(net.best['L2'], 2)))
         plt.plot(x, f(x), '--', label='tst')
         plt.plot(X, Y, 'o', label='trn')
@@ -140,10 +140,10 @@ class TestUM(unittest.TestCase):
         df = DataFrame({'p0': [10, 20, 30, 40], 'p1': [11, 21, 31, 41],
                         'p2': [12, 22, 32, 42], 'r0': [31, 41, 51, 52],
                         'r1': [32, 42, 52, 55]})
-        xKeys = ['p0', 'p2']
-        yKeys = ['r0', 'r1']
+        xkeys = ['p0', 'p2']
+        ykeys = ['r0', 'r1']
         net = Neural()
-        net.importDataFrame(df, xKeys, yKeys)
+        net.import_dataframe(df, xkeys, ykeys)
         best = net.train(goal=1e-6, neurons=[10, 3], plot=1, epochs=2000,
                          methods='cg gdx rprop bfgs', trials=10,
                          regularization=0.01, smartTrials=False)
@@ -164,19 +164,19 @@ class TestUM(unittest.TestCase):
         dy = y - Y
         X, Y, x = net.X, net.Y, net.x
         if X.shape[1] == 2:
-            plotWireframe(X[:, 0], X[:, 1],  y[:, 0],  title='$y_{prd}$',
-                          labels=['x', 'y', r'$Y_{trg}$'])
-            plotWireframe(X[:, 0], X[:, 1],  Y[:, 0],  title='$Y_{trg}$',
-                          labels=['x', 'y', r'$Y_{trg}$'])
-            plotWireframe(X[:, 0], X[:, 1], dy[:, 0], title=r'$\Delta y$',
-                          labels=['x', 'y', r'$\Delta y$'])
-            plotIsolines(X[:, 0], X[:, 1],  y[:, 0], title='$y_{prd}$')
-            plotIsoMap(X[:,   0], X[:, 1],  y[:, 0], title='$y_{prd}$')
-            plotIsoMap(X[:,   0], X[:, 1],  Y[:, 0], title='$Y_{trg}$')
-            plotIsolines(X[:, 0], X[:, 1],  Y[:, 0], title='$Y_{trg}$')
-            plotIsoMap(X[:,   0], X[:, 1], dy[:, 0], title=r'$\Delta y$')
-            plotSurface(X[:,  0], X[:, 1], dy[:, 0], title=r'$\Delta y$')
-            plotSurface(X[:,  0], X[:, 1],  y[:, 0], title='$y_{prd}$')
+            plot_wireframe(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$',
+                           labels=['x', 'y', r'$Y_{trg}$'])
+            plot_wireframe(X[:, 0], X[:, 1], Y[:, 0], title='$Y_{trg}$',
+                           labels=['x', 'y', r'$Y_{trg}$'])
+            plot_wireframe(X[:, 0], X[:, 1], dy[:, 0], title=r'$\Delta y$',
+                           labels=['x', 'y', r'$\Delta y$'])
+            plot_isolines(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$')
+            plot_isomap(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$')
+            plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='$Y_{trg}$')
+            plot_isolines(X[:, 0], X[:, 1], Y[:, 0], title='$Y_{trg}$')
+            plot_isomap(X[:, 0], X[:, 1], dy[:, 0], title=r'$\Delta y$')
+            plot_surface(X[:, 0], X[:, 1], dy[:, 0], title=r'$\Delta y$')
+            plot_surface(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$')
 
         self.assertTrue(True)
 
@@ -194,7 +194,7 @@ class TestUM(unittest.TestCase):
         net.trainf = nl.train.train_bfgs
 
         err = net.train(X, YY, epochs=10000, show=100, goal=1e-6)
-        yTrain = norm_y.renorm(net.sim(X))
+        y_train = norm_y.renorm(net.sim(X))
 
         print(err[-1])
         plt.subplot(211)
@@ -231,13 +231,13 @@ class TestUM(unittest.TestCase):
             plt.legend()
             plt.show()
         elif X.shape[1] == 2:
-            plotSurface(X[:,  0], X[:, 1], y[:, 0], title='$y_{prd}$')
-            plotIsolines(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$')
-            plotIsolines(X[:, 0], X[:, 1], Y[:, 0], title='$y_{trg}$')
+            plot_surface(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$')
+            plot_isolines(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$')
+            plot_isolines(X[:, 0], X[:, 1], Y[:, 0], title='$y_{trg}$')
         dy = y - Y
         if X.shape[1] == 2:
-            plotIsoMap(X[:, 0], X[:, 1], dy[:, 0],
-                       title='$y_{prd} - y_{trg}$')
+            plot_isomap(X[:, 0], X[:, 1], dy[:, 0],
+                        title='$y_{prd} - y_{trg}$')
 
         self.assertTrue(True)
 

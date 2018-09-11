@@ -27,7 +27,7 @@ import numpy as np
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.forward import Forward
-from grayboxes.plotarrays import plotIsoMap
+from grayboxes.plotarrays import plot_isomap
 from grayboxes.boxmodel import grid, cross, rand
 from grayboxes.white import White
 
@@ -56,7 +56,7 @@ class TestUM(unittest.TestCase):
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         x, y = Forward(White(func), 'test1')(x=grid(3, [0, 1], [0, 1]))
-        plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
+        plot_isomap(x[:, 0], x[:, 1], y[:, 0])
 
         self.assertTrue(True)
 
@@ -64,7 +64,7 @@ class TestUM(unittest.TestCase):
         s = 'Forward() with demo function build-in into BoxModel'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
         x, y = Forward(White('demo'), 'test2')(x=cross(5, [1, 2], [3, 4]))
-        plotIsoMap(x[:, 0], x[:, 1], y[:, 0], scatter=True)
+        plot_isomap(x[:, 0], x[:, 1], y[:, 0], scatter=True)
 
         self.assertTrue(True)
 

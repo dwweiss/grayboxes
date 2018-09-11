@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-09-11 DWW
 """
 
 import unittest
@@ -28,7 +28,7 @@ import psutil
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.parallel import mpi, communicator, predict_scatter, split, \
-    merge, xDemo, x3d_to_str
+    merge, x_demo, x3d_to_str
 
 
 def f(x, *args, **kwargs):
@@ -41,16 +41,16 @@ def f(x, *args, **kwargs):
 
 comm = communicator()
 if comm is None:
-    nProc = 4
-    nCore = 2
+    n_proc = 4
+    n_core = 2
 else:
-    nProc = comm.Get_size()
-    nCore = psutil.cpu_count(logical=False)
+    n_proc = comm.Get_size()
+    n_core = psutil.cpu_count(logical=False)
 
-nPoint, nInp = 5, 2
+n_point, nInp = 5, 2
 print('mpi():', mpi())
 print('communicator():', communicator())
-print('nCore nProc:', nCore, nProc)
+print('n_core n_proc:', n_core, n_proc)
 
 
 class TestUM(unittest.TestCase):
@@ -71,26 +71,26 @@ class TestUM(unittest.TestCase):
         #            return [x[0] * 2, x[1]**2]
         #
         #
-        #        xProc, kwargs = np.loads(sys.stdin.buffer.read())
-        #        yProc = []
-        #        for x in xProc:
+        #        x_proc, kwargs = np.loads(sys.stdin.buffer.read())
+        #        y_proc = []
+        #        for x in x_proc:
         #            print('x:', x)
         #            if x[0] != np.inf:
         #
         #                # computation of y = f(x)
         #                y = x * 1.1 + 2
         #
-        #            yProc.append(y)
+        #            y_proc.append(y)
         #        sys.stdout.buffer.write(dumps(y))
         #    else:
-        #        x = xDemo()
+        #        x = x_demo()
         #        y = predict_subprocess(__file__, x)
         #
         #        print('x:', 'y:', y)
         self.assertTrue(True)
 
     def test2(self):
-        x = xDemo(nPoint, nInp)
+        x = x_demo(n_point, nInp)
         print('x:', x)
 
         if communicator() is not None:
@@ -100,9 +100,9 @@ class TestUM(unittest.TestCase):
         else:
             print('+++ predict on single core')
             y = []
-            for xPoint in x:
-                yPoint = f(x=xPoint) if xPoint[0] != np.inf else np.inf
-                y.append(np.atleast_1d(yPoint))
+            for x_point in x:
+                y_point = f(x=x_point) if x_point[0] != np.inf else np.inf
+                y.append(np.atleast_1d(y_point))
             y = np.array(y)
 
         print('x:', x.tolist())
@@ -113,45 +113,45 @@ class TestUM(unittest.TestCase):
     def test3(self):
         s = 'Generates example input'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-        x = xDemo(nPoint, nInp)
-        if nPoint <= 20:
+        x = x_demo(n_point, nInp)
+        if n_point <= 20:
             print('x:', x.tolist(), '\n')
 
         s = 'Split input into sequence of input groups for multiple cores'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-        xAll = split(x, nProc)
-        print(x3d_to_str(xAll))
-        if nPoint <= 20:
-            print('xAll:', xAll.tolist())
+        x_all = split(x, n_proc)
+        print(x3d_to_str(x_all))
+        if n_point <= 20:
+            print('x_all:', x_all.tolist())
 
         if communicator() is None:
             s = 'Computes output on single core'
             print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-            yAll = []
-            for xProc in xAll:
-                yProc = []
-                for xPoint in xProc:
-                    yPoint = f(xPoint) if xPoint[0] != np.inf else [np.inf]
-                    yProc.append(yPoint)
-                yAll.append(yProc)
-            yAll = np.array(yAll)
-            print(x3d_to_str(yAll))
-            if nPoint <= 20:
-                print('yAll:', yAll.tolist(), '\n')
+            n_all = []
+            for x_proc in x_all:
+                y_proc = []
+                for x_point in x_proc:
+                    y_point = f(x_point) if x_point[0] != np.inf else [np.inf]
+                    y_proc.append(y_point)
+                n_all.append(y_proc)
+            n_all = np.array(n_all)
+            print(x3d_to_str(n_all))
+            if n_point <= 20:
+                print('n_all:', n_all.tolist(), '\n')
 
             s = "Merges output from multiple cores and removes 'inf'-rows"
             print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-            y = merge(yAll)
-            if nPoint <= 20:
+            y = merge(n_all)
+            if n_point <= 20:
                 print('x:', x.tolist())
-            if nPoint <= 20:
+            if n_point <= 20:
                 print('y:', y.tolist())
         else:
             s = 'Computes output on multiple cores'
             print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
             y = predict_scatter(f, x, silent=False)
 
-        if nPoint <= 20:
+        if n_point <= 20:
             print('x:', x.tolist())
             print('y:', y.tolist())
 
@@ -159,16 +159,16 @@ class TestUM(unittest.TestCase):
         -----------------------
         Generates example input
         -----------------------
-        x: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8],
-            [8, 9], [9, 10]]
+        x: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7],
+            [7, 8], [8, 9], [9, 10]]
         ------------------------------------------------------------
         Split input into sequence of input groups for multiple cores
         ------------------------------------------------------------
             core 0:  [ ** ]  [ ** ]  [ ** ]  [ ** ]
             core 1:  [ ** ]  [ ** ]  [ ** ]  [ ** ]
             core 2:  [ ** ]  [ ** ]  [ -- ]  [ -- ]
-        xAll: [[[0.0, 1.0], [1.0, 2.0], [2.0, 3.0], [3.0, 4.0]], [[4.0, 5.0],
-                [5.0, 6.0], [6.0, 7.0], [7.0, 8.0]], [[8.0, 9.0], [9.0, 10.0],
+        x_all: [[[0., 1.], [1., 2.], [2., 3.], [3., 4.]], [[4., 5.],
+                [5., 6.], [6., 7.], [7., 8.]], [[8., 9.], [9., 10.],
                 [inf, inf], [inf, inf]]]
         ---------------------------------
         Computes output on multiple cores
@@ -176,15 +176,15 @@ class TestUM(unittest.TestCase):
             core 0:  [ ** ]  [ ** ]  [ ** ]  [ ** ]
             core 1:  [ ** ]  [ ** ]  [ ** ]  [ ** ]
             core 2:  [ ** ]  [ ** ]  [ - ]  [ - ]
-        yAll: [[[0.0, 1.0], [2.0, 4.0], [4.0, 9.0], [6.0, 16.0]], [[8.0, 25.0],
-                [10.0, 36.0], [12.0, 49.0], [14.0, 64.0]], [[16.0, 81.0],
-                [18.0, 100.0], [inf], [inf]]]
+        n_all: [[[0., 1.], [2., 4.], [4., 9.], [6., 16.]], [[8., 25.],
+                [10., 36.], [12., 49.], [14., 64.]], [[16., 81.],
+                [18., 100.], [inf], [inf]]]
         --------------------------------------------------------
         Merges output from multiple cores and removes 'inf'-rows
         --------------------------------------------------------
-        x: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8],
-            [8, 9], [9, 10]]
-        y: [[0.0, 1.0], [2.0, 4.0], [4.0, 9.0], [6.0, 16.0], [8.0, 25.0],
+        x: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7],
+            [7, 8], [8, 9], [9, 10]]
+        y: [[0., 1.], [2., 4.], [4., 9.], [6., 16.], [8., 25.],
             [10.0, 36.0], [12.0, 49.0], [14.0, 64.0], [16.0, 81.0],
             [18.0, 100.0]]
         """

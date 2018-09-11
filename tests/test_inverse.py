@@ -27,7 +27,7 @@ import numpy as np
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.inverse import Inverse
-from grayboxes.plotarrays import plot_X_Y_Yref
+from grayboxes.plotarrays import plot_x_y_y_ref
 from grayboxes.boxmodel import grid, rand, noise
 from grayboxes.white import White
 from grayboxes.lightgray import LightGray
@@ -62,8 +62,8 @@ class TestUM(unittest.TestCase):
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         op = Inverse(White('demo'), 'test2')
-        xInv, yInv = op(x=rand(3, [-5, 5], [-5, 5]), y=[0.5],
-                        method='ga', bounds=2*[(-8, 8)], generations=2000)
+        x_inv, y_inv = op(x=rand(3, [-5, 5], [-5, 5]), y=[0.5],
+                          method='ga', bounds=2*[(-8, 8)], generations=2000)
         op.plot()
 
         self.assertTrue(True)
@@ -80,13 +80,13 @@ class TestUM(unittest.TestCase):
 
         Y_exact = White(f, 'test3')(x=X, silent=True)
         Y_noise = noise(Y_exact, absolute=noise_abs)
-        plot_X_Y_Yref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
+        plot_x_y_y_ref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
 
         #################
 
         model = LightGray(f, 'test3b')
         Y_fit = model(X=X, Y=Y_noise, c0=np.ones(3), x=X, silent=True)
-        plot_X_Y_Yref(X, Y_fit, Y_exact, ['X', 'Y_{fit}', 'Y_{exa}'])
+        plot_x_y_y_ref(X, Y_fit, Y_exact, ['X', 'Y_{fit}', 'Y_{exa}'])
 
         op = Inverse(model, 'test3c')
         x, y = op(x=grid((3, 2), [-10, 0], [1, 19]), y=[0.5])
@@ -105,12 +105,12 @@ class TestUM(unittest.TestCase):
         Y_exact = White(f, 'test4')(x=X)
         Y_noise = noise(Y_exact, absolute=noise_abs)
 
-        plot_X_Y_Yref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
+        plot_x_y_y_ref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
         model = Black()
         Y_blk = model(X=X, Y=Y_noise, neurons=[8], n=3, epochs=500, x=X)
-        plot_X_Y_Yref(X, Y_blk, Y_exact, ['X', 'Y_{blk}', 'Y_{exa}'])
+        plot_x_y_y_ref(X, Y_blk, Y_exact, ['X', 'Y_{blk}', 'Y_{exa}'])
         op = Inverse(model, 'test4b')
-        xInv, yInv = op(y=[0.5], x=[(-10, 0), (1, 19)])
+        x_inv, y_inv = op(y=[0.5], x=[(-10, 0), (1, 19)])
         op.plot()
 
         self.assertTrue(True)
@@ -126,25 +126,25 @@ class TestUM(unittest.TestCase):
         # synthetic training data
         Y_exact = White(f, 'test5')(x=X)
         Y_noise = noise(Y_exact, absolute=noise_abs)
-        plot_X_Y_Yref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
+        plot_x_y_y_ref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
 
         print('*'*30)
 
         # trains and executes theoretical model Y_fit=f(X,w)
         Y_fit = LightGray(f, 'test5b')(X=X, Y=Y_noise, c0=[1, 1, 1], x=X)
-        plot_X_Y_Yref(X, Y_fit, Y_exact, ['X', 'Y_{fit}', 'Y_{exa}'])
+        plot_x_y_y_ref(X, Y_fit, Y_exact, ['X', 'Y_{fit}', 'Y_{exa}'])
 
         # meta-model of theoretical model Y_emp=g(X,w)
         meta = Black('test5c')
         Y_meta = meta(X=X, Y=Y_fit, neurons=[10], x=X)
-        plot_X_Y_Yref(X, Y_fit, Y_meta, ['X', 'Y_{met}', 'Y_{exa}'])
+        plot_x_y_y_ref(X, Y_fit, Y_meta, ['X', 'Y_{met}', 'Y_{exa}'])
 
         # inverse solution with meta-model (emp.model of tuned theo.model)
         if 1:
             op = Inverse(meta, 'test6')
-            xInv, yInv = op(x=[(-10, 0)], y=[0.5])
+            x_inv, y_inv = op(x=[(-10, 0)], y=[0.5])
             op.plot()
-            print('id:', op.identifier, 'xInv:', xInv, 'yInv:', yInv)
+            print('id:', op.identifier, 'x_inv:', x_inv, 'y_inv:', y_inv)
 
         self.assertTrue(True)
 

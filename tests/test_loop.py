@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-09-11 DWW
 """
 
 import unittest
@@ -36,26 +36,26 @@ class HeatConduction(Loop):
         super().__init__(identifier)
         self.x = None
         self.u = None
-        self.uPrev = None
+        self.u_prev = None
         self.a = None
         self.source = 0.0
         plt.clf()
 
-    def initialCondition(self):
-        super().initialCondition()
+    def initial_condition(self):
+        super().initial_condition()
         self.x = np.linspace(0., 1., num=20)
         self.u = np.sin(self.x * np.pi * 2)
         self.u[0], self.u[-1] = (0., 0.)
-        self.uPrev = np.copy(self.u)
+        self.u_prev = np.copy(self.u)
         self.a = np.linspace(1, 1, num=len(self.x))
         plt.plot(self.x, self.u, linestyle='--', label='initial')
 
-    def updateTransient(self):
-        super().updateTransient()
-        self.uPrev, self.u = self.u, self.uPrev
+    def update_transient(self):
+        super().update_transient()
+        self.u_prev, self.u = self.u, self.u_prev
 
-    def updateNonlinear(self):
-        super().updateNonlinear()
+    def update_nonlinear(self):
+        super().update_nonlinear()
         self.a = 1 + 0 * self.u
 
     def task(self):
@@ -63,10 +63,10 @@ class HeatConduction(Loop):
 
         n = self.x.size - 1
         for i in range(1, n):
-            d2udx2 = (self.uPrev[i+1] - 2 * self.uPrev[i] +
-                      self.uPrev[i-1]) / (self.x[1] - self.x[0])**2
-            rhs = self.a[i] * d2udx2 + self.source
-            self.u[i] = self.uPrev[i] + self.dt * rhs
+            d2u_dx2 = (self.u_prev[i + 1] - 2 * self.u_prev[i] +
+                       self.u_prev[i - 1]) / (self.x[1] - self.x[0]) ** 2
+            rhs = self.a[i] * d2u_dx2 + self.source
+            self.u[i] = self.u_prev[i] + self.dt * rhs
 
         plt.plot(self.x, self.u, label=str(round(self.t, 4)))
         return 0.0
@@ -80,7 +80,7 @@ class HeatConduction(Loop):
 
 
 foo = HeatConduction('conduction')
-foo.setFollower([Base('follower 1'), Base('follower 2')])
+foo.set_follower([Base('follower 1'), Base('follower 2')])
 foo.silent = False
 
 
@@ -92,27 +92,27 @@ class TestUM(unittest.TestCase):
         pass
 
     def test1(self):
-        print('foo.isTransient:', foo.isTransient())
-        print('foo.isNonLinear:', foo.isNonLinear())
+        print('foo.isTransient:', foo.is_transient())
+        print('foo.isNonLinear:', foo.is_nonlinear())
 
         self.assertTrue(True)
 
     def test2(self):
-        foo.setTransient(tEnd=0, n=8)
-        foo.setNonLinear(nItMax=5, nItMin=3, epsilon=0.0)
+        foo.set_transient(t_end=0, n=8)
+        foo.set_nonlinear(n_it_max=5, n_it_min=3, epsilon=0.0)
 
-        print('foo.isTransient:', foo.isTransient())
-        print('foo.isNonLinear:', foo.isNonLinear())
+        print('foo.isTransient:', foo.is_transient())
+        print('foo.isNonLinear:', foo.is_nonlinear())
         foo()
 
         self.assertTrue(True)
 
     def test3(self):
-        foo.setTransient(tEnd=0.1, n=8)
-        foo.setNonLinear(nItMax=0, nItMin=0, epsilon=0.0)
+        foo.set_transient(t_end=0.1, n=8)
+        foo.set_nonlinear(n_it_max=0, n_it_min=0, epsilon=0.0)
 
-        print('foo.isTransient:', foo.isTransient())
-        print('foo.isNonLinear:', foo.isNonLinear())
+        print('foo.is_transient:', foo.is_transient())
+        print('foo.is_nonLinear:', foo.is_nonlinear())
         foo()
 
         self.assertTrue(True)

@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.boxmodel import BoxModel
-from grayboxes.plotarrays import plotIsoMap, plotSurface, plotIsolines
+from grayboxes.plotarrays import plot_isomap, plot_surface, plot_isolines
 from grayboxes.boxmodel import rand, noise, grid, frame2arr
 from grayboxes.white import White
 from grayboxes.lightgray import LightGray
@@ -38,10 +38,10 @@ def f(self, x, *args, **kwargs):
     """
     Theoretical submodel y=f(x_com, x_tun) for single data point
     """
-    nTun = 3
+    n_tun = 3
     if x is None:
-        return np.ones(nTun)                  # get number of tuning parameters
-    tun = args if len(args) == nTun else np.ones(nTun)
+        return np.ones(n_tun)                  # get number of tuning parameters
+    tun = args if len(args) == n_tun else np.ones(n_tun)
 
     y0 = tun[0] + tun[2] * x[0]**2 + tun[1] * x[1]
     y1 = tun[0] * x[1]
@@ -60,12 +60,12 @@ class TestUM(unittest.TestCase):
         y_exa = White('demo', 'test1')(x=x)
         y = noise(y_exa, relative=20e-2)
 
-        plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
-        plotSurface(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
-        plotIsolines(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$',
-                     levels=[0, 1e-4, 5e-4, .003, .005, .01, .02, .05, .1, .2])
-        plotIsoMap(x[:, 0], x[:, 1], y[:, 0], title='$y_0$')
-        plotIsoMap(x[:, 0], x[:, 1], (y-y_exa)[:, 0], title='$y_0-y_{exa,0}$')
+        plot_isomap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
+        plot_surface(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
+        plot_isolines(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$',
+                      levels=[0, 1e-4, 5e-4, .003, .005, .01, .02, .05, .1, .2])
+        plot_isomap(x[:, 0], x[:, 1], y[:, 0], title='$y_0$')
+        plot_isomap(x[:, 0], x[:, 1], (y - y_exa)[:, 0], title='$y_0-y_{exa,0}$')
 
         self.assertTrue(True)
 
@@ -74,14 +74,14 @@ class TestUM(unittest.TestCase):
         y_exa = White(f, 'test2')(x=x)
         y = noise(y_exa, relative=20e-2)
 
-        plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
-        plotIsoMap(x[:, 0], x[:, 1], y_exa[:, 1], title='$y_{exa,1}$')
-        plotSurface(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
-        plotSurface(x[:, 0], x[:, 1], y_exa[:, 1], title='$y_{exa,1}$')
-        plotIsoMap(x[:, 0], x[:, 1], y[:, 0], title='$y_0$')
-        plotIsoMap(x[:, 0], x[:, 1], y[:, 1], title='$y_1$')
-        plotIsoMap(x[:, 0], x[:, 1], (y-y_exa)[:, 0], title='$y_0-y_{exa,0}$')
-        plotIsoMap(x[:, 0], x[:, 1], (y-y_exa)[:, 1], title='$y_1-y_{exa,1}$')
+        plot_isomap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
+        plot_isomap(x[:, 0], x[:, 1], y_exa[:, 1], title='$y_{exa,1}$')
+        plot_surface(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
+        plot_surface(x[:, 0], x[:, 1], y_exa[:, 1], title='$y_{exa,1}$')
+        plot_isomap(x[:, 0], x[:, 1], y[:, 0], title='$y_0$')
+        plot_isomap(x[:, 0], x[:, 1], y[:, 1], title='$y_1$')
+        plot_isomap(x[:, 0], x[:, 1], (y - y_exa)[:, 0], title='$y_0-y_{exa,0}$')
+        plot_isomap(x[:, 0], x[:, 1], (y - y_exa)[:, 1], title='$y_1-y_{exa,1}$')
 
         self.assertTrue(True)
 
@@ -90,18 +90,18 @@ class TestUM(unittest.TestCase):
         print('X:', X)
 
         Y_exa = White(f, 'test3')(x=X)
-        plotIsoMap(X[:, 0], X[:, 1], Y_exa[:, 0], title='$Y_{exa,0}$')
-        plotIsoMap(X[:, 0], X[:, 1], Y_exa[:, 1], title='$Y_{exa,1}$')
+        plot_isomap(X[:, 0], X[:, 1], Y_exa[:, 0], title='$Y_{exa,0}$')
+        plot_isomap(X[:, 0], X[:, 1], Y_exa[:, 1], title='$Y_{exa,1}$')
         print('Y_exa:', Y_exa)
 
         Y = noise(Y_exa, absolute=0.1, uniform=True)
-        plotIsoMap(X[:, 0], X[:, 1], Y[:, 0], title='$Y_{0}$')
-        plotIsoMap(X[:, 0], X[:, 1], Y[:, 1], title='$Y_{1}$')
+        plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='$Y_{0}$')
+        plot_isomap(X[:, 0], X[:, 1], Y[:, 1], title='$Y_{1}$')
         print('Y:', Y)
 
         dY = Y - Y_exa
-        plotIsoMap(X[:, 0], X[:, 1], dY[:, 0], title='$Y - Y_{exa,0}$')
-        plotIsoMap(X[:, 0], X[:, 1], dY[:, 1], title='$Y - Y_{exa,1}$')
+        plot_isomap(X[:, 0], X[:, 1], dY[:, 0], title='$Y - Y_{exa,0}$')
+        plot_isomap(X[:, 0], X[:, 1], dY[:, 1], title='$Y - Y_{exa,1}$')
         print('dY:', dY)
 
         self.assertTrue(True)
@@ -138,11 +138,11 @@ class TestUM(unittest.TestCase):
 
     def test5(self):
         model = LightGray(f, 'test5')
-        nPoint = 20
-        X = rand(nPoint, [0, 10], [0, 10])
+        n_point = 20
+        X = rand(n_point, [0, 10], [0, 10])
         Y = noise(White(f)(x=X), absolute=0.1)
 
-        x = rand(nPoint, [0, 10], [0, 10])
+        x = rand(n_point, [0, 10], [0, 10])
         y_exa = White(f)(x=x)
         y = model(X=X, Y=Y, x=x)
 

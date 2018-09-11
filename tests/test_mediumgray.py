@@ -31,7 +31,7 @@ from grayboxes.mediumgray import MediumGray
 from grayboxes.boxmodel import grid, noise, rand
 from grayboxes.lightgray import LightGray
 from grayboxes.white import White
-from grayboxes.plotarrays import plot_X_Y_Yref
+from grayboxes.plotarrays import plot_x_y_y_ref
 
 
 nTun = 3
@@ -90,8 +90,8 @@ class TestUM(unittest.TestCase):
         pass
 
     def test1(self):
-        s = 'Tunes model, compare: y(X) vs y_exa(X)'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+        message = 'Tunes model, compare: y(X) vs y_exa(X)'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(message))
 
         # train with n1 random initial tuning parameter help, each of size n2
         local, n1, n2 = 10, 1, 3
@@ -99,30 +99,30 @@ class TestUM(unittest.TestCase):
         mgr.silent, lgr.silent = True, True
         tun0 = rand(n1, *(n2 * [[0., 2.]]))
 
-        L2 = np.inf
-        yMgr, tunMgr = None, None
+        l2 = np.inf
+        y_mgr, tun_mgr = None, None
         for local in range(1, 3):
             for neurons in range(2, 4):
                 y = mgr(X=X, Y=Y, x=X, methods=methods, tun0=tun0, nItMax=5000,
                         bounds=nTun*[(-1., 3.)], neurons=[neurons], trials=3,
                         local=local)
-                print('L2(neurons:', str(neurons)+'): ', mgr.best['L2'],
+                print('l2(neurons:', str(neurons)+'): ', mgr.best['L2'],
                       end='')
-                if L2 > mgr.best['L2']:
-                    L2 = mgr.best['L2']
+                if l2 > mgr.best['L2']:
+                    l2 = mgr.best['L2']
                     print('  *** better', end='')
-                    yMgr, tunMgr = y, mgr.weights
+                    y_mgr, tun_mgr = y, mgr.weights
                 print()
 
-        self.assertFalse(yMgr is None)
+        self.assertFalse(y_mgr is None)
 
-        yLgr = lgr(X=X, Y=Y, x=X, methods=methods, nItMax=5000, tun0=tun0)
+        y_lgr = lgr(X=X, Y=Y, x=X, methods=methods, nItMax=5000, tun0=tun0)
         print('lgr.w:', lgr.weights)
 
         if mgr.weights is None:
-            xTun = mgr._black.predict(x=X)
-            for i in range(xTun.shape[1]):
-                plt.plot(xTun[:, i], ls='-',
+            x_tun = mgr._black.predict(x=X)
+            for i in range(x_tun.shape[1]):
+                plt.plot(x_tun[:, i], ls='-',
                          label='$x^{loc}_{tun,'+str(i)+'}$')
         for i in range(len(lgr.weights)):
             plt.axhline(lgr.weights[i], ls='--',
@@ -132,8 +132,8 @@ class TestUM(unittest.TestCase):
         plt.legend(bbox_to_anchor=(1.1, 1.05))
         plt.show()
 
-        plot_X_Y_Yref(X, yLgr, y_exa, ['X', 'y_{lgr}', 'y_{exa}'])
-        plot_X_Y_Yref(X, yMgr, y_exa, ['X', 'y_{mgr}', 'y_{exa}'])
+        plot_x_y_y_ref(X, y_lgr, y_exa, ['X', 'y_{lgr}', 'y_{exa}'])
+        plot_x_y_y_ref(X, y_mgr, y_exa, ['X', 'y_{mgr}', 'y_{exa}'])
 
         self.assertTrue(True)
 

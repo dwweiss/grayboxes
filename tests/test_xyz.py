@@ -71,5 +71,6 @@ class TestUM(unittest.TestCase):
         self.assertTrue(P5 == P1)
         self.assertFalse(P5 != P1)
 
+
 if __name__ == '__main__':
     unittest.main()

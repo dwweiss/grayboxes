@@ -29,7 +29,7 @@ import pandas as pd
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.darkgray import DarkGray
-from grayboxes.plotarrays import plotIsoMap, plotWireframe
+from grayboxes.plotarrays import plot_isomap, plot_wireframe
 from grayboxes.boxmodel import frame2arr
 from grayboxes.black import Black
 
@@ -93,9 +93,9 @@ class TestUM(unittest.TestCase):
         model = DarkGray('demo', 'test1')
         X, Y = frame2arr(df, ['x0', 'x4'], ['y0'])
         y = model(X=X, Y=Y, x=X, silent=True, neurons=[10])
-        plotIsoMap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
-        plotIsoMap(X[:, 0], X[:, 1], y[:, 0], title='y(X)')
-        plotIsoMap(X[:, 0], X[:, 1], (y-Y)[:, 0], title='y(X)  -Y')
+        plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
+        plot_isomap(X[:, 0], X[:, 1], y[:, 0], title='y(X)')
+        plot_isomap(X[:, 0], X[:, 1], (y - Y)[:, 0], title='y(X)  -Y')
 
         print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
 
@@ -105,20 +105,20 @@ class TestUM(unittest.TestCase):
         s = 'Dark gray box model 2'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        df = pd.read_csv(raw, sep=',', comment='#')
-        df.rename(columns=df.iloc[0])
-        df = df.apply(pd.to_numeric, errors='coerce')
-        X = np.asfarray(df.loc[:, ['mDot', 'p']])
-        Y = np.asfarray(df.loc[:, ['A']])
+        data_frame = pd.read_csv(raw, sep=',', comment='#')
+        data_frame.rename(columns=df.iloc[0])
+        data_frame = data_frame.apply(pd.to_numeric, errors='coerce')
+        X = np.asfarray(data_frame.loc[:, ['mDot', 'p']])
+        Y = np.asfarray(data_frame.loc[:, ['A']])
 
         def f(x, *args, **kwargs):
             return x[0] + x[1]
 
         y = DarkGray(f, 'test2')(X=X, Y=Y, x=X, silent=True, neurons=[10])
 
-        plotIsoMap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
-        plotIsoMap(X[:, 0], X[:, 1], y[:, 0], title='y(X)')
-        plotIsoMap(X[:, 0], X[:, 1], y[:, 0]-Y[:, 0], title='y(X)  -Y')
+        plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
+        plot_isomap(X[:, 0], X[:, 1], y[:, 0], title='y(X)')
+        plot_isomap(X[:, 0], X[:, 1], y[:, 0] - Y[:, 0], title='y(X)  -Y')
 
         print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
 
@@ -129,22 +129,22 @@ class TestUM(unittest.TestCase):
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         raw.seek(0)
-        df = pd.read_csv(raw, sep=',', comment='#')
-        df.rename(columns=df.iloc[0])
-        df = df.apply(pd.to_numeric, errors='coerce')
-        X = np.asfarray(df.loc[:, ['mDot', 'p']])
-        Y = np.asfarray(df.loc[:, ['A']])
+        data_frame = pd.read_csv(raw, sep=',', comment='#')
+        data_frame.rename(columns=data_frame.iloc[0])
+        data_frame = data_frame.apply(pd.to_numeric, errors='coerce')
+        X = np.asfarray(data_frame.loc[:, ['mDot', 'p']])
+        Y = np.asfarray(data_frame.loc[:, ['A']])
 
         y = Black('test3')(X=X, Y=Y, neurons=[], silent=True, x=X)
 
-        plotIsoMap(X.T[0], X.T[1], Y.T[0] * 1e3, title=r'$A_{prc}\cdot 10^3$')
-        plotIsoMap(X.T[0], X.T[1], y.T[0] * 1e3, title=r'$A_{blk}\cdot 10^3$')
-        plotIsoMap(X.T[0], X.T[1], (Y.T[0] - y.T[0]) * 1e3,
-                   title=r'$(A_{prc} - A_{blk})\cdot 10^3$')
-        plotWireframe(X.T[0], X.T[1], Y.T[0]*1e3, title=r'$A_{prc}\cdot 10^3$')
-        plotWireframe(X.T[0], X.T[1], y.T[0]*1e3, title=r'$A_{blk}\cdot 10^3$')
-        plotWireframe(X.T[0], X.T[1], (Y.T[0] - y.T[0]) * 1e3,
-                      title=r'$(A_{prc} - A_{blk})\cdot 10^3$')
+        plot_isomap(X.T[0], X.T[1], Y.T[0] * 1e3, title=r'$A_{prc}\cdot 10^3$')
+        plot_isomap(X.T[0], X.T[1], y.T[0] * 1e3, title=r'$A_{blk}\cdot 10^3$')
+        plot_isomap(X.T[0], X.T[1], (Y.T[0] - y.T[0]) * 1e3,
+                    title=r'$(A_{prc} - A_{blk})\cdot 10^3$')
+        plot_wireframe(X.T[0], X.T[1], Y.T[0] * 1e3, title=r'$A_{prc}\cdot 10^3$')
+        plot_wireframe(X.T[0], X.T[1], y.T[0] * 1e3, title=r'$A_{blk}\cdot 10^3$')
+        plot_wireframe(X.T[0], X.T[1], (Y.T[0] - y.T[0]) * 1e3,
+                       title=r'$(A_{prc} - A_{blk})\cdot 10^3$')
 
         self.assertTrue(True)
 

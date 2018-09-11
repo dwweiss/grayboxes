@@ -28,7 +28,7 @@ import scipy
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.minimum import Minimum
-from grayboxes.plotarrays import plotSurface, plotIsoMap
+from grayboxes.plotarrays import plot_surface, plot_isomap
 from grayboxes.boxmodel import rand, grid
 from grayboxes.forward import Forward
 from grayboxes.white import White
@@ -90,8 +90,8 @@ class TestUM(unittest.TestCase):
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         x, y = Forward(White(f), 'test4')(x=grid(3, [-2, 2], [-2, 2]))
-        plotSurface(x[:, 0], x[:, 1], y[:, 0])
-        plotIsoMap(x[:, 0], x[:, 1], y[:, 0])
+        plot_surface(x[:, 0], x[:, 1], y[:, 0])
+        plot_isomap(x[:, 0], x[:, 1], y[:, 0])
 
         op = Minimum(White(f))
         x, y = op(x=rand(3, [-5, 5], [-7, 7]))
@@ -109,7 +109,7 @@ class TestUM(unittest.TestCase):
             op = Minimum(White('demo'), 'test5')
 
             methods = ['ga', 'BFGS']
-            methods = op._validMethods
+            methods = op._valid_methods
 
             for method in methods:
                 print('\n'+'-'*60+'\n' + method + '\n' + '-'*60+'\n')

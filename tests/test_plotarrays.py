@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-09-11 DWW
 """
 
 import unittest
@@ -26,9 +26,9 @@ import os
 import numpy as np
 
 sys.path.append(os.path.abspath('..'))
-from grayboxes.plotarrays import plotCurves, plotSurface, plotWireframe, \
-    plotIsoMap, plotIsolines, plotVector, plotTrajectory, plotBarArrays, \
-    plotBars, toRegularMesh, clip_xyz
+from grayboxes.plotarrays import plot_curves, plot_surface, plot_wireframe, \
+    plot_isomap, plot_isolines, plot_vectors, plot_trajectory, plot_bar_arrays, \
+    plot_bars, to_regular_mesh, clip_xyz
 
 
 class TestUM(unittest.TestCase):
@@ -43,13 +43,13 @@ class TestUM(unittest.TestCase):
         x = np.random.rand(10)
         y = np.random.rand(x.size)
         z = np.sin(x) + np.cos(y) * x
-        plotIsoMap(x, y, z)
-        plotIsolines(x, y, z)
-        plotIsoMap(x, y, z, title=r'$\alpha$ [$\degree$]')
+        plot_isomap(x, y, z)
+        plot_isolines(x, y, z)
+        plot_isomap(x, y, z, title=r'$\alpha$ [$\degree$]')
         print('pl979')
         x, y, z = clip_xyz(x, y, z, zrange=[0.2, 1.2])
         print('pl981')
-        plotIsoMap(x, y, z, title=r'$\alpha$ [$\degree$]', triangulation=True)
+        plot_isomap(x, y, z, title=r'$\alpha$ [$\degree$]', triangulation=True)
 
         self.assertTrue(True)
 
@@ -59,33 +59,33 @@ class TestUM(unittest.TestCase):
         y = np.random.rand(x.size)
         vx = -(x - 0.5)
         vy = +(y - 0.5)
-        plotVector(x, y, vx, vy)
+        plot_vectors(x, y, vx, vy)
 
         self.assertTrue(True)
 
     def test3(self):
         # plot of bars for two 1D arrays y(x)
-        plotBars(y1=[20, 35, 30, 35, 27], y1Error=[2, 3, 4, 1, 2],
-                 y2=[25, 32, 34, 20, 25], y2Error=[3, 5, 2, 3, 3],
-                 y3=[21, 32, 54, 20, 15], y3Error=[3, 5, 2, 3, 3],
-                 y4=[21, 32, 54, -20, 25], y4Error=[3, 5, 2, 3, 3],
-                 y5=[21, 32, 24, 20, 15], y5Error=[3, 5, 2, 3, 3],
-                 y6=[21, 11, 54, 20, 15], y6Error=[3, 5, 2, 3, 3],
-                 labels=['x [m]', 'y1', 'y2', 'y3', 'y4', 'y5', 'y6 [mm]'],
-                 figsize=(10, 7), title='', yrange=[10, 70])
+        plot_bars(y1=[20, 35, 30, 35, 27], y1error=[2, 3, 4, 1, 2],
+                  y2=[25, 32, 34, 20, 25], y2error=[3, 5, 2, 3, 3],
+                  y3=[21, 32, 54, 20, 15], y3error=[3, 5, 2, 3, 3],
+                  y4=[21, 32, 54, -20, 25], y4error=[3, 5, 2, 3, 3],
+                  y5=[21, 32, 24, 20, 15], y5error=[3, 5, 2, 3, 3],
+                  y6=[21, 11, 54, 20, 15], y6error=[3, 5, 2, 3, 3],
+                  labels=['x [m]', 'y1', 'y2', 'y3', 'y4', 'y5', 'y6 [mm]'],
+                  figsize=(10, 7), title='', yrange=[10, 70])
 
-        plotBars(y1=[20, 35, 30, 35, 27], y1Error=[2, 3, 4, 1, 2],
-                 y2=[25, 32, 34, 20, 25], y2Error=[3, 5, 2, 3, 3],
-                 y3=[21, 32, 54, 20, 15], y3Error=[3, 5, 2, 3, 3],
-                 y4=[21, 32, 54, -20, 25], y4Error=[3, 5, 2, 3, 3],
-                 y5=[21, 32, 24, 20, 15], y5Error=[3, 5, 2, 3, 3],
-                 y6=[21, 11, 54, 20, 15], y6Error=[3, 5, 2, 3, 3],
-                 labels=['x [m]', 'y1', 'y2', 'y3', 'y4', 'y5', 'y6 [mm]'],
-                 title='', yrange=[10, 70], legendPosition=(1.1, 1))
+        plot_bars(y1=[20, 35, 30, 35, 27], y1error=[2, 3, 4, 1, 2],
+                  y2=[25, 32, 34, 20, 25], y2error=[3, 5, 2, 3, 3],
+                  y3=[21, 32, 54, 20, 15], y3error=[3, 5, 2, 3, 3],
+                  y4=[21, 32, 54, -20, 25], y4error=[3, 5, 2, 3, 3],
+                  y5=[21, 32, 24, 20, 15], y5error=[3, 5, 2, 3, 3],
+                  y6=[21, 11, 54, 20, 15], y6error=[3, 5, 2, 3, 3],
+                  labels=['x [m]', 'y1', 'y2', 'y3', 'y4', 'y5', 'y6 [mm]'],
+                  title='', yrange=[10, 70], legend_position=(1.1, 1))
 
-        plotBarArrays(
+        plot_bar_arrays(
                       # x = [33, 55, 88, 100, 111],
-                      yArrays=[[20, 35, 30, 35, 27],
+                      yarrays=[[20, 35, 30, 35, 27],
                                [25, 32, 34, 20, 25],
                                [21, 32, 54, 20, 15],
                                [21, 32, 54, -20, 25]],
@@ -100,11 +100,11 @@ class TestUM(unittest.TestCase):
         b = np.cos(x)
         c = np.tan(x * 0.5)
         d = 1.2 * np.sin(x)
-        plotCurves(x, a, b, c, labels=['x', 'sin', 'cos', 'tan'])
-        plotCurves(x, c,       labels=['x', 'tan'])
-        plotCurves(x, a, y2=c, labels=['x', 'sin', 'tan'])
-        plotCurves(x, a, b, c, d, labels=['x', 'a', 'b', 'c', 'd'],
-                   legendPosition=None)
+        plot_curves(x, a, b, c, labels=['x', 'sin', 'cos', 'tan'])
+        plot_curves(x, c, labels=['x', 'tan'])
+        plot_curves(x, a, y2=c, labels=['x', 'sin', 'tan'])
+        plot_curves(x, a, b, c, d, labels=['x', 'a', 'b', 'c', 'd'],
+                    legend_position=None)
 
         self.assertTrue(True)
 
@@ -117,9 +117,9 @@ class TestUM(unittest.TestCase):
         y = r * np.cos(theta)
         z2 = z + 0.8
         z3 = z - 0.4
-        plotTrajectory(x, y, z, x, y, z2, x, y, z3, zrange=[-5, -3.3])
-        plotTrajectory(x, y, z, x, y, z2, x, y, z3, zrange=[-5, -3.3],
-                       startPoint=True)
+        plot_trajectory(x, y, z, x, y, z2, x, y, z3, zrange=[-5, -3.3])
+        plot_trajectory(x, y, z, x, y, z2, x, y, z3, zrange=[-5, -3.3],
+                        start_point=True)
 
         self.assertTrue(True)
 
@@ -130,17 +130,17 @@ class TestUM(unittest.TestCase):
         X, Y = np.meshgrid(X, Y)
         Z = np.sin(np.sqrt(X**2 + Y**2))
 
-        plotSurface(X, Y, Z, xrange=[-3., 4.])
-        plotWireframe(X, Y, Z)
-        plotIsolines(X, Y, Z, labels=['x', 'y', 'z'])
-        plotIsoMap(X, Y, Z, labels=['x', 'y', 'z'])
+        plot_surface(X, Y, Z, xrange=[-3., 4.])
+        plot_wireframe(X, Y, Z)
+        plot_isolines(X, Y, Z, labels=['x', 'y', 'z'])
+        plot_isomap(X, Y, Z, labels=['x', 'y', 'z'])
 
-        X, Y, Z = toRegularMesh(X, Y, Z, nx=n)
-        plotSurface(X, Y, Z, xrange=[-3., 4.])
-        plotWireframe(X, Y, Z)
-        plotIsolines(X, Y, Z, labels=['x', 'y', 'z'])
-        plotIsoMap(X, Y, Z, labels=['x', 'y', 'z'], scatter=True)
-        plotIsoMap(X, Y, Z, labels=['x', 'y', 'z'])
+        X, Y, Z = to_regular_mesh(X, Y, Z, nx=n)
+        plot_surface(X, Y, Z, xrange=[-3., 4.])
+        plot_wireframe(X, Y, Z)
+        plot_isolines(X, Y, Z, labels=['x', 'y', 'z'])
+        plot_isomap(X, Y, Z, labels=['x', 'y', 'z'], scatter=True)
+        plot_isomap(X, Y, Z, labels=['x', 'y', 'z'])
 
         self.assertTrue(True)
 

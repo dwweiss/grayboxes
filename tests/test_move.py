@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-09-11 DWW
 """
 
 import unittest
@@ -46,7 +46,7 @@ print(len(rot), [str(rot[i]) for i in range(9)])
 
 foo = Move('move')
 speed = 0.8
-foo.setTrajectory(way, rot=rot, speed=speed)
+foo.set_trajectory(way, rot=rot, speed=speed)
 
 print('-' * 40)
 print('test:', foo)
@@ -61,7 +61,7 @@ class TestUM(unittest.TestCase):
         pass
 
     def test1(self):
-        foo.setTrajectory(way, rot=rot, speed=speed)
+        foo.set_trajectory(way, rot=rot, speed=speed)
 
         print('-' * 40)
         print('test:', foo)
@@ -70,20 +70,20 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test2(self):
-        i = foo.iWayPointAhead(t=0.3)
-        print('t=0.3 i:', i)
-        i = foo.iWayPointAhead(t=0.0)
-        print('t=0 i:', i)
+        i_way = foo.i_waypoint_ahead(t=0.3)
+        print('t=0.3 i:', i_way)
+        i_way = foo.i_waypoint_ahead(t=0.0)
+        print('t=0 i:', i_way)
         print('-' * 40)
 
-        tRange = np.linspace(0, 5, 8)
-        for t in tRange:
-            i = foo.iWayPointAhead(t)
-            print('t:', t, 'i:', i)
+        t_range = np.linspace(0, 5, 8)
+        for t in t_range:
+            i_way = foo.i_waypoint_ahead(t)
+            print('t:', t, 'i:', i_way)
         print('-' * 40)
 
-        tEnd = np.sqrt((2*(1-(-1)))**2 + 0.8**2) / speed
-        foo.setTransient(tEnd=tEnd, n=100)
+        t_end = np.sqrt((2*(1-(-1)))**2 + 0.8**2) / speed
+        foo.set_transient(t_end=t_end, n=100)
 
         foo()
 
@@ -94,14 +94,14 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test3(self):
-        print('foo._wayPoints[-1].t:', foo._wayPoints[-1].t)
+        print('foo._waypoints[-1].t:', foo._waypoints[-1].t)
         T = np.linspace(0., 2, 100)
         p = foo.position(t=0.1)
         print('p:', p)
 
-        x = [p.x for p in foo._wayPoints]
-        y = [p.y for p in foo._wayPoints]
-        t = [p.t for p in foo._wayPoints]
+        x = [p.x for p in foo._waypoints]
+        y = [p.y for p in foo._waypoints]
+        t = [p.t for p in foo._waypoints]
 
         P = []
         for time in T:

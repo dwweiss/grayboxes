@@ -27,7 +27,7 @@ import numpy as np
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.lightgray import LightGray
-from grayboxes.plotarrays import plot_X_Y_Yref
+from grayboxes.plotarrays import plot_x_y_y_ref
 from grayboxes.boxmodel import grid, noise, rand
 from grayboxes.white import White
 
@@ -83,7 +83,7 @@ noise_rel = 10e-2
 X = grid(8, [-1, 8], [0, 3])
 y_exa = White(f)(x=X, silent=True)
 Y = noise(y_exa, absolute=noise_abs, relative=noise_rel)
-plot_X_Y_Yref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
+plot_x_y_y_ref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
 
 
 class TestUM(unittest.TestCase):
@@ -113,7 +113,7 @@ class TestUM(unittest.TestCase):
             y = LightGray(f2, 'test1b')(X=X, Y=Y, x=X, methods=methods,
                                         nItMax=5000, tun0=_tun0,
                                         silent=not True, detailed=True)
-            plot_X_Y_Yref(X, y, y_exa, ['X', 'y', 'y_{exa}'])
+            plot_x_y_y_ref(X, y, y_exa, ['X', 'y', 'y_{exa}'])
             if 1:
                 print('best:', model.best)
                 df = model.xy2frame()

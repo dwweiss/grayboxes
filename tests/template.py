@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2018-08-16 DWW
 """
 
 import unittest
@@ -26,13 +26,7 @@ import os
 import numpy as np
 
 sys.path.append(os.path.abspath('..'))
-from grayboxes.sensitivity import Sensitivity
-from grayboxes.boxmodel import cross
-from grayboxes.white import White
-
-
-def f(self, x, *args, **kwargs):
-    return np.sin(x[0]) + (x[1] - 1)**2
+from grayboxes.___ import ___
 
 
 class TestUM(unittest.TestCase):
@@ -42,33 +36,19 @@ class TestUM(unittest.TestCase):
     def tearDown(self):
         pass
 
-        self.assertTrue(True)
-
     def test1(self):
-        s = 'Sensitivity with method f(self, x)'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-        x_ref, dy_dx = Sensitivity(White(f),
-                                   'test1')(x=cross(3, [2, 3], [3, 4]))
-        if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
-            dy_dx = dy_dx.tolist()
-        print('dy_dx:', dy_dx)
-        print('x_ref:', x_ref)
+        foo = ___()
+        foo()
 
         self.assertTrue(True)
 
     def test2(self):
-        s = 'Sensitivity with demo function'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+        foo = ___()
+        foo()
 
-        op = Sensitivity(White('demo'), 'test2')
-        x_ref, dy_dx = op(x=cross(3, [2, 3], [3, 4], [4, 5]))
-        if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
-            dy_dx = dy_dx.tolist()
-        print('dy_dx:', dy_dx)
-        print('x_ref:', x_ref)
-
-        self.assertTrue(True)
+        self.assertFalse(True)
+        self.assertAlmostEqual
+        self.assertDictEqual
 
 
 if __name__ == '__main__':

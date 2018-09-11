@@ -77,10 +77,10 @@ class TestUM(unittest.TestCase):
         f22 = self.Foo('follower 2->2')
 
         # connects objects                                   foo
-        foo.setFollower([f1, f2])           # .            /     \
-        f1.setFollower([f11, f12, f13])     # .         f1 ......   f2
-        f2.setFollower([f21, f22])          # .       / |  \     : /  \
-        f1.setCooperator(f21)               # .    f11 f12 f13   f21 f22
+        foo.set_follower([f1, f2])           # .            /     \
+        f1.set_follower([f11, f12, f13])     # .         f1 ......   f2
+        f2.set_follower([f21, f22])          # .       / |  \     : /  \
+        f1.set_cooperator(f21)               # .    f11 f12 f13   f21 f22
 
         # links between two objects
         f13.x = 6.789
@@ -91,7 +91,7 @@ class TestUM(unittest.TestCase):
         print('f13.id:', f13.identifier)
         print('f13.x:', f13.x)
 
-        f1_b_link = foo.getFollower('follower 1->3')
+        f1_b_link = foo.get_follower('follower 1->3')
         print('f1.link.id:', f1.link.identifier)
         print('f1_b.link.id:', f1_b_link.identifier)
         assert f1.link.identifier == f1_b_link.identifier
@@ -114,7 +114,7 @@ class TestUM(unittest.TestCase):
         # searches for specific follower in tree
         foo = self.Foo('root3')
         identifier = 'follower 11'
-        p = foo.getFollowerDownwards(identifier=identifier)
+        p = foo.get_follower_downwards(identifier=identifier)
         if p is None:
             print('identifier not found, p:', p)
         else:
@@ -137,8 +137,10 @@ class TestUM(unittest.TestCase):
         print('foo 5:', foo)
         foo.gui = not True  # TODO toggle foo.gui if TKinter interface
         foo.warn('my warning1')
-        foo.terminate('warning to GUI')
-        self.assertRaise()
+        with self.assertRaises(SystemExit) as cm:
+            foo.terminate('warning to GUI')
+
+        self.assertEqual(cm.exception.code, None)        
 
     def test6(self):
         # sends warning
