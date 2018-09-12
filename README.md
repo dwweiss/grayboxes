@@ -39,7 +39,7 @@ _grayboxes_  is the basis of the extension package [_coloredlids_](https://githu
     git clone https://github.com/dwweiss/grayboxes.git
     python3 setup.py install --user `
     
-[[Link]](https://github.com/dwweiss/grayboxes/blob/master/doc/installation/windowsinstallation.md#installation-proposal) to alternative package installation procedure on windows
+Alternative [package installation procedure](https://github.com/dwweiss/grayboxes/blob/master/doc/installation/windowsinstallation.md#installation-proposal) on windows
 
 ### Dependencies
 
