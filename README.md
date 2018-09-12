@@ -39,8 +39,8 @@ _grayboxes_  is the basis of the extension package [_coloredlids_](https://githu
     git clone https://github.com/dwweiss/grayboxes.git
     python3 setup.py install --user `
     
-Alternative [package installation procedure](https://github.com/dwweiss/grayboxes/blob/master/doc/installation/windowsinstallation.md#installation-proposal) on windows
-
+[[Link]](https://github.com/dwweiss/grayboxes/blob/master/doc/installation/windowsinstallation.md#installation-proposal) 
+ to alternative package installation procedure on windows
 ### Dependencies
 
 - Modules _lightgray_ and _minimum_ are dependent on package _modestga_ [[MGA18]](https://github.com/dwweiss/grayboxes/wiki/References#mga18)
