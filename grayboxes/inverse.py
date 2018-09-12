@@ -75,4 +75,4 @@ class Inverse(Minimum):
 
         self._trial_history.append([x, y_opt[0], l2_norm])
 
-        return L2
+        return l2_norm
