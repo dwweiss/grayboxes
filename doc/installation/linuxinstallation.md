@@ -27,7 +27,7 @@ In the text below **USER** depicts the actual user name and **X** the disk parti
 
 - Optional: Monitor hardware
 
-      sudo apt install cpufreq-utils
+      sudo apt install cpufrequtils
       sudo apt install conky
 
 - Basic tools
