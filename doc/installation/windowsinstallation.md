@@ -1,11 +1,22 @@
+### Installation of python packages on windows with pip
 
+In this section **PACKAGE** depicts the python package name and **EXEPATH** the location of _pip*.exe_ 
+
+1. Open console
+2. Find location of _pip*.exe_
+    
+          where /R c:\ pip*.exe
+   
+   Note this path (e.g. _c:\ProgramData\Anaconda3_) as **EXEPATH** 
+   
+3. Install with 
+
+          EXEPATH\pip.exe install PACKAGE
 
 
 ### Installation of downloaded python packages on windows
 
-<!-- Version: 2018-06-21 DWW -->
-
-In the text below **PACKAGE** depicts the python package name and **EXEPATH** the location of _python*.exe_ 
+In this section **PACKAGE** depicts the python package name and **EXEPATH** the location of _python*.exe_ 
 
 1. Open console
 2. Find location of _python*.exe_
