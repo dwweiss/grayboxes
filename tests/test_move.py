@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2018-12-17 DWW
 """
 
 import unittest
@@ -41,12 +41,12 @@ way = [xyz(.0,  .0, .0),     #   ^
        xyz(.7, -.1, .0),     # -1|                   \/
        xyz(.8,  .0, .0)]     #   | trajectory W=W(t)
 
-rot = [xyz(20 * np.sin(i*3), 4*i-20, i*i-30) for i in range(len(way))]
-print(len(rot), [str(rot[i]) for i in range(9)])
+orien = [xyz(20 * np.sin(i*3), 4*i-20, i*i-30) for i in range(len(way))]
+print(len(orien), [str(orien[i]) for i in range(9)])
 
 foo = Move('move')
 speed = 0.8
-foo.set_trajectory(way, rot=rot, speed=speed)
+foo.set_trajectory(way=way, orientations=orien, speed=speed)
 
 print('-' * 40)
 print('test:', foo)
@@ -61,7 +61,7 @@ class TestUM(unittest.TestCase):
         pass
 
     def test1(self):
-        foo.set_trajectory(way, rot=rot, speed=speed)
+        foo.set_trajectory(way, orientations=orien, speed=speed)
 
         print('-' * 40)
         print('test:', foo)
@@ -112,7 +112,7 @@ class TestUM(unittest.TestCase):
         Y = [p.y for p in P]
         T = [p.t for p in P]
 
-        if 0:
+        if 1:
             plt.title('trajectory 1(3)')
             plt.plot(X, Y, label='position()')
             plt.scatter(x, y, label='wayPoints')
