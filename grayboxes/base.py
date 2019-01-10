@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-01-10 DWW
 
   Note on program arguments:
     - no arguments          : program starts in default mode
@@ -56,11 +56,12 @@ logger = logging.getLogger(__name__)
 
 try:
     import grayboxes.parallel as parallel
+    print('+++ Module parallel imported')
 except ImportError:
     try:
         import parallel as parallel
     except ImportError:
-        print('!!! Module parallel not imported')
+        pass
 
 
 class Base(object):
@@ -787,7 +788,7 @@ class Base(object):
             x.epilog()
 
         if self.is_root():
-            message = "'" + self.program + "' is successfully completed\n"
+            message = "'" + self.program + "' is completed\n"
             exe_time = time() - self._exe_time_start
             if exe_time >= self._min_exe_time_shown:
                 self.write('    Execution time: ' + format(round(exe_time, 2)))
