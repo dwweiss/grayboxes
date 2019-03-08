@@ -2,6 +2,12 @@
 
 In this section **PACKAGE** depicts the python package name and **EXEPATH** the location of _pip*.exe_ 
 
+Install with 
+
+          pip install PACKAGE
+
+If _pip_ is not recognized as a command:
+
 1. Open console
 2. Find location of _pip*.exe_
     
