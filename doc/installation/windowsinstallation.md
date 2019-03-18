@@ -2,19 +2,19 @@
 
 In this section **PACKAGE** depicts the python package name and **EXEPATH** the location of _pip*.exe_ 
 
-1. Open console and install with 
+Open Anaconda command promp and install with 
 
           pip install PACKAGE
 
-If _pip_ is not recognized as a command:
+Alternatively, open the windows command prompt:
 
-2. Find location of _pip*.exe_
+- Find location of _pip*.exe_
     
           where /R c:\ pip*.exe
    
    Note this path (e.g. _c:\ProgramData\Anaconda3_) as **EXEPATH** 
    
-3. Install with 
+- Install with 
 
           EXEPATH\pip.exe install PACKAGE
 
