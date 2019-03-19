@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2019-03-19 DWW
 """
 
 import unittest
@@ -40,7 +40,7 @@ def f(self, x, *args, **kwargs):
     """
     n_tun = 3
     if x is None:
-        return np.ones(n_tun)                  # get number of tuning parameters
+        return np.ones(n_tun)          # get number of tuning parameters
     tun = args if len(args) == n_tun else np.ones(n_tun)
 
     y0 = tun[0] + tun[2] * x[0]**2 + tun[1] * x[1]
@@ -63,9 +63,11 @@ class TestUM(unittest.TestCase):
         plot_isomap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
         plot_surface(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
         plot_isolines(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$',
-                      levels=[0, 1e-4, 5e-4, .003, .005, .01, .02, .05, .1, .2])
+                      levels=[0, 1e-4, 5e-4, .003, .005, .01, .02, .05, .1, 
+                              .2])
         plot_isomap(x[:, 0], x[:, 1], y[:, 0], title='$y_0$')
-        plot_isomap(x[:, 0], x[:, 1], (y - y_exa)[:, 0], title='$y_0-y_{exa,0}$')
+        plot_isomap(x[:, 0], x[:, 1], (y - y_exa)[:, 0], 
+                    title='$y_0-y_{exa,0}$')
 
         self.assertTrue(True)
 
@@ -80,8 +82,10 @@ class TestUM(unittest.TestCase):
         plot_surface(x[:, 0], x[:, 1], y_exa[:, 1], title='$y_{exa,1}$')
         plot_isomap(x[:, 0], x[:, 1], y[:, 0], title='$y_0$')
         plot_isomap(x[:, 0], x[:, 1], y[:, 1], title='$y_1$')
-        plot_isomap(x[:, 0], x[:, 1], (y - y_exa)[:, 0], title='$y_0-y_{exa,0}$')
-        plot_isomap(x[:, 0], x[:, 1], (y - y_exa)[:, 1], title='$y_1-y_{exa,1}$')
+        plot_isomap(x[:, 0], x[:, 1], (y - y_exa)[:, 0], 
+                    title='$y_0-y_{exa,0}$')
+        plot_isomap(x[:, 0], x[:, 1], (y - y_exa)[:, 1], 
+                    title='$y_1-y_{exa,1}$')
 
         self.assertTrue(True)
 
