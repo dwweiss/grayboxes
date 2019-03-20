@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-30 DWW
+      2019-03-20 DWW
 """
 
 import unittest
@@ -114,17 +114,17 @@ class TestUM(unittest.TestCase):
 
         file = 'sin_x_-3..3.5pi'
         n_point = 20
-        max_neurons_in_layer = 2  # 16
-        n_hidden_layers = 1  # 3
+        max_neurons_in_layer = 5  # 16
+        n_hidden_layers = 3  # 3
         MAX_HIDDEN_LAYERS = 6  # MUST NOT be modified
         assert MAX_HIDDEN_LAYERS >= n_hidden_layers
         max_noise = 0.0
 
-        # compute training target ('X', 'U') and test data ('x', 'uAna')
+        # compute training target (X, Y) and test data (x, y_ref)
         def f(x, *args):
-            c0, c1 = args if len(args) > 0 else 1, 1
+            c0, c1 = args if len(args) > 0 else 1, 0
             return np.sin(x) * c0 + c1
-        X = np.linspace(-2*np.pi, +2*np.pi, n_point)    # X of train data
+        X = np.linspace(-2*np.pi, +2*np.pi, n_point)   # X of train data
         if 0:
             X = np.flipud(X)                        # reverse order of X
         x = np.linspace(-3*np.pi, 3*np.pi, 100)
@@ -146,7 +146,7 @@ class TestUM(unittest.TestCase):
         collect = pd.DataFrame(columns=columns)
         definition_max = [max_neurons_in_layer for _ in range(n_hidden_layers)]
         definition_max = definition_max + [0] * (MAX_HIDDEN_LAYERS -
-                                               n_hidden_layers)
+                                                 n_hidden_layers)
         print('definition_max:', definition_max)
 
         definitions = []
@@ -156,19 +156,8 @@ class TestUM(unittest.TestCase):
                     for n4 in range(0, 1+min(n3, definition_max[3])):
                         for n5 in range(0, 1+min(n4, definition_max[4])):
                             for n6 in range(0, 1+min(n5, definition_max[5])):
-                                definition = list([int(n1)])
-                                if n2 > 0:
-                                    definition.append(int(n2))
-                                if n3 > 0:
-                                    definition.append(int(n3))
-                                if n4 > 0:
-                                    definition.append(int(n4))
-                                if n5 > 0:
-                                    definition.append(int(n5))
-                                if n6 > 0:
-                                    definition.append(int(n6))
-                                print('+++ generate hidden:', definition)
-                                definitions.append(definition)
+                                definitions.append([n1, n2, n3, n4, n5, n6])
+        definitions = [np.trim_zeros(a) for a in definitions]
         print('+++ definitions:', definitions)
 
         l2_tst_best, i_def_best = 1.0, 0
@@ -179,7 +168,7 @@ class TestUM(unittest.TestCase):
             # network training
             blk = Black()
             best_trn = blk(X=X, Y=Y, neurons=definition, trials=5, epochs=500,
-                          show=500, algorithms='bfgs', goal=1e-5)
+                           show=500, algorithms='bfgs', goal=1e-5)
 
             # network prediction
             y = blk.predict(x=x)
@@ -209,10 +198,10 @@ class TestUM(unittest.TestCase):
             plt.scatter(X, Y, marker='>', c='g', label='training data')
             plt.plot(x, y, linestyle='-', label='prediction')
             plt.plot(x, y_ref, linestyle=':', label='analytical')
-            plt.scatter([X[best_trn['iAbs']]], [Y[best_trn['iAbs']]], marker='o',
-                        color='c', s=60, label='max err train')
-            plt.scatter([x[best_tst['iAbs']]], [y[best_tst['iAbs']]], marker='o',
-                        color='r', s=60, label='max err test')
+            plt.scatter([X[best_trn['iAbs']]], [Y[best_trn['iAbs']]], 
+                        marker='o', color='c', s=60, label='max err train')
+            plt.scatter([x[best_tst['iAbs']]], [y[best_tst['iAbs']]], 
+                        marker='o', color='r', s=60, label='max err test')
             plt.legend(bbox_to_anchor=(1.15, 0), loc='lower left')
             if self.saveFigures:
                 f = file
