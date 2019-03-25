@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-03-20 DWW
 """
 
 import numpy as np
@@ -34,21 +34,21 @@ class Sensitivity(Forward):
     Sensitivity operation on box type model for a given input range
 
     Examples:
-        op = Sensitivity(LightGray('demo')                        x
-        X = [[... ]]  input of training                           |
-        Y = [[... ]]  target of training                      x--ref--x
-        ranges = ([x0min, x0max], [x1min, x1max], ... )           |
-        xCross = cross(3, *ranges)                                x
+        op = Sensitivity(LightGray('demo')                         x
+        X = [[... ]]  input of training                            |
+        Y = [[... ]]  target of training                       x--ref--x
+        ranges = ([x0min, x0max], [x1min, x1max], ... )            |
+        xCross = cross(3, *ranges)                                 x
 
-        dy_dx = op(X=X, Y=Y, x=xCross)               # training and sensitivity
-        dy_dx = op(x=xCross)        # sensitivity only, x contains cross points
-        dy_dx = op(x=cross(5, *ranges)       # generate x from ranges and cross
+        dy_dx = op(X=X, Y=Y, x=xCross)        # training and sensitivity
+        dy_dx = op(x=xCross)        # sensitivity only, x contains cross
+        dy_dx = op(x=cross(5, *ranges)    # gen. x from ranges and cross
     """
 
     def __init__(self, model: BoxModel, identifier: str='Sensitivity') -> None:
         """
         Args:
-            model (BoxModel):
+            model:
                 Box type model
 
             identifier:

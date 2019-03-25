@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-03-25 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -49,13 +49,13 @@ class Minimum(Forward):
 
         X = [[... ]]  input of training
         Y = [[... ]]  target of training
-        xIni = [(x00, x01), ... ]
+        x_ini = [(x00, x01), ... ]
         bounds = [(x0min, x0max), (x1min, x1max), ... ]
 
-        x, y = op(X=X, Y=Y, x=xIni)          # train lightgray box and optimize
-        x, y = op(x=xIni, bounds=bounds)                             # optimize
-        x, y = op(x=rand(9, [0, 1], [1, 2]))   # generate random x and optimize
-        norm = op(XY=(X, Y, xKeys, yKeys))                         # train only
+        x, y = op(X=X, Y=Y, x=x_ini)  # train lightgray box and optimize
+        x, y = op(x=x_ini, bounds=bounds)                     # optimize
+        x, y = op(x=rand(9, [0, 1], [1, 2]))     # random x and optimize
+        norm = op(XY=(X, Y, x_keys, y_keys))                # train only
 
     Notes:
         - Limited to single target (Inverse: norm(y - Y), Optimum: one of y)
@@ -63,7 +63,7 @@ class Minimum(Forward):
         - At the end of every evolution of objective(), the single
           point input array x, the single point output array y, and
           the scalar result of the objective function is appended to
-          self._trialHistory
+          self._trial_History
 
         - The list of single point input, output and objective
           function result is stored self._history
@@ -84,8 +84,8 @@ class Minimum(Forward):
 
         self._bounds: Sequence[Tuple[float, float]] = None
                                                          # x-constraints
-        self._x_opt: np.ndarray = None  # 1D arr. of initial or optimal x
-        self._y_opt: np.ndarray = None  # 1D array of target or optimal y
+        self._x_opt: np.ndarray = None  # 1D arr.of initial or optimal x
+        self._y_opt: np.ndarray = None  # 1D arr. of target or optimal y
 
         SINGLE_EVALUATION = Tuple[np.ndarray, np.ndarray, float]
                                                      # [x, y, objective]
@@ -106,8 +106,8 @@ class Minimum(Forward):
                               'SLSQP',
                                # 'dogleg',           # requires Jacobian
                                # 'trust-ncg',        # requires Jacobian
-                              'basinhopping',  # GLOBAL optimum
-                              'differential_evolution',  # GLOBAL opt.
+                              'basinhopping',           # GLOBAL optimum
+                              'differential_evolution',    # GLOBAL opt.
                                ]
         if 'modestga' in sys.modules:
             self._valid_methods += ['ga']
@@ -183,7 +183,7 @@ class Minimum(Forward):
         Args:
             x (2D or 1D array of float):
                 input of multiple or single data points,
-                shape: (nPoint, nInp) or (nInp,)
+                shape: (n_point, n_inp) or (n_inp,)
 
         Kwargs:
             Keyword arguments to be passed to model.predict()
@@ -214,35 +214,47 @@ class Minimum(Forward):
             method (str):
                 optimization method
 
+            x (2D or 1D array of float):
+                initial values as multiple or single data points,
+                shape: (n_point, n_inp) or (n_inp,)
+                
             y (1D array of float):
                 target of inverse problem (only if 'self' is of type
-                Inverse), shape: (nOut,)
+                Inverse), shape: (n_out,)
 
         Returns:
             (2-tuple of 1D array of float):
                 model input at optimum and corresponding model output,
-                shape: (nInp,) and shape: (nOut,)
+                shape: (n_inp,) and shape: (n_out,)
         Note:
-            - requires initial point(s) self.x for getting input number: nInp
-            - if inverse problem solution then self.y is required as target
+            - requires initial point(s) self.x for getting number of 
+              input n_inp
+            - if inverse problem solution, then self.y is required as 
+              target
         """
         Base.task(self, **kwargs)
 
         bounds = kwargs.get('bounds', None)
+
+        # sets initial values or returns (if x is None,model train.only)
+        self.x = kwargs.get('x', None)
+        if self.x is None:
+            return 0
+
+        # sets target for Inverse (if y is None, model training only)
+        if type(self).__name__ in ('Inverse'):
+            self.y = kwargs.get('y', None)
+            if self.y is None:
+                return 0
 
         method = self.kwargs_get(kwargs, ('method', 'methods'), None)
         if method not in self._valid_methods:
             method = self._valid_methods[0]
         self.write('+++ Method: ' + str(method))
 
-        # sets target for Inverse
-        if type(self).__name__ in ('Inverse'):
-            y = kwargs.get('y', None)
-            self.y = np.atleast_1d(y) if y is not None else self.y
-
         x_ini = self.x.copy()
         self._history = []
-        for x0 in x_ini:              # x_ini.shape[0] is number of trials
+        for x0 in x_ini:           # x_ini.shape[0] is number of trials
             #
             # Note: self._trialHistory list is populated in objective()
             #
@@ -329,6 +341,9 @@ class Minimum(Forward):
         return self.x, self.y
 
     def plot(self, select: Optional[str]=None) -> None:
+        if self.y is None:
+            return
+
         if select is None or not isinstance(select, str):
             select = 'all'
         select = select.lower()
@@ -476,7 +491,7 @@ class Minimum(Forward):
             plt.show()
 
         if n_inp >= 3:
-            self.write('+++ Trajectory of x[2..nInp] vs. (x0, x1), all trials')
+            self.write('+++ Trajectory of x[2..n_inp] vs (x0, x1), all trials')
             for j_inp_z in range(2, n_inp):
                 mpl.rcParams['legend.fontsize'] = 10
                 fig = plt.figure(figsize=(10, 8))

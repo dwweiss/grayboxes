@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-03-20 DWW
 
   Acknowledgements:
       Neurolab is a contribution by E. Zuev (pypi.python.org/pypi/neurolab)
@@ -105,9 +105,9 @@ class Neural(object):
 
     Major methods and attributes (return type in the comment):
         - y = Neural()(X=None, Y=None, x=None, **kwargs) 
-                                                  #y.shape:(nPoint,nOut)
+                                               # y.shape:(n_point,n_out)
         - best = self.train(X, Y,**kwargs)               # see self.best
-        - y = self.predict(x, **kwargs)        # y.shape: (nPoint, nOut)
+        - y = self.predict(x, **kwargs)      # y.shape: (n_point, n_out)
         - self.ready                                              # bool
         - self.best                           # dict{str: float/str/int}
         - self.plot()
@@ -126,13 +126,12 @@ class Neural(object):
         """
         Args:
             f:
-                theoretical submodel as method f(self, x) or function f(x)
-                default: None
+                theor. submodel as method f(self, x) or function f(x)
 
         Note: if f is not None, genetic training or training with
             derivative dE/dy and dE/dw is employed
         """
-        self.f = f               # theoretical submodel for single data point
+        self.f = f               # theor. submodel for single data point
 
         self._net = None         # network
         self._X = None           # input of training
@@ -140,24 +139,26 @@ class Neural(object):
         self._x = None           # input of prediction
         self._y = None           # prediction y = net(x)
         self._norm_y = None      # data from normalization of target
-        self._x_keys = None       # xKeys for import from data frame
-        self._y_keys = None       # yKeys for import from data frame
+        self._x_keys = None      # xKeys for import from data frame
+        self._y_keys = None      # yKeys for import from data frame
         self._methods = ''       # list of training algorithms
-        self._final_errors = []   # error(SSE,MSE) of best trial of each method
+        self._final_errors = []  # error (SSE, MSE) of best trial of 
+                                 # each method
         self._finalL2norms = []  # L2-norm of best trial of each method
-        self._best_epochs = []    # epochs of best trial of each method
+        self._best_epochs = []   # epochs of best trial of each method
         self._ready = False      # flag indicating successful training
 
         self._silent = False
         plt.rcParams.update({'font.size': 14})
-        plt.rcParams['legend.fontsize'] = 14                   # fonts in plots
+        plt.rcParams['legend.fontsize'] = 14            # fonts in plots
 
         self._best = {'method': None, 'L2': np.inf, 'abs': np.inf,
-                      'iAbs': -1, 'epochs': -1}   # results of best train trial
+                      'iAbs': -1, 'epochs': -1}   # result of best trial
 
-    def __call__(self, X: Optional[np.ndarray]=None, Y: Optional[np.ndarray]=None,
-                 x: Optional[np.ndarray]=None, **kwargs: Any) \
-            -> Union[np.ndarray, Dict[str, Any], None]:
+    def __call__(self, X: Optional[np.ndarray]=None, 
+                 Y: Optional[np.ndarray]=None,
+                 x: Optional[np.ndarray]=None, 
+                 **kwargs: Any) -> Union[np.ndarray, Dict[str, Any], None]:
         """
         - Trains neural network if X is not None and Y is not None
         - Sets self.ready to True if training is successful
@@ -165,35 +166,35 @@ class Neural(object):
 
         Args:
             X (2D or 1D array_like of float, optional, default: self.X):
-                training input, shape: (nPoint, nInp) or (nPoint,)
+                training input, shape: (n_point, n_inp) or (n_point,)
                 
             Y (2D or 1D array_like of float, optional, default: self.Y):
-                training target, shape: (nPoint, nOut) or (nPoint,)
+                training target, shape: (n_point, n_out) or (n_point,)
 
             x (2D or 1D array_like of float, optional, default: self.x):
-                prediction input, shape: (nPoint, nInp) or (nInp,)
+                prediction input, shape: (n_point, n_inp) or (n_inp,)
 
         Kwargs:
             keyword arguments, see: train() and predict()
 
         Returns:
             (2D array of float):
-                prediction of network net(x) if x is not None and self.ready
+                prediction of net(x) if x is not None and self.ready
             or
             (dictionary):
                 result of best training trial if X and Y are not None
                     'method' (str): best method
-                    'L2'   (float): sqrt{sum{(net(x)-Y)^2}/N} of best training
+                    'L2'   (float): sqrt{sum{(net(x)-Y)^2}/N} best train
                     'abs'  (float): max{|net(x) - Y|} of best training
-                    'iAbs'   (int): index of Y where absolute error is maximum
+                    'iAbs'   (int): index of Y where abs. error is max.
                     'epochs' (int): number of epochs of best training
             or
             (None):
                 if (X, Y and x are None) or not self.ready
 
         Note:
-            - The shape of X, Y and x is corrected to: (nPoint, nInp/nOut)
-            - The references to X, Y, x and y are stored as self.X, self.Y,
+            - Shape of X, Y and x is corrected to: (n_point,n_inp/n_out)
+            - References to X, Y, x and y are stored as self.X, self.Y,
               self.x, self.y, see self.train() and self.predict()
         """
         if X is not None and Y is not None:
@@ -256,8 +257,8 @@ class Neural(object):
     def import_dataframe(self, df: pd.DataFrame, x_keys: Sequence[str],
                          y_keys: Sequence[str]) -> None:
         """
-        Imports training input X and training target Y
-        self.Y is the normalized target after import, but 'df' stays unchanged
+        Imports training input X and training target Y.  self.Y is the 
+        normalized target after import, but 'df' stays unchanged
 
         Args:
             df:
@@ -271,10 +272,10 @@ class Neural(object):
         """
         self._x_keys = np.atleast_1d(x_keys)
         self._y_keys = np.atleast_1d(y_keys)
-        assert all(k in df for k in x_keys), "unknown x-keys: '" + str(x_keys) +\
-            "', valid keys: '" + df.columns + "'"
-        assert all(k in df for k in y_keys), "unknown y-keys: '" + str(y_keys) +\
-            "', valid keys: '" + df.columns + "'"
+        assert all(k in df for k in x_keys), "unknown x-keys: '" + \
+            str(x_keys) + "', valid keys: '" + df.columns + "'"
+        assert all(k in df for k in y_keys), "unknown y-keys: '" + \
+            str(y_keys) + "', valid keys: '" + df.columns + "'"
         self._X = np.asfarray(df.loc[:, x_keys])
         self._Y = np.asfarray(df.loc[:, y_keys])
 
@@ -287,15 +288,15 @@ class Neural(object):
         """
         - Imports training input X and training target Y
         - converts X and Y to 2D arrays
-        - normalizes training target (self.Y is then the normalized target,
+        - normalizes training target (self.Y is then normalized target,
           but argument 'Y' stays unchanged)
 
         Args:
             X (2D or 1D array_like of float):
-                training input, shape: (nPoint, nInp) or (nPoint,)
+                training input, shape: (n_point, n_inp) or (n_point,)
 
             Y (2D or 1D array_like of float):
-                training target, shape: (nPoint, nOut) or (nPoint,)
+                training target, shape: (n_point, n_out) or (n_point,)
 
             x_keys:
                 list of column keys for data selection
@@ -335,16 +336,16 @@ class Neural(object):
     def train(self, X: Optional[np.ndarray]=None, Y: Optional[np.ndarray]=None,
               **kwargs: Any) -> Dict[str, Any]:
         """
-        Trains model, stores X and Y as self.X and self.Y, and stores result of
-        best training trial as self.best
+        Trains model, stores X and Y as self.X and self.Y, and stores 
+        result of best training trial as self.best
 
         Args:
             X (2D or 1D array of float):
-                training input, shape: (nPoint, nInp) or (nPoint,)
+                training input, shape: (n_point, n_inp) or (n_point,)
                 default: self.X
 
             Y (2D or 1D array of float):
-                training target, shape: (nPoint, nOut) or (nPoint,)
+                training target, shape: (n_point, n_out) or (n_point,)
                 default: self.Y
 
         Kwargs:
@@ -367,7 +368,7 @@ class Neural(object):
                 [note: MSE of 1e-3 corresponds to L2-norm of 1e-6]
 
             methods (str or list of str):
-                if string, then space separated string is converted to list
+                if string, then space sep. string is converted to list
                 if 'all' or None, then all training methods are assigned
                 default: 'bfgs'
 
@@ -553,7 +554,8 @@ class Neural(object):
                     net.init()
                     trial_errors = net.train(self._X, self._Y, epochs=epochs,
                                              show=show, goal=goal, rr=rr)
-                assert len(trial_errors) >= 1, str(trial_errors)
+                assert len(trial_errors) >= 1, '\nte:'+str(trial_errors)+'\n'+\
+                    str(self._X) + '\n' + str(self._Y) + '\n' + str(self.f)
                 if sequence_error > trial_errors[-1]:
                     sequence_error = trial_errors[-1]
                     del self._net
@@ -627,7 +629,7 @@ class Neural(object):
 
         Args:
             x (2D or 1D array_like of float):
-                prediction input, shape: (nPoint, nInp) or (nInp,)
+                prediction input, shape: (n_point, n_inp) or (n_inp,)
 
         Kwargs:
             silent (bool):
@@ -642,7 +644,7 @@ class Neural(object):
                 if x is None
 
         Note:
-            - Shape of x is corrected to: (nPoint, nInp)
+            - Shape of x is corrected to: (n_point, n_inp)
             - Input x and output net(x) are stored as self.x and self.y
         """
         if x is None:

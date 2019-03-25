@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-03-25 DWW
 """
 
 import numpy as np
@@ -46,7 +46,7 @@ class Inverse(Minimum):
         x, y = op(XY=(X, Y, x_keys, y_keys))             # only training
         x, y = op(X=X, Y=Y, x=x_ini, y=y_inv)       # training & inverse
         x, y = op(x=rand(5, (1, 4), (0, 9)), y=y_inv)     # only inverse
-        x, y = op(x=xIni, bounds=bounds, y=y_inv)         # only inverse
+        x, y = op(x=x_ini, bounds=bounds, y=y_inv)        # only inverse
 
         x, y = Inverse(LightGray(f))(XY=(X, Y), c0=1, x=x_ini, y=y_inv)
     """
@@ -58,7 +58,7 @@ class Inverse(Minimum):
         Args:
             x (2D or 1D array of float):
                 input of multiple or single data points,
-                shape: (nPoint, nInp) or (nInp, )
+                shape: (n_point, n_inp) or (n_inp, )
 
         Kwargs:
             keyword arguments to be passed to model.predict()
@@ -70,7 +70,7 @@ class Inverse(Minimum):
         y_opt = self.model.predict(np.asfarray(x),
                                    **self.kwargs_del(kwargs, 'x'))
 
-        # self.y is target, self.y.shape: (nOut,), y_opt.shape: (1, n_out)
+        # self.y is target, self.y.shape: (n_out,), y_opt.shape: (1, n_out)
         l2_norm = np.sqrt(np.mean((y_opt[0] - self.y)**2))
 
         self._trial_history.append([x, y_opt[0], l2_norm])

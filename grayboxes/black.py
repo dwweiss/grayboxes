@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-03-20 DWW
 """
 
 import numpy as np
@@ -41,16 +41,17 @@ class Black(BoxModel):
         x = X * 2
         Y = X**2
 
-        # black box, neural network, expanded variant:
-        model = Black()
-        model(X=X, Y=Y, neurons=[2, 3])
-        yTrn = model(x=X)
-        yTst = model(x=x)
-
         # black box, neural network, compact variant:
         y = Black()(XY=(X, Y), neurons=[2, 3], x=x)
 
-    Todo:
+        # black box, neural network, expanded variant:
+        model = Black()                       # create instance of Black
+        model(X=X, Y=Y, neurons=[2, 3])                       # training
+        y_trn = model(x=X)              # prediction with training input
+        y_tst = model(x=x)                  # prediction with test input
+
+
+    TODO:
         Implement multivariant splines
     """
 
@@ -82,14 +83,14 @@ class Black(BoxModel):
 
         Args:
             X (2D or 1D array of float):
-                training input, shape: (nPoint, nInp) or (nPoint,)
+                training input, shape: (n_point, n_inp) or (n_point,)
 
             Y (2D or 1D array of float):
-                training target, shape: (nPoint, nOut) or (nPoint,)
+                training target, shape: (n_point, n_out) or (n_point,)
 
         Kwargs:
             neurons (int or 1D array of int):
-                number of neurons in hidden layers of neural network
+                number of neurons in hidden layer(s) of neural network
 
             splines (1D array of float):
                 not specified yet
@@ -152,14 +153,14 @@ class Black(BoxModel):
 
         Args:
             x (2D or 1D array of float):
-                prediction input, shape: (nPoint, nInp) or (nInp, )
+                prediction input, shape: (n_point, n_inp) or (n_inp, )
 
         Kwargs:
             Keyword arguments
 
         Returns:
             (2D array of float):
-                prediction output, shape: (nPoint, nOut)
+                prediction output, shape: (n_point, n_out)
         """
         assert self.ready, str(self.ready)
         assert self._empirical is not None

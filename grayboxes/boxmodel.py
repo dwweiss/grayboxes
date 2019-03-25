@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-03-22 DWW
 """
 
 __all__ = ['BoxModel', 'grid', 'cross', 'rand', 'noise', 'frame2arr']
@@ -117,8 +117,8 @@ def cross(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
         -> np.ndarray:
 
     """
-    Sets initial (uniformly spaced) cross input, for instance for 2 input
-    with 5 nodes per axis: cross(5, [3., 7.], [-4., -2.])
+    Sets initial (uniformly spaced) cross input, for instance for 2 
+    input with 5 nodes per axis: cross(5, [3., 7.], [-4., -2.])
 
                  -2.0
                    |
@@ -131,7 +131,7 @@ def cross(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
                  -4.0
     Args:
         n:
-            number of nodes per axis for which initial values are generated
+            number of nodes per axis for which initial values generated
             n is corrected to the next odd number if n is even
 
         ranges (variable length argument list of pairs of float):
@@ -139,8 +139,8 @@ def cross(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
 
     Returns:
         (2D array of float):
-            Cross-like initial values, shape: (nPoint, nInp). First point is
-            reference point in cross center, see figure
+            Cross-like initial values, shape: (n_point, n_inp). First 
+            point is reference point in cross center, see figure
     """
     ranges = list(ranges)
     N = list(np.atleast_1d(n))
@@ -183,7 +183,7 @@ def rand(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
            1.0         3.0
 
     Args:
-        n (int):
+        n:
             number of trials for which initial values random generated
 
         ranges (variable length argument list of pairs of float):
@@ -205,7 +205,7 @@ def rand(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
     return x
 
 
-def noise(y: np.ndarray, absolute: float=0.0, relative: float=0.0,
+def noise(y: np.ndarray, absolute: float=0.0, relative: float=0e-2,
           uniform: bool=True) -> Optional[np.ndarray]:
     """
     Adds noise to an array_like argument 'y'. The noise can be:
@@ -213,10 +213,10 @@ def noise(y: np.ndarray, absolute: float=0.0, relative: float=0.0,
         - uniformly distributed
 
     The addition to 'y' can be:
-        - noise from the interval [-absolute, +absolute] independently of the
+        - noise from the interval [-absolute, +absolute] independently of
           actual value of 'y' or
-        - noise from the interval [-relative, +relative] proportional to the
-          actual value of 'y'
+        - noise from the interval [-relative, +relative] proportional to
+          actual value of 'y', 'relative' is not in percent
 
 
         y
@@ -234,27 +234,32 @@ def noise(y: np.ndarray, absolute: float=0.0, relative: float=0.0,
             initial array of any shape
 
         absolute:
-            upper boundary of interval of absolute values of noise to be added.
-            The lower boundary is the opposite of 'absolute'
+            upper boundary of interval of absolute values of noise to be 
+            added. The lower boundary is the opposite of 'absolute'
+            
             default: 0.0
 
         relative:
-            upper boundary of interval of the relative noise to be added.
+            upper boundary of interval of relative noise to be added.
             The lower boundary is the opposite of 'relative'.
-            The addition is relative to the actual value of y.
+            The addition is relative to actual value of y, for instance 
+            'relative = 0.2' adds noise out of the range from -20% to 
+            20% to 'y'
+
             default: 0.0
 
         uniform:
-            if True then noise is uniformly distributed between the upper and
-            lower boundaries given by 'absolute' and/or 'relative'.
-            Otherwise these upper boundaries represent the standard deviation
-            of a Gaussian distribution (at given boundary noise value is 60.7%
-            of max noise )
+            if True then noise is uniformly distributed between the upper 
+            and lower boundaries given by 'absolute' and/or 'relative'.
+            Otherwise these upper boundaries represent the standard 
+            deviation of a Gaussian distribution (at given boundary 
+            noise value is 60.7% of max noise )
+            
             default: True
 
     Returns:
         (array of float of same shape as y):
-            copy of y plus noise if y is not None
+            result is a copy of y plus noise if y is not None
         or
         (None):
             if y is None
@@ -324,7 +329,7 @@ def frame2arr(df: DataFrame,
 
     Returns:
         (list of 1D arrays of float):
-            column arrays of shape: (nPoints, len(key?)). Size of tuple equals
+            column arrays of shape: (n_points, len(key?)). Size of tuple equals
             number of keys 'keys0, key1,  .., keys7' which are not None
         or
         (None):
@@ -365,12 +370,12 @@ class BoxModel(Base):
     Parent class of White, LightGray, MediumGray, DarkGray and Black
 
     - Input and output are 2D arrays. First index is data point index
-    - If X or Y is passed as 1D array_like, then they are transformed to:
+    - If X or Y is passed as 1D array_like, then they are transformed to
           self.X = np.atleast_2d(X).T and self.Y = np.atleast_2d(Y).T
 
-    - Upper case 'X' is 2D   training input and 'Y' is 2D   training target
-    - Lower case 'x' is 2D prediction input and 'y' is 2D prediction output
-    - XY = (X, Y, xKeys, yKeys) is combination of X and Y, optional with keys
+    - Upper case 'X' is 2D   training input and 'Y' is 2D train. target
+    - Lower case 'x' is 2D prediction input and 'y' is 2D pred. output
+    - XY = (X, Y, x_keys, y_keys) is union of X and Y,optional with keys
 
     Decision tree
     -------------
@@ -385,7 +390,7 @@ class BoxModel(Base):
                     LightGray()
                 elif model_color.startswith('medium'):
                     if '-loc' in model_color:
-                        MediumGray() - local tuning pars for empirical submodel
+                        MediumGray() - local tuning pars from empirical
                     else:
                         MediumGray() - global training
                 else:
@@ -477,7 +482,7 @@ class BoxModel(Base):
 
         Args:
             x (1D array of float):
-                input, shape: (nInp, )
+                input, shape: (n_inp,)
 
             args:
                 tuning parameters as positional arguments
@@ -488,7 +493,7 @@ class BoxModel(Base):
 
         Returns:
             (1D list of float):
-                output, shape: (nOut, )
+                output, shape: (n_out,)
         """
         # minimum at f(a, a**2) = f(1, 1) = 0
         a, b = args if len(args) > 0 else (1, 100)
@@ -500,7 +505,7 @@ class BoxModel(Base):
         """
         Returns:
             (2D array of float):
-                X array of training input, shape: (nPoint, nInp)
+                X array of training input, shape: (n_point, n_inp)
         """
         return self._X
 
@@ -509,8 +514,8 @@ class BoxModel(Base):
         """
         Args:
             value (2D or 1D array of float):
-                X array of training input, shape: (nPoint, nInp)
-                or (nPoint,)
+                X array of training input, shape: (n_point, n_inp)
+                or (n_point,)
         """
         if value is None:
             self._X = None
@@ -525,7 +530,7 @@ class BoxModel(Base):
         """
         Returns:
             (2D array of float):
-                Y array of training target, shape: (nPoint, nOut)
+                Y array of training target, shape: (n_point, n_out)
         """
         return self._Y
 
@@ -534,8 +539,8 @@ class BoxModel(Base):
         """
         Args:
             value (2D or 1D array of float):
-                Y array of training target, shape: (nPoint, nOut)
-                or (nPoint,)
+                Y array of training target, shape: (n_point, n_out)
+                or (n_out,)
         """
         if value is None:
             self._Y = None
@@ -550,7 +555,7 @@ class BoxModel(Base):
         """
         Returns:
             (2D array of float):
-                x array of prediction input, shape: (nPoint, nInp)
+                x array of prediction input, shape: (n_point, n_inp)
         """
         return self._x
 
@@ -559,8 +564,8 @@ class BoxModel(Base):
         """
         Args:
             value(2D or 1D array of float):
-                x array of prediction input, shape: (nPoint, nInp)
-                or (nInp,)
+                x array of prediction input, shape: (n_point, n_inp)
+                or (n_inp,)
         """
         if value is None:
             self._x = None
@@ -572,7 +577,7 @@ class BoxModel(Base):
         """
         Returns:
             (2D array of float):
-                y array of prediction output, shape: (nPoint, nOut)
+                y array of prediction output, shape: (n_point, n_out)
         """
         return self._y
 
@@ -581,8 +586,8 @@ class BoxModel(Base):
         """
         Args:
             value(2D or 1D array of float):
-                y array of prediction output, shape: (nPoint, nOut)
-                or (nOut,)
+                y array of prediction output, shape: (n_point, n_out)
+                or (n_out,)
         """
         if value is None:
             self._y = None
@@ -594,19 +599,19 @@ class BoxModel(Base):
         """
         Returns:
             X (2D or 1D array of float):
-                training input, shape: (nPoint, nInp) or (nPoint,)
+                training input, shape: (n_point, n_inp) or (n_point,)
 
             Y (2D or 1D array of float):
-                training target, shape: (nPoint, nOut) or (nPoint,)
+                training target, shape: (n_point, n_out) or (n_point,)
 
-            xKeys (1D list of str):
+            x_keys (1D list of str):
                 list of column keys for data selection
-                use self._x_keys keys if xKeys is None,
+                use self._x_keys keys if x_keys is None,
                 default: ['x0', 'x1', ... ]
 
-            yKeys (1D list of str):
+            y_keys (1D list of str):
                 list of column keys for data selection
-                use self._y_keys keys if yKeys is None,
+                use self._y_keys keys if y_keys is None,
                 default: ['y0', 'y1', ... ]
         """
         return self._X, self._X, self._x_keys, self._y_keys
@@ -618,10 +623,10 @@ class BoxModel(Base):
         Args:
             value (4-tuple of two arrays of float and two arrays of str):
                 X (2D or 1D array_like of float):
-                    training input, shape: (nPoint, nInp) or (nPoint,)
+                    training input, shape: (n_point, n_inp) or (n_point,)
 
                 Y (2D or 1D array of float):
-                    training target, shape: (nPoint, nOut) or (nPoint,)
+                    training target, shape: (n_point, n_out) or (n_point,)
 
                 x_keys (1D array of str or None):
                     list of column keys for data selection
@@ -664,11 +669,11 @@ class BoxModel(Base):
         """
         Args:
             X (2D or 1D array of float):
-                training input, shape: (nPoint, nInp) or (nPoint,)
+                training input, shape: (n_point, n_inp) or (n_point,)
                 default: self.X
 
             Y (2D or 1D array of float):
-                training target, shape: (nPoint, nOut) or (nPoint,)
+                training target, shape: (n_point, n_out) or (n_point,)
                 default: self.Y
 
         Returns:
@@ -740,10 +745,10 @@ class BoxModel(Base):
 
         Args:
             X (2D or 1D array of float):
-                training input, shape: (nPoint, nInp) or (nPoint,)
+                training input, shape: (n_point, n_inp) or (n_point,)
 
             Y (2D or 1D array of float):
-                training target, shape: (nPoint, nOut) or (nPoint,)
+                training target, shape: (n_point, n_out) or (n_point,)
 
         Kwargs:
             methods (str or list of str):
@@ -799,7 +804,7 @@ class BoxModel(Base):
 
         Args:
             x (2D or 1D array of float):
-                prediction input, shape: (nPoint, nInp) or (nInp,)
+                prediction input, shape: (n_point, n_inp) or (n_inp,)
 
             args (*float):
                 positional arguments to be passed to theoretical
@@ -834,10 +839,10 @@ class BoxModel(Base):
 
         Args:
             X (2D array of float):
-                reference input, shape: (nPoint, nInp)
+                reference input, shape: (n_point, n_inp)
 
             Y (2D array of float):
-                reference output, shape: (nPoint, nOut)
+                reference output, shape: (n_point, n_out)
 
             args (*float):
                 positional arguments
@@ -853,7 +858,7 @@ class BoxModel(Base):
                     'abs' (float): max{|net(x) - Y|} of best training
                     'iAbs'  (int): index of Y where absolute err is max
         Note:
-            - maximum abs index is 1D index, e.g. yAbsMax = Y.ravel()[iAbsMax]
+            maximum abs index is 1D index, eg yAbsMax=Y.ravel()[iAbsMax]
         """
         if X is None or Y is None:
             best = self.init_results()
@@ -883,18 +888,18 @@ class BoxModel(Base):
     def pre(self, **kwargs: Any) -> Dict[str, Any]:
         """
         Kwargs:
-            XY (4-tuple of two 2D array of float, and
+            XY (tuple of two 2D array of float, and
                 optionally two list of str):
                 training input & training target, optional keys of X and Y
                 'XY' supersede 'X' and 'Y'
 
             X (2D or 1D array of float):
-                training input, shape: (nPoint, nInp) or (nPoint,)
+                training input, shape: (n_point, n_inp) or (n_point,)
                 'XY' supersede 'X' and 'Y'
                 default: self.X
 
             Y (2D or 1D array of float):
-                training target, shape: (nPoint, nOut) or (nPoint,)
+                training target, shape: (n_point, n_out) or (n_point,)
                 'XY' supersede 'X' and 'Y'
                 default: self.Y
 
@@ -934,7 +939,7 @@ class BoxModel(Base):
         """
         Kwargs:
             x (2D or 1D array of float):
-                prediction input, shape: (nPoint, nInp) or (nInp,)
+                prediction input, shape: (n_point, n_inp) or (n_inp,)
 
         Returns:
             (2D array of float):

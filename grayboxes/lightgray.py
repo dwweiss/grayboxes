@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-03-20 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -40,7 +40,7 @@ class LightGray(BoxModel):
     Light gray box model y=f(x_com, x_tun)
 
     Extends functionality of class BoxModel by a train() method which 
-    tunes theoretical submodel f(x) with a set of tuning parameters x_tun
+    tunes theoretical submodel f(x) with set of tuning parameters x_tun
 
     Notes:
         - tun0 (int, 1D or 2D array_like of float) is principally a 
@@ -167,7 +167,7 @@ class LightGray(BoxModel):
         Args:
             method:
                 optimizing method for minimizing objective function
-                [recommendation: 'BFGS' or 'L-BFGS-B' if ill-conditioned.
+                [recommended: 'BFGS' or 'L-BFGS-B' if ill-conditioned.
                  'Nelder-Mead' or 'Powell' if noisy data]
 
             tun0:
@@ -209,7 +209,8 @@ class LightGray(BoxModel):
                 n_it_max = kwargs.get('n_it_max', None)
 
                 res = scipy.optimize.differential_evolution(
-                    func=self._mean_square_errror, bounds=[[-10, 10]] * tun0.size,
+                    func=self._mean_square_errror, 
+                    bounds=[[-10, 10]] * tun0.size,
                     strategy='best1bin', maxiter=n_it_max, popsize=15,
                     tol=0.01, mutation=(0.5, 1), recombination=0.7,
                     seed=None, disp=False, polish=True,
@@ -252,11 +253,12 @@ class LightGray(BoxModel):
                 res = scipy.optimize.root(
                     fun=self._difference, x0=tun0, args=(), method='lm',
                     jac=None, tol=None, callback=None,
-                    options={  # 'func': None,mesg:_root_leastsq() got multiple
-                             #                       values for argument 'func'
+                    options={  # 'func': None,mesg:_root_leastsq() got 
+                             #           multiple values for argument 'func'
                              'col_deriv': 0, 'xtol': 1.49012e-08,
-                             'ftol': 1.49012e-8, 'gtol': 0., 'maxiter': n_it_max,
-                             'eps': 0.0, 'factor': 100, 'diag': None})
+                             'ftol': 1.49012e-8, 'gtol': 0., 
+                             'maxiter': n_it_max, 'eps': 0.0, 'factor': 100, 
+                             'diag': None})
                 if res.success:
                     results['weights'] = np.atleast_1d(res.x)
                     results['iterations'] = -1
@@ -298,7 +300,7 @@ class LightGray(BoxModel):
                 res = modestga.minimize(fun=self._mean_square_errror, x0=tun0,
                                         # TODO method=method,
                                         **kw)
-                if True:  # TODO replace 'if true' with 'if res.success'
+                if True:  # TODO replace 'if True' with 'if res.success'
                     results['weights'] = np.atleast_1d(res.x)
                     results['iterations'] = -1            # TODO res.nit
                     results['evaluations'] = -1          # TODO res.nfev

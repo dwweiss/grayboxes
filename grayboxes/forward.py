@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-03-25 DWW
 """
 
 import numpy as np
@@ -30,8 +30,8 @@ from grayboxes.white import White
 
 class Forward(Base):
     """
-    Predicts $y = \phi(x)$ for series of data points,
-    x.shape: (nPoint, nInp)
+    Predicts $y = \phi(x)$ for series of data points, 
+    x.shape: (n_point, n_inp)
 
     Examples:
         X = [[... ]]  input of training
@@ -112,16 +112,16 @@ class Forward(Base):
                 supersedes X, Y
 
             X (2D or 1D array_like of float):
-                training input, shape: (nPoint, nInp) or (nPoint,)
+                training input, shape: (n_point, n_inp) or (n_point,)
                 default: self._X
 
             Y (2D or 1D array_like of float):
-                training target, shape: (nPoint, nOut) or (nPoint,)
+                training target, shape: (n_point, n_out) or (n_point,)
                 default: self._Y
 
             x (2D or 1D array_like of float):
                 input to forward prediction or to sensitivity analysis
-                shape: (nPoint, nInp) or (nInp,)
+                shape: (n_point, n_inp) or (n_inp,)
                 default: self._x
         """
         super().pre(**kwargs)
@@ -155,7 +155,7 @@ class Forward(Base):
         Return:
             x, y (2-tuple of 2D arrays of float):
                 input and output of model prediction,
-                x.shape: (nPoint, nInp) and y.shape: (nPoint, nOut)
+                x.shape: (n_point, n_inp) and y.shape: (n_point, n_out)
         """
         super().task(**kwargs)
 
