@@ -878,7 +878,7 @@ class Base(object):
         if self.root().followers:
             self.write('--- Post (' + self.identifier + ')')
         if self.data is None:
-            ok = self.save
+            ok = self.save()
         self._post_done = True
         sys.stdout.flush()
         return ok
