@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-03-20 DWW
+      2019-04-01 DWW
 """
 
 import unittest
@@ -78,15 +78,15 @@ class TestUM(unittest.TestCase):
 
         blk = Black('black2')
         opt = {'neurons': [10, 10], 'trials': 5, 'goal': 1e-6,
-               'epochs': 500, 'methods': 'bfgs rprop'}
+               'epochs': 500, 'trainers': 'bfgs rprop'}
 
-        best_trn = blk(X=X, Y=Y, **opt)
+        metrics_trn = blk(X=X, Y=Y, **opt)
         y = blk(x=x)
-        best_tst = blk.error(x, White(f)(x=x))
+        metrics_tst = blk.evaluate(x, White(f)(x=x))
 
         plt.title('$neurons:' + str(opt['neurons']) +
-                  ', L_{2}^{train}:' + str(round(best_trn['L2'], 4)) +
-                  ', L_{2}^{test}:' + str(round(best_tst['L2'], 4)) + '$')
+                  ', L_{2}^{train}:' + str(round(metrics_trn['L2'], 4)) +
+                  ', L_{2}^{test}:' + str(round(metrics_tst['L2'], 4)) + '$')
         plt.cla()
         plt.ylim(min(-2, Y.min(), y.min()), max(2, Y.max(), Y.max()))
         plt.yscale('linear')
@@ -94,10 +94,10 @@ class TestUM(unittest.TestCase):
         plt.scatter(X, Y, marker='x', c='r', label='training data')
         plt.plot(x, y, c='b', label='prediction')
         plt.plot(x, f(x), linestyle=':', label='analytical')
-        i_abs_trn = best_trn['iAbs']
+        i_abs_trn = metrics_trn['iAbs']
         plt.scatter([X[i_abs_trn]], [Y[i_abs_trn]], marker='o', color='r',
                     s=66, label='max abs train')
-        i_abs_tst = best_tst['iAbs']
+        i_abs_tst = metrics_tst['iAbs']
         plt.scatter([x[i_abs_tst]], [y[i_abs_tst]], marker='o', color='b',
                     s=66, label='max abs test')
         plt.legend(bbox_to_anchor=(1.1, 0), loc='lower left')
@@ -142,7 +142,7 @@ class TestUM(unittest.TestCase):
         columns = ['n' + str(i+1) for i in range(MAX_HIDDEN_LAYERS)]
         columns.extend(['L2Train', 'absTrain', 'iAbsTrain',
                         'L2Test', 'absTest', 'iAbsTest',
-                        'mse', 'method', 'epochs'])
+                        'mse', 'trainer', 'epochs'])
         collect = pd.DataFrame(columns=columns)
         definition_max = [max_neurons_in_layer for _ in range(n_hidden_layers)]
         definition_max = definition_max + [0] * (MAX_HIDDEN_LAYERS -
@@ -167,21 +167,23 @@ class TestUM(unittest.TestCase):
 
             # network training
             blk = Black()
-            best_trn = blk(X=X, Y=Y, neurons=definition, trials=5, epochs=500,
-                           show=500, algorithms='bfgs', goal=1e-5)
+            metrics_trn = blk(X=X, Y=Y, neurons=definition, trials=5, 
+                              epochs=500, show=500, algorithms='bfgs', 
+                              goal=1e-5)
 
             # network prediction
             y = blk.predict(x=x)
 
-            best_tst = blk.error(x, y_ref, silent=False)
-            if l2_tst_best > best_tst['L2']:
-                l2_tst_best = best_tst['L2']
+            metrics_tst = blk.evaluate(x, y_ref, silent=False)
+            if l2_tst_best > metrics_tst['L2']:
+                l2_tst_best = metrics_tst['L2']
                 i_def_best = i_def
             row = definition_copy.copy()
             row = row + [0]*(MAX_HIDDEN_LAYERS - len(row))
-            row.extend([best_trn['L2'], best_trn['abs'], best_trn['iAbs'],
-                        best_tst['L2'], best_tst['abs'], best_tst['iAbs'],
-                        0, 0, 0  # mse training method epochs
+            row.extend([metrics_trn['L2'], metrics_trn['abs'], 
+                        metrics_trn['iAbs'], metrics_tst['L2'], 
+                        metrics_tst['abs'], metrics_tst['iAbs'],
+                        0., 0., 0.  # mse training method epochs
                         ])
             # print('row:', row, len(row), 'columns:', collect.keys)
             collect.loc[collect.shape[0]] = row
@@ -189,8 +191,8 @@ class TestUM(unittest.TestCase):
             if isinstance(blk._empirical, Neural):
                 print('+++ neural network definition:', definition)
             plt.title('$' + str(definition_copy) + '\ \ L_2(tr/te):\ ' +
-                      str(round(best_trn['L2'], 5)) + r', ' +
-                      str(round(best_tst['L2'], 4)) +
+                      str(round(metrics_trn['L2'], 5)) + r', ' +
+                      str(round(metrics_tst['L2'], 4)) +
                       '$')
             plt.xlim(x.min() - 0.25, x.max() + 0.25)
             plt.ylim(-2, 2)
@@ -198,9 +200,9 @@ class TestUM(unittest.TestCase):
             plt.scatter(X, Y, marker='>', c='g', label='training data')
             plt.plot(x, y, linestyle='-', label='prediction')
             plt.plot(x, y_ref, linestyle=':', label='analytical')
-            plt.scatter([X[best_trn['iAbs']]], [Y[best_trn['iAbs']]], 
+            plt.scatter([X[metrics_trn['iAbs']]], [Y[metrics_trn['iAbs']]], 
                         marker='o', color='c', s=60, label='max err train')
-            plt.scatter([x[best_tst['iAbs']]], [y[best_tst['iAbs']]], 
+            plt.scatter([x[metrics_tst['iAbs']]], [y[metrics_tst['iAbs']]], 
                         marker='o', color='r', s=60, label='max err test')
             plt.legend(bbox_to_anchor=(1.15, 0), loc='lower left')
             if self.saveFigures:
@@ -250,7 +252,7 @@ class TestUM(unittest.TestCase):
                        f2]
 
         # neural network options
-        opt = {'methods': 'bfgs rprop', 'neurons': []}
+        opt = {'trainers': 'bfgs rprop', 'neurons': []}
 
         Y = np.array(df.loc[:, ['u']])            # extracts an 2D array
         for f in definitions:

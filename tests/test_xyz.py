@@ -60,17 +60,18 @@ class TestUM(unittest.TestCase):
     def test2(self):
         P1 = xyz(x=1, z=4)
         P4 = xyzt(2.2, -1, t=7)
-        P5 = xyzt(point=P1)
-        P6 = xyzt(point=P4)
-        P7 = xyzt(point={'a': 1, 'b': 2})         # invalid
         print('P4:', P4)
+        P5 = xyzt(point=P1)
         print('P5:', P5)
+        P6 = xyzt(point=P4)
         print('P6:', P6)
+        P7 = xyzt(point={'a': 1, 'b': 2})         # invalid
         print('P7:', P7)
 
         self.assertTrue(P5 == P1)
         self.assertFalse(P5 != P1)
-
+        self.assertTrue(P7.x is None)
+   
 
 if __name__ == '__main__':
     unittest.main()

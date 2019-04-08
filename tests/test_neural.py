@@ -25,6 +25,7 @@ import sys
 import os
 import numpy as np
 from pandas import DataFrame
+
 import matplotlib.pyplot as plt
 import neurolab as nl
 
@@ -85,7 +86,7 @@ class TestUM(unittest.TestCase):
         net = Neural()
         for outputf in (nl.trans.PureLin, ):  # TanSig2, ):
             net(X=X, Y=Y, neurons=[6], epochs=2000, goal=1e-6, show=0,
-                trials=3, methods='rprop', regularization=0.0, plot=0,
+                trials=3, trainer='rprop', regularization=0.0, plot=0,
                 # outputf=nl.trans.PureLin,    TODO fails with 'invalid output'
                 # errorf=nl.error.MSE,
                 silent=True)
@@ -94,8 +95,8 @@ class TestUM(unittest.TestCase):
                 plt.plot(x, y, '-',
                          label='tst:'+str_L2(net(x=x), f(x)) + ' ' +
                                'trn:'+str_L2(net(x=X), Y))
-        plt.title('Test (' + net.best['method'] + ') ' +
-                  'L2_trn: ' + str(round(net.best['L2'], 2)))
+        plt.title('Test (' + net.metrics['trainer'] + ') ' +
+                  'L2_trn: ' + str(round(net.metrics['L2'], 2)))
         plt.plot(x, f(x), '--', label='tst')
         plt.plot(X, Y, 'o', label='trn')
         # plt.legend(['pred', 'targ', 'true'])
@@ -120,10 +121,10 @@ class TestUM(unittest.TestCase):
 
         net = Neural()
         y = net(X=X, Y=Y, x=x, neurons=[6], plot=1, epochs=500, goal=1e-5,
-                trials=5, methods='cg gdx rprop bfgs',
+                trials=5, trainer='cg gdx rprop bfgs',
                 regularization=0.0, show=None)
 
-        plt.title('Test, L2:' + str(round(net.best['L2'], 5)))
+        plt.title('Test, L2:' + str(round(net.metrics['L2'], 5)))
         plt.plot(x, y, '-')
         plt.plot(X, Y, '.')
         plt.legend(['pred', 'targ', ])
@@ -144,9 +145,9 @@ class TestUM(unittest.TestCase):
         ykeys = ['r0', 'r1']
         net = Neural()
         net.import_dataframe(df, xkeys, ykeys)
-        best = net.train(goal=1e-6, neurons=[10, 3], plot=1, epochs=2000,
-                         methods='cg gdx rprop bfgs', trials=10,
-                         regularization=0.01, smartTrials=False)
+        metrics = net.train(goal=1e-6, neurons=[10, 3], plot=1, epochs=2000,
+                            trainer='cg gdx rprop bfgs', trials=10,
+                            regularization=0.01, smartTrials=False)
 
         self.assertTrue(True)
 
@@ -160,7 +161,7 @@ class TestUM(unittest.TestCase):
 
         net = Neural()
         y = net(X, Y, x, neurons=6, plot=1, epochs=1000, goal=1e-6,
-                methods='cg gdx rprop bfgs', trials=5)
+                trainer='cg gdx rprop bfgs', trials=5)
         dy = y - Y
         X, Y, x = net.X, net.Y, net.x
         if X.shape[1] == 2:
@@ -194,7 +195,7 @@ class TestUM(unittest.TestCase):
         net.trainf = nl.train.train_bfgs
 
         err = net.train(X, YY, epochs=10000, show=100, goal=1e-6)
-        y_train = norm_y.renorm(net.sim(X))
+        y_trn = norm_y.renorm(net.sim(X))
 
         print(err[-1])
         plt.subplot(211)
@@ -223,7 +224,7 @@ class TestUM(unittest.TestCase):
         Y = np.sin(X) * 5
         x = X
         y = Neural()(X=X, Y=Y, x=x, neurons=[8, 2], plot=1, epochs=2000,
-                     goal=1e-5, methods='rprop bfgs', trials=8)
+                     goal=1e-5, trainer='rprop bfgs', trials=8)
 
         if X.shape[1] == 1:
             plt.plot(X, y, label='pred')

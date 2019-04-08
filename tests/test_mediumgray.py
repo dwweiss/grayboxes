@@ -68,18 +68,18 @@ X = grid(10, [-1., 2.], [0., 3.])
 y_exa = White(f)(x=X, silent=True)
 Y = noise(y_exa, absolute=noise_abs, relative=noise_rel)
 if 0:
-    plot_X_Y_Yref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
+    plot_x_y_y_ref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
 
-methods = [
-            # 'all',
-            # 'L-BFGS-B',
-            'BFGS',
-            # 'Powell',
-            # 'Nelder-Mead',
-            # 'differential_evolution',
-            # 'basinhopping',
-            # 'ga',
-            ]
+trainer = [
+           # 'all',
+           # 'L-BFGS-B',
+           'BFGS',
+           # 'Powell',
+           # 'Nelder-Mead',
+           # 'differential_evolution',
+           # 'basinhopping',
+           # 'ga',
+           ]
 
 
 class TestUM(unittest.TestCase):
@@ -103,7 +103,7 @@ class TestUM(unittest.TestCase):
         y_mgr, tun_mgr = None, None
         for local in range(1, 3):
             for neurons in range(2, 4):
-                y = mgr(X=X, Y=Y, x=X, methods=methods, tun0=tun0, nItMax=5000,
+                y = mgr(X=X, Y=Y, x=X, trainer=trainer, tun0=tun0, nItMax=5000,
                         bounds=nTun*[(-1., 3.)], neurons=[neurons], trials=3,
                         local=local)
                 print('l2(neurons:', str(neurons)+'): ', mgr.best['L2'],
@@ -116,7 +116,7 @@ class TestUM(unittest.TestCase):
 
         self.assertFalse(y_mgr is None)
 
-        y_lgr = lgr(X=X, Y=Y, x=X, methods=methods, nItMax=5000, tun0=tun0)
+        y_lgr = lgr(X=X, Y=Y, x=X, trainer=trainer, nItMax=5000, tun0=tun0)
         print('lgr.w:', lgr.weights)
 
         if mgr.weights is None:

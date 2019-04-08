@@ -66,7 +66,7 @@ class TestUM(unittest.TestCase):
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         op = Minimum(White('demo'), 'test2')
-        x, y = op(x=rand(10, [-5, 5], [-7, 7]), method='nelder-mead',
+        x, y = op(x=rand(10, [-5, 5], [-7, 7]), optimizer='nelder-mead',
                   silent=True)
         # op.plot()
         print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)
@@ -78,7 +78,7 @@ class TestUM(unittest.TestCase):
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         op = Minimum(White(f), 'test3')
-        x, y = op(x=rand(10, [-5, 5], [-7, 7]), method='nelder-mead',
+        x, y = op(x=rand(10, [-5, 5], [-7, 7]), optimizer='nelder-mead',
                   silent=True)
         # op.plot()
         print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)
@@ -108,18 +108,18 @@ class TestUM(unittest.TestCase):
         if True:
             op = Minimum(White('demo'), 'test5')
 
-            methods = ['ga', 'BFGS']
-            methods = op._valid_methods
+            optimizers = ['ga', 'BFGS']
+            optimizers = op._valid_optimizers
 
-            for method in methods:
-                print('\n'+'-'*60+'\n' + method + '\n' + '-'*60+'\n')
+            for optimizer in optimizers:
+                print('\n'+'-'*60+'\n' + optimizer + '\n' + '-'*60+'\n')
 
                 x = rand(3, [0, 2], [0, 2])
-                if method == 'ga':
-                    x, y = op(x=x, method=method, bounds=2*[(0, 2)],
+                if optimizer == 'ga':
+                    x, y = op(x=x, optimizer=optimizer, bounds=2*[(0, 2)],
                               generations=5000)
                 else:
-                    x, y = op(x=x, method=method, silent=True)
+                    x, y = op(x=x, optimizer=optimizer, silent=True)
 
                 if 0:
                     op.plot('traj')

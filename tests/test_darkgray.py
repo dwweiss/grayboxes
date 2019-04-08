@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2019-03-01 DWW
 """
 
 import unittest
@@ -30,7 +30,7 @@ import pandas as pd
 sys.path.append(os.path.abspath('..'))
 from grayboxes.darkgray import DarkGray
 from grayboxes.plotarrays import plot_isomap, plot_wireframe
-from grayboxes.boxmodel import frame2arr
+from grayboxes.boxmodel import frame_to_arrays
 from grayboxes.black import Black
 
 
@@ -91,7 +91,7 @@ class TestUM(unittest.TestCase):
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         model = DarkGray('demo', 'test1')
-        X, Y = frame2arr(df, ['x0', 'x4'], ['y0'])
+        X, Y = frame_to_arrays(df, ['x0', 'x4'], ['y0'])
         y = model(X=X, Y=Y, x=X, silent=True, neurons=[10])
         plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
         plot_isomap(X[:, 0], X[:, 1], y[:, 0], title='y(X)')
@@ -118,7 +118,7 @@ class TestUM(unittest.TestCase):
 
         plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
         plot_isomap(X[:, 0], X[:, 1], y[:, 0], title='y(X)')
-        plot_isomap(X[:, 0], X[:, 1], y[:, 0] - Y[:, 0], title='y(X)  -Y')
+        plot_isomap(X[:, 0], X[:, 1], y[:, 0] - Y[:, 0], title='y(X) - Y')
 
         print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
 
@@ -141,8 +141,10 @@ class TestUM(unittest.TestCase):
         plot_isomap(X.T[0], X.T[1], y.T[0] * 1e3, title=r'$A_{blk}\cdot 10^3$')
         plot_isomap(X.T[0], X.T[1], (Y.T[0] - y.T[0]) * 1e3,
                     title=r'$(A_{prc} - A_{blk})\cdot 10^3$')
-        plot_wireframe(X.T[0], X.T[1], Y.T[0] * 1e3, title=r'$A_{prc}\cdot 10^3$')
-        plot_wireframe(X.T[0], X.T[1], y.T[0] * 1e3, title=r'$A_{blk}\cdot 10^3$')
+        plot_wireframe(X.T[0], X.T[1], Y.T[0] * 1e3, 
+                       title=r'$A_{prc}\cdot 10^3$')
+        plot_wireframe(X.T[0], X.T[1], y.T[0] * 1e3, 
+                       title=r'$A_{blk}\cdot 10^3$')
         plot_wireframe(X.T[0], X.T[1], (Y.T[0] - y.T[0]) * 1e3,
                        title=r'$(A_{prc} - A_{blk})\cdot 10^3$')
 

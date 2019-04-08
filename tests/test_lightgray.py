@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-29 DWW
+      2019-04-01 DWW
 """
 
 import unittest
@@ -66,7 +66,7 @@ def f2(self, x, *args, **kwargs):
     return [y0]
 
 
-methods = [
+trainer = [
            # 'all',
            # 'L-BFGS-B',
            'BFGS',
@@ -107,16 +107,16 @@ class TestUM(unittest.TestCase):
         for _tun0 in [tun0, None]:
             print('+++ tun0:\n', _tun0, '\n', '*'*40)
 
-            y = model(X=X, Y=Y, tun0=_tun0, x=X, methods=methods,
+            y = model(X=X, Y=Y, tun0=_tun0, x=X, trainer=trainer,
                       detailed=True, nItMax=5000, bounds=4*[(0, 2)])
 
-            y = LightGray(f2, 'test1b')(X=X, Y=Y, x=X, methods=methods,
+            y = LightGray(f2, 'test1b')(X=X, Y=Y, x=X, trainer=trainer,
                                         nItMax=5000, tun0=_tun0,
                                         silent=not True, detailed=True)
             plot_x_y_y_ref(X, y, y_exa, ['X', 'y', 'y_{exa}'])
             if 1:
                 print('best:', model.best)
-                df = model.xy2frame()
+                df = model.xy_to_frame()
                 print('=== df:\n', df)
 
         self.assertTrue(True)
@@ -125,11 +125,10 @@ class TestUM(unittest.TestCase):
         # train with single initial tuning parameter set, nTun from f2(None)
         if 1:
             y = LightGray(f2, 'test2')(X=X, Y=Y, x=X, tun0=np.ones(4),
-                                       silent=not True, methods=methods,
+                                       silent=not True, trainer=trainer,
                                        detailed=False)
 
-        y = LightGray(f2, 'test2b')(X=X, Y=Y, x=X,
-                                    silent=not True, methods='all')
+        y = LightGray(f2, 'test2b')(X=X, Y=Y, x=X, silent=False, trainer='all')
 
         self.assertTrue(y is not None)
 

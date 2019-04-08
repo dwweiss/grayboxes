@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 sys.path.append(os.path.abspath('..'))
 from grayboxes.boxmodel import BoxModel
 from grayboxes.plotarrays import plot_isomap, plot_surface, plot_isolines
-from grayboxes.boxmodel import rand, noise, grid, frame2arr
+from grayboxes.boxmodel import rand, noise, grid, frame_to_arrays
 from grayboxes.white import White
 from grayboxes.lightgray import LightGray
 
@@ -120,22 +120,22 @@ class TestUM(unittest.TestCase):
         print('1: model.x:', model.x, 'model.y:', model.y)
 
         print('test data frame import/export')
-        df = model.xy2frame()
+        df = model.xy_to_frame()
         print('4: df:', df)
 
-        df = model.XY2frame()
+        df = model.XY_to_frame()
         print('5: df:', df)
 
         model.X = [[2, 3], [4, 5]]
         model.Y = [[22, 33], [44, 55]]
-        df = model.XY2frame()
+        df = model.XY_to_frame()
         print('6: df:', df)
 
-        y0, y1 = frame2arr(df, ['y0'], ['y1'])
+        y0, y1 = frame_to_arrays(df, ['y0'], ['y1'])
         print('7 y0:', y0, 'y1:', y1)
-        y01 = frame2arr(df, ['y0', 'y1'])
+        y01 = frame_to_arrays(df, ['y0', 'y1'])
         print('8 y01:', y01)
-        y12, x0 = frame2arr(df, ['y0', 'y1'], ['x0'])
+        y12, x0 = frame_to_arrays(df, ['y0', 'y1'], ['x0'])
         print('9 y12:', y12, 'x0', x0)
 
         self.assertTrue(True)

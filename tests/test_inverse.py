@@ -51,9 +51,9 @@ class TestUM(unittest.TestCase):
         s = 'Inverse, ranges+rand replaced method f()'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Inverse(White(f), 'test1')
-        x, y = op(x=grid(3, [-1, 1], [4, 8], [3, 5]), y=[0.5])
-        op.plot()
+        operation = Inverse(White(f), 'test1')
+        x, y = operation(x=grid(3, [-1, 1], [4, 8], [3, 5]), y=[0.5])
+        operation.plot()
 
         self.assertTrue(True)
 
@@ -61,10 +61,11 @@ class TestUM(unittest.TestCase):
         s = 'Inverse, replaced model'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Inverse(White('demo'), 'test2')
-        x_inv, y_inv = op(x=rand(3, [-5, 5], [-5, 5]), y=[0.5],
-                          method='ga', bounds=2*[(-8, 8)], generations=2000)
-        op.plot()
+        operation = Inverse(White('demo'), 'test2')
+        x_inv, y_inv = operation(x=rand(3, [-5, 5], [-5, 5]), y=[0.5],
+                                 optimizer='ga', bounds=2*[(-8, 8)], 
+                                 generations=2000)
+        operation.plot()
 
         self.assertTrue(True)
 
@@ -88,9 +89,9 @@ class TestUM(unittest.TestCase):
         Y_fit = model(X=X, Y=Y_noise, c0=np.ones(3), x=X, silent=True)
         plot_x_y_y_ref(X, Y_fit, Y_exact, ['X', 'Y_{fit}', 'Y_{exa}'])
 
-        op = Inverse(model, 'test3c')
-        x, y = op(x=grid((3, 2), [-10, 0], [1, 19]), y=[0.5])
-        op.plot()
+        operation = Inverse(model, 'test3c')
+        x, y = operation(x=grid((3, 2), [-10, 0], [1, 19]), y=[0.5])
+        operation.plot()
 
         self.assertTrue(True)
 
@@ -109,9 +110,9 @@ class TestUM(unittest.TestCase):
         model = Black()
         Y_blk = model(X=X, Y=Y_noise, neurons=[8], n=3, epochs=500, x=X)
         plot_x_y_y_ref(X, Y_blk, Y_exact, ['X', 'Y_{blk}', 'Y_{exa}'])
-        op = Inverse(model, 'test4b')
-        x_inv, y_inv = op(y=[0.5], x=[(-10, 0), (1, 19)])
-        op.plot()
+        operation = Inverse(model, 'test4b')
+        x_inv, y_inv = operation(y=[0.5], x=[(-10, 0), (1, 19)])
+        operation.plot()
 
         self.assertTrue(True)
 
@@ -141,10 +142,10 @@ class TestUM(unittest.TestCase):
 
         # inverse solution with meta-model (emp.model of tuned theo.model)
         if 1:
-            op = Inverse(meta, 'test6')
-            x_inv, y_inv = op(x=[(-10, 0)], y=[0.5])
-            op.plot()
-            print('id:', op.identifier, 'x_inv:', x_inv, 'y_inv:', y_inv)
+            operation = Inverse(meta, 'test6')
+            x_inv, y_inv = operation(x=[(-10, 0)], y=[0.5])
+            operation.plot()
+            print('id:', operation.identifier, 'x_inv', x_inv, 'y_inv', y_inv)
 
         self.assertTrue(True)
 

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-30 DWW
+      2019-04-01 DWW
 """
 
 import unittest
@@ -72,9 +72,9 @@ class TestUM(unittest.TestCase):
         s = "Forward, assign external function (without self-argument) to f"
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Forward(White(func), 'test3')
-        _, y = op(x=rand(12, [2, 3], [3, 4]))
-        print('x:', op.model.x, '\ny1:', op.model.y)
+        operation = Forward(White(func), 'test3')
+        _, y = operation(x=rand(12, [2, 3], [3, 4]))
+        print('x:', operation.model.x, '\ny1:', operation.model.y)
 
         self.assertTrue(True)
 
@@ -82,9 +82,9 @@ class TestUM(unittest.TestCase):
         s = "Forward, assign method (with 'self'-argument) to f"
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Forward(White(func), 'test4')
-        _, y = op(x=[[2, 3], [3, 4], [4, 5], [5, 6], [6, 7]])
-        print('x:', op.model.x, '\ny1:', op.model.y)
+        operation = Forward(White(func), 'test4')
+        _, y = operation(x=[[2, 3], [3, 4], [4, 5], [5, 6], [6, 7]])
+        print('x:', operation.model.x, '\ny1:', operation.model.y)
 
         self.assertTrue(True)
 
