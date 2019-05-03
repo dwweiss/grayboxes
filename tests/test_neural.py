@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2019-04-30 DWW
 """
 
 import unittest
@@ -57,11 +57,11 @@ class TestUM(unittest.TestCase):
         def f(x):
             return np.sin(x) * 1 + 0
 
-        X = np.linspace(-1.75 * np.pi, 1.75 * np.pi, 50)
+        X = np.atleast_2d(np.linspace(-1.75 * np.pi, 1.75 * np.pi, 50)).T
         dx = 0.25 * (X.max() - X.min())
-        x = np.linspace(X.min() - dx, X.max() + dx)
-        X[0] = x[0]
-        X[-1] = x[-1]
+        x = np.atleast_2d(np.linspace(X.min() - dx, X.max() + dx)).T
+        X[0, 0] = x[0, 0]
+        X[-1, 0] = x[-1, 0]
         Y = f(X)
 
         class Train2(nl.core.Train):
@@ -108,16 +108,16 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test2(self):
-        s = 'Example 1 compact form'
+        s = 'Example 2 compact form'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         def f(x):
             return np.sin(x) * 10 + 0
 
-        X = np.linspace(-1.75 * np.pi, 1.75 * np.pi, 50)
+        X = np.atleast_2d(np.linspace(-1.75 * np.pi, 1.75 * np.pi, 50)).T
         Y = f(X)
         dx = 0.5 * (X.max() - X.min())
-        x = np.linspace(X.min() - dx, X.max() + dx)
+        x = np.atleast_2d(np.linspace(X.min() - dx, X.max() + dx)).T
 
         net = Neural()
         y = net(X=X, Y=Y, x=x, neurons=[6], plot=1, epochs=500, goal=1e-5,
@@ -135,7 +135,7 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test3(self):
-        s = 'Example 2'
+        s = 'Example 3'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         df = DataFrame({'p0': [10, 20, 30, 40], 'p1': [11, 21, 31, 41],
@@ -152,7 +152,7 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test4(self):
-        s = 'Example 3'
+        s = 'Example 4'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         X = [[10, 11], [11, 33], [33, 14], [37, 39], [20, 20]]
@@ -182,7 +182,7 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test5(self):
-        s = 'Example 4: newff and train without class Neural'
+        s = 'Example 5: newff and train without class Neural'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         X = np.atleast_2d(np.linspace(-7, 7, 20)).T
@@ -204,11 +204,11 @@ class TestUM(unittest.TestCase):
         plt.xlabel('Epoch number')
         plt.ylabel('error (default SSE)')
 
-        xTest = np.atleast_2d(np.linspace(-5, 8, 150)).T
-        yTest = norm_y.renorm(net.sim(xTest)).ravel()
+        x_tst = np.atleast_2d(np.linspace(-5, 8, 150)).T
+        y_tst = norm_y.renorm(net.sim(x_tst)).ravel()
 
         plt.subplot(212)
-        plt.plot(xTest, yTest, '-', X, Y, '.')
+        plt.plot(x_tst, y_tst, '-', X, Y, '.')
         plt.legend(['pred', 'targ'])
         plt.xlabel('x')
         plt.ylabel('y(x)')
@@ -217,7 +217,7 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test6(self):
-        s = 'Example 5'
+        s = 'Example 6'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         X = np.atleast_2d(np.linspace(-2 * np.pi, 2 * np.pi, 50)).T

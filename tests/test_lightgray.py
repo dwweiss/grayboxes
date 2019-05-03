@@ -80,7 +80,7 @@ trainer = [
 
 noise_abs = 0.25
 noise_rel = 10e-2
-X = grid(8, [-1, 8], [0, 3])
+X = grid(8, (-1, 8), (0, 3))
 y_exa = White(f)(x=X, silent=True)
 Y = noise(y_exa, absolute=noise_abs, relative=noise_rel)
 plot_x_y_y_ref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
@@ -115,7 +115,7 @@ class TestUM(unittest.TestCase):
                                         silent=not True, detailed=True)
             plot_x_y_y_ref(X, y, y_exa, ['X', 'y', 'y_{exa}'])
             if 1:
-                print('best:', model.best)
+                print('metrics:', model.metrics)
                 df = model.xy_to_frame()
                 print('=== df:\n', df)
 

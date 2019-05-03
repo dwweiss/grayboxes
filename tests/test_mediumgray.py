@@ -106,10 +106,10 @@ class TestUM(unittest.TestCase):
                 y = mgr(X=X, Y=Y, x=X, trainer=trainer, tun0=tun0, nItMax=5000,
                         bounds=nTun*[(-1., 3.)], neurons=[neurons], trials=3,
                         local=local)
-                print('l2(neurons:', str(neurons)+'): ', mgr.best['L2'],
+                print('l2(neurons:', str(neurons)+'): ', mgr.metrics['L2'],
                       end='')
-                if l2 > mgr.best['L2']:
-                    l2 = mgr.best['L2']
+                if l2 > mgr.metrics['L2']:
+                    l2 = mgr.metrics['L2']
                     print('  *** better', end='')
                     y_mgr, tun_mgr = y, mgr.weights
                 print()

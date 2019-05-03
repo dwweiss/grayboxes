@@ -28,6 +28,8 @@ import numpy as np
 import pandas as pd
 
 sys.path.append(os.path.abspath('..'))
+sys.path.append(os.path.abspath('../grayboxes'))
+
 from grayboxes.darkgray import DarkGray
 from grayboxes.plotarrays import plot_isomap, plot_wireframe
 from grayboxes.boxmodel import frame_to_arrays
