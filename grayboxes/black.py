@@ -17,27 +17,36 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-03-20 DWW
+      2019-05-02 DWW
 """
 
+import sys
 import numpy as np
 from typing import Any, Dict, Optional
 
 from grayboxes.boxmodel import BoxModel
-from grayboxes.neural import Neural
+from grayboxes.neural import Neural, RadialBasis
+try:
+    from grayboxes.splines import Splines
+except ImportError:
+    print('!!! Module splines not imported')
 
 
 class Black(BoxModel):
     """
-    Black box model y = F^*(x, w), w = train(X, Y, f(x))
+    Black box model y = beta(x, w) with w = arg min ||beta(x, w) - Y||_2
 
         - Neural network is employed if kwargs contains 'neurons'
-          Best network of all trials is saved as 'self._empirical._net'
 
-        - Splines are employed if the kwargs contains 'splines'
+        - Splines are employed if kwargs contains 'splines'
+
+        - Radial basis functions are employed if kwargs contains 'centers'
+
+        - Weights of best model training trials are saved as 
+          'self._empirical._weights'
 
     Example:
-        X = np.linspace(0.0, 1.0, 20)
+        X = np.atleast_2d(np.linspace(0.0, 1.0, 20)).T
         x = X * 2
         Y = X**2
 
@@ -46,13 +55,9 @@ class Black(BoxModel):
 
         # black box, neural network, expanded variant:
         model = Black()                       # create instance of Black
-        model(X=X, Y=Y, neurons=[2, 3])                       # training
+        metrics = model(X=X, Y=Y, neurons=[2, 3])             # training
         y_trn = model(x=X)              # prediction with training input
         y_tst = model(x=x)                  # prediction with test input
-
-
-    TODO:
-        Implement multivariant splines
     """
 
     def __init__(self, identifier: str='Black') -> None:
@@ -62,8 +67,8 @@ class Black(BoxModel):
                 Unique object identifier
         """
         super().__init__(f=None, identifier=identifier)
-        self._empirical = None   # holds instance of Neural, splines etc
-        self.best = None
+        self._empirical = None   # Neural, Splines, RadialBasis instance
+        self.metrics = None               # measure of model performance
 
     @property
     def silent(self) -> bool:
@@ -79,21 +84,26 @@ class Black(BoxModel):
             -> Optional[Dict[str, Any]]:
         """
         Trains model, stores X and Y as self.X and self.Y, and stores
-        result of best training trial as self.best
+        performance of best training trial as self.metrics
 
         Args:
-            X (2D or 1D array of float):
-                training input, shape: (n_point, n_inp) or (n_point,)
+            X (2D array of float):
+                training input, shape: (n_point, n_inp)
 
-            Y (2D or 1D array of float):
-                training target, shape: (n_point, n_out) or (n_point,)
+            Y (2D array of float):
+                training target, shape: (n_point, n_out)
 
         Kwargs:
             neurons (int or 1D array of int):
                 number of neurons in hidden layer(s) of neural network
 
-            splines (1D array of float):
+            splines (int or 1D array of float):
                 not specified yet
+               
+            centers (int or 1D array of float)
+                number of centers in hidden layer 
+                or
+                array of centers
 
             ... additional training options, see Neural.train()
 
@@ -104,48 +114,34 @@ class Black(BoxModel):
                 None
         """
         if X is None or Y is None:
+            self.metrics = None
             return None
 
-        self.X, self.Y = np.atleast_2d(X), np.atleast_2d(Y)
-        if self._X.shape[0] == 1:
-            self._X = self._X.T
-        if self._Y.shape[0] == 1:
-            self._Y = self._Y.T
-        assert self.X.shape[0] == self.Y.shape[0], \
-            str(self.X.shape) + str(self.Y.shape)
-        assert self.X.shape[0] > 2, str(self.X.shape)
+        self.set_XY(X, Y)
 
         neurons = kwargs.get('neurons', None)
         splines = kwargs.get('splines', None) if neurons is None else None
-
-        if neurons is not None:
-            self.write('+++ train neural, hidden neurons:' + str(neurons))
-
-            if self._empirical is not None:
-                del self._empirical
-            self._empirical = Neural()
-            self._empirical.silent = self.silent
-
-            self.best = self._empirical.train(self.X, self.Y, **kwargs)
-            self.ready = self._empirical.ready
-
-        elif splines is not None:
-            assert self.f is None
-
-            # TODO ...
-
-            self.best = None
-            self.ready = False
-            assert 0, 'splines not implemented'
-
+        centers = kwargs.get('centers', None)
+        if neurons:
+            empirical = Neural()
+        elif splines and  'splines' in sys.modules:
+            empirical = Splines()
+        elif centers:
+            empirical = RadialBasis()
         else:
-            assert self.f is None
-            self.best = None
-            self.ready = False
-            self._empirical = None
-            assert 0, 'unknown empirical method'
+            empirical = Neural()
 
-        return self.best
+        self.write('+++ train')
+
+        if self._empirical is not None:
+            del self._empirical
+        self._empirical = empirical
+        self._empirical.silent = self.silent
+
+        self.metrics = self._empirical.train(self.X, self.Y, **kwargs)
+        self.ready = self._empirical.ready
+
+        return self.metrics
 
     def predict(self, x: np.ndarray, **kwargs: Any) -> np.ndarray:
         """
@@ -153,7 +149,7 @@ class Black(BoxModel):
 
         Args:
             x (2D or 1D array of float):
-                prediction input, shape: (n_point, n_inp) or (n_inp, )
+                prediction input, shape: (n_point, n_inp) or (n_inp,)
 
         Kwargs:
             Keyword arguments
@@ -165,6 +161,9 @@ class Black(BoxModel):
         assert self.ready, str(self.ready)
         assert self._empirical is not None
 
-        self.x = x
+        self.x = x                # self.x is a setter ensuring 2D array
+        assert self._n_inp == self.x.shape[1], \
+            str((self._n_inp, self.x.shape))
+
         self.y = self._empirical.predict(self.x, **kwargs)
         return self.y

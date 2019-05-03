@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-03-25 DWW
+      2019-05-02 DWW
 """
 
 import numpy as np
@@ -30,8 +30,7 @@ from grayboxes.white import White
 
 class Forward(Base):
     """
-    Predicts $y = \phi(x)$ for series of data points, 
-    x.shape: (n_point, n_inp)
+    Predicts $y = \phi(x)$ for array of points, shape: (n_point, n_inp)
 
     Examples:
         X = [[... ]]  input of training
@@ -45,13 +44,13 @@ class Forward(Base):
             return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
         # create operation on model
-        op = Forward(White(function))
+        operation = Forward(White(function))
         or:
-        op = Forward(White(method))
+        operation = Forward(White(method))
 
         # training and prediction
-        best = op(X=X, Y=Y)     # train
-        x, y = op(x=x)          # predict
+        best = operation(X=X, Y=Y)     # train
+        x, y = operation(x=x)          # predict
 
         # compact form
         x, y = Forward(White(function))(X=X, Y=Y, x=x)
@@ -61,7 +60,7 @@ class Forward(Base):
         - Forward.__call__() returns 2-tuple of 2D arrays of float
 
         - Forward has no self._x or self._y attribute and employs
-          model.x and model. y for storing input and output
+          model.x and model.y for storing input and output
 
     """
 
@@ -111,12 +110,12 @@ class Forward(Base):
                 input and target of training, this argument
                 supersedes X, Y
 
-            X (2D or 1D array_like of float):
-                training input, shape: (n_point, n_inp) or (n_point,)
+            X (2D array_like of float):
+                training input, shape: (n_point, n_inp)
                 default: self._X
 
-            Y (2D or 1D array_like of float):
-                training target, shape: (n_point, n_out) or (n_point,)
+            Y (2D array_like of float):
+                training target, shape: (n_point, n_out)
                 default: self._Y
 
             x (2D or 1D array_like of float):
@@ -134,8 +133,8 @@ class Forward(Base):
             X, Y = kwargs.get('X', None), kwargs.get('Y', None)
         if not isinstance(self.model, White):
             if X is not None and Y is not None:
-                self.best = self.model.train(X, Y, **self.kwargs_del(kwargs,
-                                             ['X', 'Y']))
+                self.metrics = self.model.train(X, Y, **self.kwargs_del(kwargs,
+                                                ['X', 'Y']))
 
         x = kwargs.get('x', None)
         if type(self).__name__ in ('Minimum', 'Maximum', 'Inverse'):
@@ -146,7 +145,7 @@ class Forward(Base):
     def task(self, **kwargs: Any) -> Tuple[np.ndarray, np.ndarray]:
         """
         This task() method is only for Forward and Sensitivity. Minimum,
-        Maximum and Inverse have a different implementations of task()
+        Maximum and Inverse have different implementations of task()
 
         Kwargs:
             Keyword arguments passed to super.task() and to
@@ -164,7 +163,8 @@ class Forward(Base):
         else:
             self.model.y = np.asfarray(self.model.predict(x=self.model.x,
                                        **self.kwargs_del(kwargs, 'x')))
-        return self.model.x, self.model.y
+        if self.model.x is not None:
+            return self.model.x, self.model.y
 
     def post(self, **kwargs: Any) -> None:
         """

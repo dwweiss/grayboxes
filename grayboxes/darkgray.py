@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-05-02 DWW
 """
 
 import numpy as np
@@ -45,18 +45,18 @@ class DarkGray(BoxModel):
 
             # expanded form:
             model = DarkGray(f)
-            best = model.train(X, Y, neurons=[5])
+            metrics = model.train(X, Y, neurons=[5])
             y = model.predict(x)
 
             # compact form:
-            y = DarkGray(f)(X=X, Y=Y, x=x, neurons=[5])
+            y = DarkGray(f)(X=X, Y=Y, neurons=[5], x=x)
     """
 
     def __init__(self, f: Callable, identifier: str='DarkGray') -> None:
         """
         Args:
             f:
-                theoretical submodel f(self, x) or f(x) for single data point
+                theoretical submodel f(self, x) or f(x) for single point
 
             identifier:
                 object identifier
@@ -77,14 +77,14 @@ class DarkGray(BoxModel):
             -> Optional[Dict[str, Any]]:
         """
         Args:
-            X (2D or 1D array of float):
-                training input, shape: (nPoint, nInp) or (nInp,)
+            X (2D array of float):
+                training input, shape: (n_point, n_inp)
 
-            Y (2D or 1D array of float):
-                training target, shape: (nPoint, nOut) or (nOut,)
+            Y (2D array of float):
+                training target, shape: (n_point, n_out)
 
         Kwargs:
-            Keyword arguments to be passed to train () of this object
+            Keyword arguments to be passed to train() of this object
             and of black box model
 
         Returns:
@@ -95,11 +95,12 @@ class DarkGray(BoxModel):
         if X is None or Y is None:
             return None
 
-        self.X, self.Y = X, Y
-        y = BoxModel.predict(self, self.X, **self.kwargs_del(kwargs, 'x'))
-        self.best = self._black.train(np.c_[self.X, y], y-self.Y, **kwargs)
+        self.set_XY(X, Y)
 
-        return self.best
+        y = BoxModel.predict(self, self.X, **self.kwargs_del(kwargs, 'x'))
+        self.metrics = self._black.train(np.c_[self.X, y], y-self.Y, **kwargs)
+
+        return self.metrics
 
     def predict(self, x: np.ndarray, **kwargs: Any) -> Optional[np.ndarray]:
         """
@@ -107,7 +108,7 @@ class DarkGray(BoxModel):
 
         Args:
             x (2D or 1D array of float):
-                prediction input, shape: (nPoint, nInp) or (nInp,)
+                prediction input, shape: (n_point, n_inp) or (n_inp,)
 
         Kwargs:
             Keyword arguments to be passed to predict() of this object
@@ -115,7 +116,7 @@ class DarkGray(BoxModel):
 
         Returns:
             (2D array of float):
-                prediction output, shape: (nPoint, nOut)
+                prediction output, shape: (n_point, n_out)
             or
             None if x is None
         """
@@ -125,6 +126,6 @@ class DarkGray(BoxModel):
 
         self.x = x
         self._y = BoxModel.predict(self, x, **kwargs)
-        self._y -= self._black.predict(np.c_[x, self._y], **kwargs)
+        self._y -= self._black.predict(np.c_[self.x, self._y], **kwargs)
 
         return self.y

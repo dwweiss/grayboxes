@@ -66,12 +66,12 @@ class Sensitivity(Forward):
         Analyzes sensitivity
 
         Kwargs:
-            X (2D or 1D array of float, optional):
-                training input, shape: (n_point, n_inp) or (n_point,)
+            X (2D array of float, optional):
+                training input, shape: (n_point, n_inp) 
                 default: self.model.X
 
-            Y (2D or 1D array of float, optional):
-                training target, shape: (n_point, n_out) or (n_point,)
+            Y (2D array of float, optional):
+                training target, shape: (n_point, n_out)
                 default: self.model.Y
 
             x (2D array of float):

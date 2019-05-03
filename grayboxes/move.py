@@ -59,7 +59,7 @@ class Move(Loop):
         self._velocity: xyz = xyz()           # velocity in 3D space [m/s]
         self._actual_orientation: xyz = xyz()   # actual orientation [rad]
         self._i_last_waypoint: int = 0    # index of last passed way point
-        self._trajectory_history: Optional[list[xyz]] = None    # plotdata
+        self._trajectory_history: Optional[list[xyz]] = None   # plot data
 
     def set_trajectory(self, way: Sequence[Union[xyz, xyzt]],
                        orientations: Optional[Sequence[xyz]]=None,
@@ -185,9 +185,11 @@ class Move(Loop):
             self._trajectory_history = None
         else:
             self._trajectory_history = \
-                [[self._actual_position.x], [self._actual_position.y], [self._actual_position.z],
+                [[self._actual_position.x], [self._actual_position.y], 
+                                            [self._actual_position.z],
                  [self._velocity.x], [self._velocity.y], [self._velocity.z],
-                 [self._actual_orientation.x], [self._actual_orientation.y], [self._actual_orientation.z]]
+                 [self._actual_orientation.x], [self._actual_orientation.y], 
+                                               [self._actual_orientation.z]]
 
     def update_transient(self) -> None:
         """
@@ -222,9 +224,9 @@ class Move(Loop):
                 time [s]
 
         Returns:
-            Value of self._actual_position if t is None and if self._actual_position
-            is not None. Otherwise the actual position is calculated as
-            function of time [m, m, m]
+            Value of self._actual_position if t is None and if 
+            self._actual_position is not None. Otherwise the actual 
+            position is calculated as function of time [m, m, m]
 
         Note:
             The calculated position is NOT stored as 'self._actual_position'
@@ -255,9 +257,9 @@ class Move(Loop):
                 time [s]
 
         Returns:
-            Value of self._orientations if t is None and if self._orientations
-            is not None. Otherwise the actual rotation is calculated as
-            function of time [rad]
+            Value of self._orientations if t is None and if 
+            self._orientations is not None. Otherwise the actual 
+            rotation is calculated as function of time [rad]
 
         Note:
             The calculated rotation is NOT stored as 'self._actual_orientation'

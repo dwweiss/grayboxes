@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-03-25 DWW
+      2019-04-30 DWW
 """
 
 import numpy as np
@@ -28,7 +28,7 @@ from grayboxes.minimum import Minimum
 
 class Inverse(Minimum):
     """
-    Finds the inverse x = f^{-1}(y)
+    Finds the inverse x = phi^{-1}(y)
 
     Examples:
         X = [[... ]]  input of training
@@ -58,21 +58,25 @@ class Inverse(Minimum):
         Args:
             x (2D or 1D array of float):
                 input of multiple or single data points,
-                shape: (n_point, n_inp) or (n_inp, )
+                shape: (1, n_inp) or (n_inp,)
 
         Kwargs:
-            keyword arguments to be passed to model.predict()
+            Keyword arguments to be passed to self.model.predict()
+
+        Note: 
+            The target is given as self.y with self.y.shape: (n_out,)
 
         Returns:
-            L2-norm as measure of difference between prediction and target
+            L2-norm as measure of difference between prediction & target
         """
-        # x is input of prediction, x.shape: (nInp, )
+        # x is prediction input, x.shape:(n_inp,), y_opt.shape:(1, n_out)
         y_opt = self.model.predict(np.asfarray(x),
                                    **self.kwargs_del(kwargs, 'x'))
 
-        # self.y is target, self.y.shape: (n_out,), y_opt.shape: (1, n_out)
-        l2_norm = np.sqrt(np.mean((y_opt[0] - self.y)**2))
+        # y is target, self.y.shape: (n_out,), y_opt[0].shape: (n_out,)
+        # Note: This L2-norm is only computed for a single data point 
+        L2_norm = np.sqrt(np.mean((y_opt[0] - self.y)**2))
 
-        self._trial_history.append([x, y_opt[0], l2_norm])
+        self._trial_history.append([x, y_opt[0], L2_norm])
 
-        return l2_norm
+        return L2_norm

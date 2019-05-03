@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-03-25 DWW
+      2019-04-03 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -58,12 +58,12 @@ class Minimum(Forward):
         norm = op(XY=(X, Y, x_keys, y_keys))                # train only
 
     Notes:
-        - Limited to single target (Inverse: norm(y - Y), Optimum: one of y)
-
+        - Limited to single target (Inverse: norm(y - Y), 
+                                    Optimum: one element of of y array)
         - At the end of every evolution of objective(), the single
           point input array x, the single point output array y, and
           the scalar result of the objective function is appended to
-          self._trial_History
+          self._trial_history
 
         - The list of single point input, output and objective
           function result is stored self._history
@@ -95,24 +95,22 @@ class Minimum(Forward):
                        # _history[iTrial][jEvaluation] = (x,y,objective)
 
         # three leading chars are significant, case-insensitive
-        self._valid_methods = ['Nelder-Mead',
-                              'Powell',
-                              'CG',
-                              'BFGS',
-                               # 'Newton-CG',        # requires Jacobian
-                              'L-BFGS-B',
-                              'TNC',
-                               # 'COBYLA',    # failed in test_lightgray
-                              'SLSQP',
-                               # 'dogleg',           # requires Jacobian
-                               # 'trust-ncg',        # requires Jacobian
-                              'basinhopping',           # GLOBAL optimum
-                              'differential_evolution',    # GLOBAL opt.
-                               ]
+        self._valid_optimizers = ['Nelder-Mead',
+                                  'Powell',
+                                  'CG',
+                                  'BFGS',
+                                   # 'Newton-CG',    # requires Jacobian
+                                  'L-BFGS-B',
+                                  'TNC',
+                                   # 'COBYLA',# failed in test_lightgray
+                                  'SLSQP',
+                                   # 'dogleg',       # requires Jacobian
+                                   # 'trust-ncg',    # requires Jacobian
+                                  'basinhopping',       # GLOBAL optimum
+                                  'differential_evolution', # GLOBAL opt
+                                   ]
         if 'modestga' in sys.modules:
-            self._valid_methods += ['ga']
-
-        self._method = self._valid_methods[0]
+            self._valid_optimizers += ['ga']
 
     @property
     def x(self) -> np.ndarray:
@@ -199,7 +197,7 @@ class Minimum(Forward):
 
         y = self.model.predict(x, **self.kwargs_del(kwargs, 'x'))
         out = y[0]                                    # first data point
-        obj = out[0]                                  # first output
+        obj = out[0]                                      # first output
 
         self._trial_history.append((x, out, obj))
 
@@ -211,12 +209,12 @@ class Minimum(Forward):
             bounds (Sequence[Tuple[float, float]]):
                 array of min/max pairs for optimization constraints etc
 
-            method (str):
+            optimizer (str):
                 optimization method
 
             x (2D or 1D array of float):
                 initial values as multiple or single data points,
-                shape: (n_point, n_inp) or (n_inp,)
+                shape: (n_point, n_inp) or (n_inp, )
                 
             y (1D array of float):
                 target of inverse problem (only if 'self' is of type
@@ -236,7 +234,7 @@ class Minimum(Forward):
 
         bounds = kwargs.get('bounds', None)
 
-        # sets initial values or returns (if x is None,model train.only)
+        # sets initial values or returns (if x is None,model train only)
         self.x = kwargs.get('x', None)
         if self.x is None:
             return 0
@@ -247,20 +245,20 @@ class Minimum(Forward):
             if self.y is None:
                 return 0
 
-        method = self.kwargs_get(kwargs, ('method', 'methods'), None)
-        if method not in self._valid_methods:
-            method = self._valid_methods[0]
-        self.write('+++ Method: ' + str(method))
+        optimizer = self.kwargs_get(kwargs, 'optimizer', None)
+        if optimizer not in self._valid_optimizers:
+            optimizer = self._valid_optimizers[0]
+        self.write('+++ optimizer: ' + str(optimizer))
 
         x_ini = self.x.copy()
         self._history = []
-        for x0 in x_ini:           # x_ini.shape[0] is number of trials
+        for x0 in x_ini:            # x_ini.shape[0] is number of trials
             #
             # Note: self._trialHistory list is populated in objective()
             #
             self._trial_history = []
 
-            if method.startswith('bas'):
+            if optimizer.startswith('bas'):
                 res = scipy.optimize.basinhopping(
                     func=self.objective, x0=x0, niter=100, T=1.0, stepsize=0.5,
                     minimizer_kwargs=None, take_step=None, accept_test=None,
@@ -268,7 +266,7 @@ class Minimum(Forward):
                 # x, y = np.atleast_1d(res.x), np.atleast_1d(res.fun)
                 success = 'success' in res.message[0]
 
-            elif method.startswith('dif'):
+            elif optimizer.startswith('dif'):
                 if bounds is None:
                     bounds = [(-10, 10)] * len(x0)
                 res = scipy.optimize.differential_evolution(
@@ -279,17 +277,17 @@ class Minimum(Forward):
                 # x, y = res.x, res.fun
                 success = res.success
 
-            elif method == 'ga':
+            elif optimizer == 'ga':
                 valid_keys = ['tol', 'options', 'bounds']
                 kw = {k: kwargs[k] for k in valid_keys if k in kwargs}
                 res = mg.minimize(fun=self.objective, x0=x0,
-                                  # method=self.method, # TODO .
+                                  # method=optimizer, # TODO .
                                   **kw)
                 # x, y = np.atleast_1d(res.x), np.atleast_1d(res.fx)
                 success = True  # TODO .
             else:
                 res = scipy.optimize.minimize(fun=self.objective, x0=x0,
-                                              method=method,)
+                                              method=optimizer,)
                 # x = np.atleast_1d(res.x)
                 # kw = self.kwargs_del(kwargs, 'x')
                 # y = self.model.predict(x=res.x, **kw)[0]
@@ -434,7 +432,7 @@ class Minimum(Forward):
 
         # type(self._history) = List[List[
         #              Tuple[x: np.ndarray, y: np.ndarray, obj: float]]]
-        n_inp = len(self._history[0][0][0])  # trial:0, evaluation:0, x:0
+        n_inp = len(self._history[0][0][0])   # trial:0 evaluation:0 x:0
         n_trial = len(self._history)
 
         plt.title('Objective (x0..x' + str(n_inp-1)+', trial[0..' +
@@ -459,8 +457,8 @@ class Minimum(Forward):
         plt.show()
 
     def plot_trajectory(self) -> None:
-        n_inp = len(self._history[0][0][0])  # trial:0, eval:0, xindex=0
-        n_out = len(self._history[0][0][1])  # trial:0, eval:0, yindex=0
+        n_inp = len(self._history[0][0][0])  # trial:0 eval:0 x_index=0
+        n_out = len(self._history[0][0][1])  # trial:0 eval:0 y_index=0
 
         if n_inp >= 2:
             self.write('    Trajectory of objective vs (x0, x1), all trials')

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-05-02 DWW
 """
 
 import numpy as np
@@ -74,14 +74,14 @@ class MediumGray(BoxModel):
             -> Dict[str, Any]:
         """
         Trains model, stores X and X as self.X and self.Y, and stores 
-        result of best training trial as self.best
+        result of best training trial as self.metrics
 
         Args:
-            X (2D or 1D array of float):
-                training input X_prc, shape: (n_point, n_inp) or (n_point,)
+            X (2D array of float):
+                training input X_prc, shape: (n_point, n_inp)
 
-            Y (2D or 1D array of float):
-                training target Y_com, shape: (n_point, nOut) or (n_point,)
+            Y (2D array of float):
+                training target Y_com, shape: (n_point, nOut)
 
         Kwargs:
             bounds (2-tuple of float or 2-tuple of 1D array of float):
@@ -93,11 +93,11 @@ class MediumGray(BoxModel):
                 if 'local' is None, False or 0, a single global network is
                     trained without local tuning and data collection
 
-            methods (str or list of str):
+            trainer (str or list of str):
                 optimizer method of
                     - scipy.optimizer.minimize or
                     - genetic algorithm
-                see LightGray.validMethods
+                see LightGray.valid_trainers
                 default: 'BFGS'
 
             shuffle (bool):
@@ -137,16 +137,16 @@ class MediumGray(BoxModel):
 
                 # expanded form:
                 model = MediumGray(f=f)
-                model.train(X, Y, methods='ga', neurons=[])
+                model.train(X, Y, trainer='ga', neurons=[])
                 y = model.predict(x)
 
                 # compact form:
-                y = MediumGray(f)(X=X, Y=Y, x=x, methods='ga', neurons=[])
+                y = MediumGray(f)(X=X, Y=Y, x=x, trainer='ga', neurons=[])
         """
-        self.X = X if X is not None else self.X
-        self.Y = Y if Y is not None else self.Y
+        self.set_XY(X, Y)
 
         opt = self.kwargs_del(kwargs, ['X', 'Y', 'local'])
+        opt['correct_xy_shape'] = False
         self.silent = kwargs.get('silent', self.silent)
         self._local_size = kwargs.get('local', None)
         neurons = kwargs.get('neurons', [])
@@ -156,14 +156,14 @@ class MediumGray(BoxModel):
                        str(self._local_size) + ')')
 
             shuffle = kwargs.get('shuffle', self._local_size > 1)
-            methods = kwargs.get('methods', ['bfgs', 'rprop'])
+            trainer = kwargs.get('trainer', ['bfgs', 'rprop'])
             n_point = self.X.shape[0]
             n_sub = n_point // np.clip(self._local_size, 1, n_point)
 
             xy_rnd2d = np.c_[self.X, self.Y]
             if shuffle:
                 np.random.shuffle(xy_rnd2d)
-            xy_all3d = np.array_split(xy_rnd2d, n_sub)   # list of 2d array
+            xy_all3d = np.array_split(xy_rnd2d, n_sub)   # 2D arr. list
 
             x_tun_all2d: List[np.ndarray] = []
             n_inp = self.X.shape[1]
@@ -180,7 +180,7 @@ class MediumGray(BoxModel):
             if len(xy_all3d) > 1:
                 self.write('            (generalization)')
                 res = self._black.train(X=xy_rnd2d[:, :n_inp], Y=x_tun_all2d,
-                                        neurons=neurons, methods=methods)
+                                        neurons=neurons, trainer=trainer)
                 self.weights = None
             else:
                 # constant weights if local == X.shape[0], (1 group)
@@ -192,17 +192,17 @@ class MediumGray(BoxModel):
         else:
             self.write('+++ Medium gray (global training)')
 
-            methods = kwargs.get('methods', ['genetic', 'derivative'])
+            trainer = kwargs.get('trainer', ['genetic', 'derivative'])
 
             if self._black is not None:
                 del self._black
             self._black = Neural(f=self.f)
             self._black.train(self.X, self.Y, neurons=neurons, 
-                              methods=methods)
+                              trainer=trainer)
 
         self.ready = True
-        self.best = self.error(self.X, self.Y, **opt)
-        return self.best
+        self.metrics = self.evaluate(self.X, self.Y, **opt)
+        return self.metrics
 
     def predict(self, x: np.ndarray, **kwargs: Any) -> np.ndarray:
         """
@@ -210,7 +210,7 @@ class MediumGray(BoxModel):
 
         Args:
             x (2D or 1D array of float):
-                prediction input, shape: (nPoint, nInp) or (nInp,)
+                prediction input, shape: (n_point, n_inp) or (n_inp,)
 
         Kwargs:
             Keyword arguments to be passed to BoxModel.predict() and to
@@ -218,11 +218,14 @@ class MediumGray(BoxModel):
 
         Returns:
             (2D array of float):
-                prediction output, shape: (nPoint, nOut)
+                prediction output, shape: (n_point, n_out)
         """
         assert self._black is not None and self._black.ready
         opt = self.kwargs_del(kwargs, 'x')
-        self.x = x
+        
+        self.x = x                # self.x is a setter ensuring 2D array
+        assert self._n_inp == self.x.shape[1], \
+            str((self._n_inp, self.x.shape))
 
         if self._local_size is not None:
             if self.weights is None:

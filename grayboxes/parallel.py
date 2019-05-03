@@ -105,7 +105,7 @@ def predict_scatter(f: Callable, x: np.ndarray, *args: float, **kwargs: Any) \
             generic function f(x) without 'self' argument
 
         x (2D or 1D array_like of float):
-            prediction input, shape: (nPoint, nInp)
+            prediction input, shape: (n_point, n_inp)
 
         args:
             positional arguments
@@ -116,7 +116,7 @@ def predict_scatter(f: Callable, x: np.ndarray, *args: float, **kwargs: Any) \
 
     Returns:
         y (2D array of float):
-            output array, shape: (nPoint, nOut)
+            output array, shape: (n_point, n_out)
             or np.array((None)) if no MPI
     """
     assert os.name == 'posix', os.name
@@ -168,14 +168,14 @@ def predict_scatter(f: Callable, x: np.ndarray, *args: float, **kwargs: Any) \
 #            file with implementation of generic model f(x), see example
 #
 #        x (2D or 1D array_like of float):
-#            input array, shape: (nPoint, nInp)
+#            input array, shape: (n_point, n_inp)
 #
 #        kwargs (dict, optional):
 #            keyword arguments
 #
 #    Returns:
 #        y (2D array of float):
-#            output array, shape: (nPoint, nOut)
+#            output array, shape: (n_point, n_out)
 #            or np.array((None)) if no MPI
 #
 #    Example of file 'f':
@@ -293,7 +293,7 @@ def x3d_to_str(data: np.ndarray, indent: Union[str, int]='    ') -> str:
 
     Args:
         data (3D array of float):
-            input or output array, shape: (nProc, nPointPerProc, nInp)
+            input or output array, shape: (n_proc, n_point_per_proc, n_inp)
 
         indent:
             indent in string representation if type of indent is string
@@ -330,6 +330,6 @@ def x_demo(n_point: int=24, n_inp: int=2) -> np.ndarray:
 
     Returns:
         (2D array of float):
-            demo input array, shape: (nPoint, nInp)
+            demo input array, shape: (n_point, n_inp)
     """
     return np.array([[i + j for j in range(n_inp)] for i in range(n_point)])

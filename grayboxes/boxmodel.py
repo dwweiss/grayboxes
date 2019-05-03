@@ -17,10 +17,10 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-03-22 DWW
+      2019-05-02 DWW
 """
 
-__all__ = ['BoxModel', 'grid', 'cross', 'rand', 'noise', 'frame2arr']
+__all__ = ['BoxModel', 'grid', 'cross', 'rand', 'noise', 'frame_to_arrays']
 
 import inspect
 import random
@@ -191,8 +191,8 @@ def rand(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
 
     Returns:
         (2D array of float):
-            Random initial values, first index is trial index,
-            second index is input index
+            Random initial values, first index is trial index, second 
+            index is input index
     """
     ranges = list(ranges)
     ranges = np.atleast_2d(ranges)
@@ -243,7 +243,7 @@ def noise(y: np.ndarray, absolute: float=0.0, relative: float=0e-2,
             upper boundary of interval of relative noise to be added.
             The lower boundary is the opposite of 'relative'.
             The addition is relative to actual value of y, for instance 
-            'relative = 0.2' adds noise out of the range from -20% to 
+            'relative = 20e-2' adds noise out of the range from -20% to 
             20% to 'y'
 
             default: 0.0
@@ -286,15 +286,15 @@ def noise(y: np.ndarray, absolute: float=0.0, relative: float=0e-2,
     return y
 
 
-def frame2arr(df: DataFrame,
-              keys0: Union[str, Sequence[str]],
-              keys1: Union[str, Sequence[str], None]=None,
-              keys2: Union[str, Sequence[str], None]=None,
-              keys3: Union[str, Sequence[str], None]=None,
-              keys4: Union[str, Sequence[str], None]=None,
-              keys5: Union[str, Sequence[str], None]=None,
-              keys6: Union[str, Sequence[str], None]=None,
-              keys7: Union[str, Sequence[str], None]=None) \
+def frame_to_arrays(df: DataFrame,
+                    keys0: Union[str, Sequence[str]],
+                    keys1: Union[str, Sequence[str], None]=None,
+                    keys2: Union[str, Sequence[str], None]=None,
+                    keys3: Union[str, Sequence[str], None]=None,
+                    keys4: Union[str, Sequence[str], None]=None,
+                    keys5: Union[str, Sequence[str], None]=None,
+                    keys6: Union[str, Sequence[str], None]=None,
+                    keys7: Union[str, Sequence[str], None]=None) \
         -> Optional[List[np.ndarray]]:
     """
     Extracts 1D arrays of float from columns of a pandas DataFrame
@@ -369,13 +369,13 @@ class BoxModel(Base):
     """
     Parent class of White, LightGray, MediumGray, DarkGray and Black
 
-    - Input and output are 2D arrays. First index is data point index
+    - Inputs and outputs are 2D arrays. First index is data point index
     - If X or Y is passed as 1D array_like, then they are transformed to
           self.X = np.atleast_2d(X).T and self.Y = np.atleast_2d(Y).T
 
-    - Upper case 'X' is 2D   training input and 'Y' is 2D train. target
+    - Upper case 'X' is 2D training input and 'Y' is 2D training target
     - Lower case 'x' is 2D prediction input and 'y' is 2D pred. output
-    - XY = (X, Y, x_keys, y_keys) is union of X and Y,optional with keys
+    - XY = (X, Y, x_keys,y_keys) is union of X and Y, optional with keys
 
     Decision tree
     -------------
@@ -410,21 +410,22 @@ class BoxModel(Base):
                 Unique object identifier
         """
         super().__init__(identifier=identifier)
-        self.f: Callable = f  # theoretical submodel if not black box
+        self.f: Callable = f     # theoretical submodel if not black box
         self._X: Optional[np.ndarray] = None  # training input  (2D arr)
         self._Y: Optional[np.ndarray] = None  # training target (2D arr)
         self._x: Optional[np.ndarray] = None  # pred. input  (1D/2D arr)
         self._y: Optional[np.ndarray] = None  # pred. output (1D/2D arr)
-        self._x_keys: Optional[List[str]] = None  # x-keys for data selec
-        self._y_keys: Optional[List[str]] = None  # y-keys for data selec
-        self._best: Dict[str, Any] = self.init_results()  # init best
+        self._x_keys: Optional[List[str]] = None   # x-keys for data sel
+        self._y_keys: Optional[List[str]] = None   # y-keys for data sel
+        self._metrics: Dict[str, Any] = self.init_metrics()  # init met.
         self._weights: Optional[np.ndarray] = None  # weights of emp.mod
+        self._n_inp: int = -1                         # number of inputs
 
-    def init_results(self, keys: Union[str, Sequence[str], None]=None,
+    def init_metrics(self, keys: Union[str, Sequence[str], None]=None,
                      values: Union[Any, Sequence[Any], None]=None) \
             -> Dict[str, Any]:
         """
-        Sets default values to result dictionary
+        Sets default values to metrics describing model performance
 
         Args:
             keys:
@@ -434,17 +435,24 @@ class BoxModel(Base):
                 list of values to be updated or added
 
         Returns:
-            default for results of best training trial,
+            default settings for 
+                - metrics of best training trial or of 
+                - model evaluation
             see BoxModel.train()
         """
-        results = {'method': None,
-                   'L2': np.inf, 'abs': np.inf, 'iAbs': -1,
-                   'iterations': -1, 'evaluations': -1, 'epochs': -1,
-                   'weights': None}
+        metrics = {'trainer': None,
+                   'L2': np.inf, 
+                   'abs': np.inf,
+                   'iAbs': -1,
+                   'iterations': -1, 
+                   'evaluations': -1, 
+                   'epochs': -1,
+                   'weights': None
+                   }
         if keys is not None and values is not None:
             for key, value in zip(np.atleast_1d(keys), np.atleast_1d(values)):
-                results[key] = value
-        return results
+                metrics[key] = value
+        return metrics
 
     @property
     def f(self) -> Callable:
@@ -488,7 +496,7 @@ class BoxModel(Base):
                 tuning parameters as positional arguments
 
         Kwargs:
-            c0, c1, ... (float):
+            a, b, ... (float):
                 coefficients
 
         Returns:
@@ -499,6 +507,40 @@ class BoxModel(Base):
         a, b = args if len(args) > 0 else (1, 100)
         y0 = (a - x[0])**2 + b * (x[1] - x[0]**2)**2
         return [y0]
+
+    def set_XY(self, X: np.ndarray, Y: np.ndarray, correct_xy_shape: \
+               bool=True) -> None:
+        """
+        Sets X and Y array. Saves X.shape[1] as self._n_inp
+        
+        Args:
+            X (2D array of float):
+                X array of training input, shape: (n_point, n_inp)
+
+            Y (2D array of float):
+                Y array of training target, shape: (n_point, n_out)
+
+            correct_xy_shape:
+                if True, correct shape of X and Y so that X.shape[0] > 1
+                and Y.shape[0] > 1
+
+        Returns:
+            None
+        """
+        self.X = X if X is not None else self.X
+        self.Y = Y if Y is not None else self.Y
+        if correct_xy_shape:
+            if self._X.shape[0] == 1:
+                self._X = self._X.T
+            if self._Y.shape[0] == 1:
+                self._Y = self._Y.T
+
+        self._n_inp = self.X.shape[1]
+
+        assert self.X.shape[0] == self.Y.shape[0], str((self.X.shape,
+                                                        self.Y.shape))
+        if correct_xy_shape:
+            assert self.X.shape[0] > 2, str(self.X.shape)
 
     @property
     def X(self) -> np.ndarray:
@@ -513,17 +555,13 @@ class BoxModel(Base):
     def X(self, value: np.ndarray) -> None:
         """
         Args:
-            value (2D or 1D array of float):
+            value (2D array of float):
                 X array of training input, shape: (n_point, n_inp)
-                or (n_point,)
         """
         if value is None:
             self._X = None
         else:
             self._X = np.atleast_2d(value)
-
-            assert self._Y is None or self._X.shape[0] == self._Y.shape[0], \
-                str(self._X.shape) + str(self._Y.shape)
 
     @property
     def Y(self) -> np.ndarray:
@@ -538,17 +576,13 @@ class BoxModel(Base):
     def Y(self, value: np.ndarray) -> None:
         """
         Args:
-            value (2D or 1D array of float):
+            value (2D array of float):
                 Y array of training target, shape: (n_point, n_out)
-                or (n_out,)
         """
         if value is None:
             self._Y = None
         else:
             self._Y = np.atleast_2d(value)
-
-            assert self._X is None or self._X.shape[0] == self._Y.shape[0], \
-                str(self._X.shape) + str(self._Y.shape)
 
     @property
     def x(self) -> np.ndarray:
@@ -563,9 +597,8 @@ class BoxModel(Base):
     def x(self, value: np.ndarray) -> None:
         """
         Args:
-            value(2D or 1D array of float):
+            value (2D array of float):
                 x array of prediction input, shape: (n_point, n_inp)
-                or (n_inp,)
         """
         if value is None:
             self._x = None
@@ -585,9 +618,8 @@ class BoxModel(Base):
     def y(self, value: np.ndarray) -> None:
         """
         Args:
-            value(2D or 1D array of float):
+            value (2D array of float):
                 y array of prediction output, shape: (n_point, n_out)
-                or (n_out,)
         """
         if value is None:
             self._y = None
@@ -598,11 +630,11 @@ class BoxModel(Base):
     def XY(self) -> Tuple[np.ndarray, np.ndarray, List[str], List[str]]:
         """
         Returns:
-            X (2D or 1D array of float):
-                training input, shape: (n_point, n_inp) or (n_point,)
+            X (2D array of float):
+                training input, shape: (n_point, n_inp)
 
-            Y (2D or 1D array of float):
-                training target, shape: (n_point, n_out) or (n_point,)
+            Y (2D array of float):
+                training target, shape: (n_point, n_out)
 
             x_keys (1D list of str):
                 list of column keys for data selection
@@ -622,11 +654,11 @@ class BoxModel(Base):
         """
         Args:
             value (4-tuple of two arrays of float and two arrays of str):
-                X (2D or 1D array_like of float):
-                    training input, shape: (n_point, n_inp) or (n_point,)
+                X (2D array_like of float):
+                    training input, shape: (n_point, n_inp)
 
-                Y (2D or 1D array of float):
-                    training target, shape: (n_point, n_out) or (n_point,)
+                Y (2D array of float):
+                    training target, shape: (n_point, n_out)
 
                 x_keys (1D array of str or None):
                     list of column keys for data selection
@@ -664,16 +696,16 @@ class BoxModel(Base):
         assert not any(x in self._y_keys for x in self._x_keys), \
             str(x_keys) + str(y_keys)
 
-    def XY2frame(self, X: Optional[np.ndarray]=None,
+    def XY_to_frame(self, X: Optional[np.ndarray]=None,
                  Y: Optional[np.ndarray]=None) -> DataFrame:
         """
         Args:
-            X (2D or 1D array of float):
-                training input, shape: (n_point, n_inp) or (n_point,)
+            X (2D array of float):
+                training input, shape: (n_point, n_inp)
                 default: self.X
 
-            Y (2D or 1D array of float):
-                training target, shape: (n_point, n_out) or (n_point,)
+            Y (2D array of float):
+                training target, shape: (n_point, n_out)
                 default: self.Y
 
         Returns:
@@ -683,7 +715,8 @@ class BoxModel(Base):
             X = self._X
         if Y is None:
             Y = self._Y
-        X, Y = np.atleast_2d(X, Y)
+        X = np.atleast_2d(X)
+        Y = np.atleast_2d(Y)
         x_keys, y_keys = self._x_keys, self._y_keys
         assert X is not None
         assert Y is not None
@@ -710,12 +743,12 @@ class BoxModel(Base):
             dic[y_keys[j]] = Y[:, j]
         return DataFrame(dic)
 
-    def xy2frame(self) -> DataFrame:
+    def xy_to_frame(self) -> DataFrame:
         """
         Returns:
             Data frame created from self._x and self._y
         """
-        return self.XY2frame(self._x, self._y)
+        return self.XY_to_frame(self._x, self._y)
 
     @property
     def weights(self) -> np.ndarray:
@@ -744,14 +777,14 @@ class BoxModel(Base):
         X and Y are stored as self.X and self.Y if both are not None
 
         Args:
-            X (2D or 1D array of float):
-                training input, shape: (n_point, n_inp) or (n_point,)
+            X (2D array of float):
+                training input, shape: (n_point, n_inp)
 
-            Y (2D or 1D array of float):
-                training target, shape: (n_point, n_out) or (n_point,)
+            Y (2D array of float):
+                training target, shape: (n_point, n_out)
 
         Kwargs:
-            methods (str or list of str):
+            trainer (str or list of str):
                 training methods
 
             epochs (int):
@@ -766,24 +799,25 @@ class BoxModel(Base):
 
         Returns:
             (dictionary):
-                result of best training trial:
-                    'method'     (str): best training method
-                    'L2'       (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
-                    'abs'      (float): max{|net(x) - Y|} of best training
+                metrics of best training trial:
+                    'trainer'    (str): best training method
+                    'L2'       (float): sqrt{sum{(phi(x)-Y)^2}/N} of best train
+                    'abs'      (float): max{|phi(x) - Y|} of best train
                     'iAbs'       (int): index of Y where absolute error is max
                     'epochs'     (int): number of epochs of best (neural) train
                     'iterations' (int): number of iterations
-                    'weights'    (arr): weights if not White box model
+                    'weights'  (array): weights if not White box model
 
         Note:
-            If X or Y is None, or training fails then self.best['method']=None
+            If X or Y is None, or training fails: self.metrics['trainer']=None
         """
         self.ready = True
         self._weights = None
-        self.best = self.init_results()
+        self.metrics = self.init_metrics()
 
         if X is not None and Y is not None:
             self.X, self.Y = X, Y
+            self._n_inp = self.X.shape[1]
             #
             # ... INSERT TRAINING IN DERIVED CLASSES ...
             #
@@ -791,10 +825,10 @@ class BoxModel(Base):
             # self.ready = SUCCESS
             # if self.ready:
             #    self._weights = ...
-            #    self.best = {'method': ..., 'L2': ..., 'abs': ...,
+            #    self.metrics = {'trainer': ..., 'L2': ..., 'abs': ...,
             #                 'iAbs': ..., 'epochs': ...}
 
-        return self.best
+        return self.metrics
 
     def predict(self, x: np.ndarray, *args: float, **kwargs: Any) \
             -> Optional[np.ndarray]:
@@ -822,6 +856,9 @@ class BoxModel(Base):
         """
         self.x = x          # self.x is a setter ensuring 2D numpy array
 
+        assert self._n_inp == -1 or self._n_inp == self.x.shape[1], \
+            str((self._n_inp, self.x.shape))
+
         if not self.ready:
             self.y = None
         elif not communicator() or x.shape[0] <= 1:
@@ -830,10 +867,10 @@ class BoxModel(Base):
         else:
             self.y = predict_scatter(
                 self.f, self.x, *args, **self.kwargs_del(kwargs, 'x'))
-        return self.y
+        return np.atleast_2d(self.y)
 
-    def error(self, X: np.ndarray, Y: np.ndarray, *args: float,
-              **kwargs: Any) -> Dict[str, Any]:
+    def evaluate(self, X: np.ndarray, Y: np.ndarray, *args: float,
+                 **kwargs: Any) -> Dict[str, Any]:
         """
         Evaluates difference between prediction y(X) and reference Y(X)
 
@@ -848,12 +885,13 @@ class BoxModel(Base):
                 positional arguments
 
         Kwargs:
-                silent (bool):
-                    if True then print of norm is suppressed
-                    default: False
+            silent (bool):
+                if True then print of norm is suppressed
+                default: False
+
         Returns:
             (dictionary):
-                result of evaluation
+                metrics of evaluation
                     'L2'  (float): sqrt{sum{(net(x)-Y)^2}/N} best train
                     'abs' (float): max{|net(x) - Y|} of best training
                     'iAbs'  (int): index of Y where absolute err is max
@@ -861,10 +899,10 @@ class BoxModel(Base):
             maximum abs index is 1D index, eg yAbsMax=Y.ravel()[iAbsMax]
         """
         if X is None or Y is None:
-            best = self.init_results()
-            best = {key: best[key] for key in ('L2', 'abs', 'iAbs')}
+            metrics = self.init_metrics()
+            metrics = {key: metrics[key] for key in ('L2', 'abs', 'iAbs')}
         else:
-            assert X.shape[0] == Y.shape[0], str(X.shape) + str(Y.shape)
+            assert X.shape[0] == Y.shape[0], str((X.shape, Y.shape))
 
             y = self.predict(x=X, *args, **self.kwargs_del(kwargs, 'x'))
 
@@ -873,17 +911,17 @@ class BoxModel(Base):
             except ValueError:
                 print('X Y y:', X.shape, Y.shape, y.shape)
                 assert 0
-            best = {'L2': np.sqrt(np.mean(np.square(dy))),
-                    'iAbs': np.abs(dy).argmax()}
-            best['abs'] = dy.ravel()[best['iAbs']]
+            i_abs = np.abs(dy).argmax()
+            metrics = {'L2': np.sqrt(np.mean(np.square(dy))), 'iAbs': i_abs}
+            metrics['abs'] = dy.ravel()[metrics['iAbs']]
 
             if not kwargs.get('silent', True):
-                self.write('    L2: ' + str(np.round(best['L2'], 4)) +
-                           ' max(abs(y-Y)): ' + str(np.round(best['abs'], 5)) +
-                           ' [' + str(best['iAbs']) + '] x,y:(' +
-                           str(np.round(X.ravel()[best['iAbs']], 3)) + ', ' +
-                           str(np.round(Y.ravel()[best['iAbs']], 3)) + ')')
-        return best
+                self.write('    L2: ' + str(np.round(metrics['L2'], 4)) +
+                           ' max(abs(y-Y)): '+str(np.round(metrics['abs'], 5))+
+                           ' [' + str(i_abs) + '] x,y:(' +
+                           str(np.round(X.ravel()[i_abs], 3)) + ', ' +
+                           str(np.round(Y.ravel()[i_abs], 3)) + ')')
+        return metrics
 
     def pre(self, **kwargs: Any) -> Dict[str, Any]:
         """
@@ -893,30 +931,30 @@ class BoxModel(Base):
                 training input & training target, optional keys of X and Y
                 'XY' supersede 'X' and 'Y'
 
-            X (2D or 1D array of float):
-                training input, shape: (n_point, n_inp) or (n_point,)
+            X (2D array of float):
+                training input, shape: (n_point, n_inp)
                 'XY' supersede 'X' and 'Y'
                 default: self.X
 
-            Y (2D or 1D array of float):
-                training target, shape: (n_point, n_out) or (n_point,)
+            Y (2D array of float):
+                training target, shape: (n_point, n_out)
                 'XY' supersede 'X' and 'Y'
                 default: self.Y
 
          Returns:
             (dictionary):
-                result of best training trial:
-                    'method '    (str): best training method
-                    'L2'       (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
-                    'abs'      (float): max{|net(x) - Y|} of best training
+                metrics of best training trial:
+                    'trainer'    (str): best training method
+                    'L2'       (float): sqrt{sum{(phi(x)-Y)^2}/N} of best train
+                    'abs'      (float): max{|phi(x) - Y|} of best training
                     'iAbs'       (int): index of Y where absolute error is max
                     'epochs'     (int): number of epochs of best (neural) train
                     'iterations' (int): number of iterations
                     'weights'    (arr): weights if not White box model
                 if 'XY' or ('X' and 'Y') in 'kwargs'
 
-        Side effects:
-            self.X and self.Y are overwritten with setter: XY or (X, Y)
+        Note:
+            self.X and self.Y are overwritten by setters of XY or (X, Y)
         """
         super().pre(**kwargs)
 
@@ -928,12 +966,12 @@ class BoxModel(Base):
 
         # trains model if self.X is not None and self.Y is not None
         if self.X is not None and self.Y is not None:
-            kw = self.kwargs_del(kwargs, ['X', 'Y'])
-            self.best = self.train(X=self.X, Y=self.Y, **kw)
+            opt = self.kwargs_del(kwargs, ['X', 'Y'])
+            self.metrics = self.train(X=self.X, Y=self.Y, **opt)
         else:
-            self.best = self.init_results()
+            self.metrics = self.init_metrics()
 
-        return self.best
+        return self.metrics
 
     def task(self, **kwargs: Any) -> Union[np.ndarray, Dict[str, Any]]:
         """
@@ -943,26 +981,26 @@ class BoxModel(Base):
 
         Returns:
             (2D array of float):
-                if x is not None and self.read: predict y=model(x)
+                if x is not None and self.ready: predict y=model(x)
             or
             (dictionary):
-                result of train() with best training trial:
-                    'method'     (str): best training method
-                    'L2'       (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
-                    'abs'      (float): max{|net(x) - Y|} of best training
+                metrics of best training trial of train():
+                    'trainer'    (str): best training method
+                    'L2'       (float): sqrt{sum{(phi(x)-Y)^2}/N} of best train
+                    'abs'      (float): max{|phi(x) - Y|} of best training
                     'iAbs'       (int): index of Y where absolute error is max
                     'epochs'     (int): number of epochs of best (neural) train
                     'iterations' (int): number of iterations
-                    'weights'    (arr): weights if not White box model
+                    'weights'  (array): weights if not White box model
 
-        Side effects:
-            x is stored as self.x and prediction output as self.y
+        Note:
+            x is stored as self.x and the prediction output as self.y
         """
         super().task(**kwargs)
 
         x = kwargs.get('x', None)
         if x is None:
-            return self.best
+            return self.metrics
 
         self.x = x                # self.x is a setter ensuring 2D shape
         self.y = self.predict(x=self.x, **self.kwargs_del(kwargs, 'x'))

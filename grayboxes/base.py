@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-10-15 DWW
+      2019-03-26 DWW
 
   Note on program arguments:
     - no arguments          : program starts in default mode
