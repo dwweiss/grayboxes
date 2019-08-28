@@ -369,7 +369,7 @@ def xy_rand_split(x: np.ndarray, y: Optional[np.ndarray]=None,
     arrays is defined by a list of 'fractions'
 
     Example:
-        from coloredlids.xy_rand_split import xy_rand_split
+        from arrays.xy_rand_split import xy_rand_split
         x = [1, 2, 3, 4, 5, 6]
         y = [3, 4, 5, 6, 7, 8]
         x = np.atleast_2d(x).T  # 2D array with one column
@@ -396,8 +396,6 @@ def xy_rand_split(x: np.ndarray, y: Optional[np.ndarray]=None,
             
     Returns:
         Pair of lists of 2D sub-arrays of float
-
-    Example:
     """
     assert len(x.shape) == 2, str(x.shape)
     if y is not None:
@@ -431,7 +429,7 @@ def xy_rand_split(x: np.ndarray, y: Optional[np.ndarray]=None,
 def xy_thin_out(x: np.ndarray, y: np.ndarray, bins: int=32) \
         -> Tuple[np.ndarray, np.ndarray]:
     """
-    Thinning out an a fine array of (x, y) points to coarse array
+    Thinning out an a fine array of (x, y) points -> to coarse array
     
     Args
         x (1D array of float):
