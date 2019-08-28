@@ -25,7 +25,7 @@ import numpy as np
 from typing import Any, Dict, Optional
 
 from grayboxes.boxmodel import BoxModel
-from grayboxes.neural import Neural, RadialBasis
+from grayboxes.neural import Neural    # , RadialBasis
 try:
     from grayboxes.splines import Splines
 except ImportError:
@@ -127,7 +127,8 @@ class Black(BoxModel):
         elif splines and  'splines' in sys.modules:
             empirical = Splines()
         elif centers:
-            empirical = RadialBasis()
+            assert 0
+#            empirical = RadialBasis()
         else:
             empirical = Neural()
 

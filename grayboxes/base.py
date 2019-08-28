@@ -17,16 +17,19 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-03-26 DWW
+      2019-08-28 DWW
 
   Note on program arguments:
     - no arguments          : program starts in default mode
     - two arguments: 'path input_file'
                             : command line mode with password protection
-    - three arguments '-s path input_file'
+    - three arguments '-s path input_file' or
+                      '--silent path input_file'
                             : command line mode, no password
-    - two arguments '-s -g' : graphic mode, no console output
+    - two arguments '-s -g' : graphic mode, no console output or
+                    '--silent', '--gui'
     - one argument '-g'     : graphic mode with information to console
+                    '--gui'
 
 """
 
@@ -74,7 +77,6 @@ class Base(object):
     leader-cooperator relationships allows the creation of complex
     object structures which can coexist in space, time or abstract
     contexts.
-
     The implementation supports:
 
     - Distributed development of objects derived from the connecting
@@ -178,6 +180,8 @@ class Base(object):
             identifier = self.__class__.__name__
         self._identifier: str = str(identifier)
         self.argv: Optional[List[str]] = argv
+        if argv is None:
+            self.argv = sys.argv
         self.program: str = self.__class__.__name__
         self.version: str = '18.09'
 

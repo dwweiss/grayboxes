@@ -23,7 +23,9 @@
       Neurolab is a contribution by E. Zuev (pypi.python.org/pypi/neurolab)
 """
 
-__all__ = ['NeuralBase', 'Neural', 'RadialBasis', 'propose_hidden_neurons']
+__all__ = ['NeuralBase', 'Neural', 'propose_hidden_neurons',
+#            'RadialBasis', 
+            ]
 
 from collections import OrderedDict
 import inspect
@@ -779,210 +781,210 @@ class Neural(NeuralBase):
         return self._y
 
 
-class RadialBasis(NeuralBase):
-    """
-    Radial basis function neural network
-    """
-    def __init__(self) -> None:
-        super().__init__()
-
-        self.basis: Optional[Callable] = None
-        self.bias: Optional[np.ndarray] = None
-        self.centers: Optional[np.ndarray] = None
-        self.silent: bool = False
-        self.sigma: float = 1.
-        self.weights: Optional[np.ndarray] = None
-    
-    def gaussian_basis(self, x: Union[float, np.ndarray], \
-            centers: Union[float, np.ndarray], sigma: float=1) \
-            -> Union[float, np.ndarray]:
-        return np.exp(-.5 / (sigma**2 * np.square(x - centers)))
-
-    def multiquadratic_basis(self, x: Union[float, np.ndarray], \
-            centers: Union[float, np.ndarray], dummy: float=np.inf) \
-            -> Union[float, np.ndarray]: 
-        return np.sqrt(1 + np.square(x - centers))
-
-    def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) \
-        -> Dict[str, Any]:
-        """
-        Trains model, stores X and Y as self.X and self.Y, and stores 
-        result of best training trial as self.metrics
-
-        Args:
-            X (2D or 1D array of float):
-                training input, shape: (n_point, n_inp) or (n_point,)
-                default: self.X
-
-            Y (2D or 1D array of float):
-                training target, shape: (n_point, n_out) or (n_point,)
-                default: self.Y
-
-        Kwargs:
-            basis (str):
-                type of radial basis function: 
-                    ('gaussian', 'multiquadric', 'inverse_quadratic', 
-                    'inverse_multiquadric', 'polyharmonic_spline',
-                    'bump_function')
-                default: 'gaussian'
-                
-            centers (int or 1D array of float):
-                number of centers of radial bases
-                or
-                array of centers of radial basis functions, requirement 
-                of: centers.ndim == X.ndim 
-                default: 10
-                
-            epochs (int):
-                max number of iterations of single trial
-                default: 500
-
-            goal (float):
-                limit for stop of training (0. < goal < 1.)
-                default: 1e-5
-                [note: MSE of 1e-3 corresponds to L2-norm of 1e-6]
-
-            plot (int):
-                controls frequency of plotting progress of training
-                default: 0 (no plot)
-
-            show (int):
-                control of information about training, if show>0: print
-                default: epochs // 10
-                [argument 'show' superseds 'silent' if show > 0]
-
-            silent (bool):
-                if True then no information is sent to console
-                default: False
-                [argument 'show' superseds 'silent' if show > 0]
-
-        Returns:
-            (dictionary)
-                metrics of best training trial:
-                'trainer' (str): placeholder
-                'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
-                'abs'   (float): max{|net(x) - Y|} of best training
-                'iAbs'    (int): index of Y where abs. error is maximum
-                'epochs'  (int): number of epochs of best training
-
-        Note:
-            - If training fails, then self.metrics['trainer']=None
-            - Reference to training data is stored as self.X and self.Y
-        """
-        if X is None or Y is None:
-            return None
-
-        basis = kwargs.get('basis', 'gaussian').lower()
-        if basis == 'gaussian':
-            self.basis = self.gaussian_basis
-        elif basis == 'multiquadratic':
-            self.basis = self.multiquadratic_basis
-        else:
-            self.basis = self.gaussian_basis
-        self.centers = kwargs.get('centers', None)
-        if self.centers is None or isinstance(self.centers, int):
-            if not isinstance(self.centers, int):
-                n_center = 100
-            else:
-                n_center = self.centers
-            dx = (X.max() - X.min()) / n_center
-            self.centers = np.linspace(X.min() + dx/2, X.max() - dx/2, 
-                                       n_center)
-        epochs = kwargs.get('epochs', 300)
-        goal = kwargs.get('goal', 1e-5)
-        plot = kwargs.get('plot', True)
-        rate = kwargs.get('rate', 0.8)
-        
-        self.silent = kwargs.get('silent', self.silent)
-        show = kwargs.get('show', epochs // 10)
-        
-        self._X = np.atleast_2d(X)
-        if self.X.shape[0] == 1:
-            self._X = self.X.T
-        self._Y = np.atleast_2d(Y)
-        if self.Y.shape[0] == 1:
-            self._Y = self.Y.T
-        assert self.X.shape[0] == self.Y.shape[0], \
-            str((self.X.shape, self.Y.shape))
-    
-        # TODO Increase number of input
-        assert self.X.shape[1] == 1, \
-            'X.shape:' + str(self.X.shape) + ' number of inputs limited to 1' 
-        assert self.Y.shape[1] == 1, \
-            'Y.shape:' + str(self.Y.shape) + ' number of outputs limited to 1'  
-        
-        
-        n_center = len(self.centers)
-        self.sigma = 1
-        self.weights = 1
-        self.bias = 1
-        L2_history = []
-        
-        for epoch in range(epochs):
-            for x, y in zip(self.X, self.Y):
-                a = self.basis(x, self.centers, self.sigma)
-                a = np.atleast_2d(a)
-                r = a.dot(self.weights) + self.bias                
-                pseudo = np.hstack((a, np.ones([1, 1])))
-                delta = pinv(pseudo) * np.array([r[0] - y])
-                self.weights -= delta[0:n_center] * rate
-                self.bias -= delta[n_center] * rate
-
-            y = self.predict(self.X)
-            L2_norm = np.sqrt(np.mean(np.square(y - Y)))
-            L2_history.append(L2_norm)
-            if not self.silent:
-                if show is not None and epoch % show == 0:
-                    print('+++ epoch: {:3} L2: {}'.format(epoch, L2_norm))
-            if L2_norm < goal:
-                break
-        self._ready = L2_norm < 1.
-
-        if not self.silent and plot:
-            plt.title('Training history, L2:' + str(np.round(L2_norm, 4)) + 
-                      ', rate: ' + str(rate))
-            plt.xlabel('epochs')
-            plt.ylabel('$L_2$-norm')
-            plt.yscale('log')
-            plt.grid()
-            plt.plot(L2_history)
-            plt.show()
-
-        return {'L2': L2_norm, 'epochs': epoch, 
-                'abs': None, 'iAbs': None, 'trainer': None}
-            
-    def predict(self, x, **kwargs):
-        """
-        Executes network, stores input as self.x and output as self.y
-
-        Args:
-            x (2D or 1D array_like of float):
-                prediction input, shape: (n_point, n_inp) or (n_inp,)
-
-        Kwargs:
+#class RadialBasis(NeuralBase):
+#    """
+#    Radial basis function neural network
+#    """
+#    def __init__(self) -> None:
+#        super().__init__()
+#
+#        self.basis: Optional[Callable] = None
+#        self.bias: Optional[np.ndarray] = None
+#        self.centers: Optional[np.ndarray] = None
+#        self.silent: bool = False
+#        self.sigma: float = 1.
+#        self.weights: Optional[np.ndarray] = None
+#    
+#    def gaussian_basis(self, x: Union[float, np.ndarray], \
+#            centers: Union[float, np.ndarray], sigma: float=1) \
+#            -> Union[float, np.ndarray]:
+#        return np.exp(-.5 / (sigma**2 * np.square(x - centers)))
+#
+#    def multiquadratic_basis(self, x: Union[float, np.ndarray], \
+#            centers: Union[float, np.ndarray], dummy: float=np.inf) \
+#            -> Union[float, np.ndarray]: 
+#        return np.sqrt(1 + np.square(x - centers))
+#
+#    def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) \
+#        -> Dict[str, Any]:
+#        """
+#        Trains model, stores X and Y as self.X and self.Y, and stores 
+#        result of best training trial as self.metrics
+#
+#        Args:
+#            X (2D or 1D array of float):
+#                training input, shape: (n_point, n_inp) or (n_point,)
+#                default: self.X
+#
+#            Y (2D or 1D array of float):
+#                training target, shape: (n_point, n_out) or (n_point,)
+#                default: self.Y
+#
+#        Kwargs:
+#            basis (str):
+#                type of radial basis function: 
+#                    ('gaussian', 'multiquadric', 'inverse_quadratic', 
+#                    'inverse_multiquadric', 'polyharmonic_spline',
+#                    'bump_function')
+#                default: 'gaussian'
+#                
+#            centers (int or 1D array of float):
+#                number of centers of radial bases
+#                or
+#                array of centers of radial basis functions, requirement 
+#                of: centers.ndim == X.ndim 
+#                default: 10
+#                
+#            epochs (int):
+#                max number of iterations of single trial
+#                default: 500
+#
+#            goal (float):
+#                limit for stop of training (0. < goal < 1.)
+#                default: 1e-5
+#                [note: MSE of 1e-3 corresponds to L2-norm of 1e-6]
+#
+#            plot (int):
+#                controls frequency of plotting progress of training
+#                default: 0 (no plot)
+#
+#            show (int):
+#                control of information about training, if show>0: print
+#                default: epochs // 10
+#                [argument 'show' superseds 'silent' if show > 0]
+#
 #            silent (bool):
-#                if True then no printing
-#                default: self.silent
-
-        Returns:
-            (2D array of float):
-                prediction y = model(x) if x is not None
-            or
-            (None):
-                if x is None
-
-        Note:
-            - Shape of x is corrected to: (n_point, n_inp)
-            - Input x and output net(x) are stored as self.x and self.y
-        """
-        if x is None:
-            return None
-
-        self._x = np.atleast_2d(x)        
-        y = []
-        for i, _x in enumerate(self.x):
-            a_all_centers = self.basis(_x, self.centers, self.sigma)
-            y.append(a_all_centers.T.dot(self.weights[:, 4]) + self.bias[0])
-            
-        self._y = np.atleast_2d(y).T
-        return self.y
+#                if True then no information is sent to console
+#                default: False
+#                [argument 'show' superseds 'silent' if show > 0]
+#
+#        Returns:
+#            (dictionary)
+#                metrics of best training trial:
+#                'trainer' (str): placeholder
+#                'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
+#                'abs'   (float): max{|net(x) - Y|} of best training
+#                'iAbs'    (int): index of Y where abs. error is maximum
+#                'epochs'  (int): number of epochs of best training
+#
+#        Note:
+#            - If training fails, then self.metrics['trainer']=None
+#            - Reference to training data is stored as self.X and self.Y
+#        """
+#        if X is None or Y is None:
+#            return None
+#
+#        basis = kwargs.get('basis', 'gaussian').lower()
+#        if basis == 'gaussian':
+#            self.basis = self.gaussian_basis
+#        elif basis == 'multiquadratic':
+#            self.basis = self.multiquadratic_basis
+#        else:
+#            self.basis = self.gaussian_basis
+#        self.centers = kwargs.get('centers', None)
+#        if self.centers is None or isinstance(self.centers, int):
+#            if not isinstance(self.centers, int):
+#                n_center = 100
+#            else:
+#                n_center = self.centers
+#            dx = (X.max() - X.min()) / n_center
+#            self.centers = np.linspace(X.min() + dx/2, X.max() - dx/2, 
+#                                       n_center)
+#        epochs = kwargs.get('epochs', 300)
+#        goal = kwargs.get('goal', 1e-5)
+#        plot = kwargs.get('plot', True)
+#        rate = kwargs.get('rate', 0.8)
+#        
+#        self.silent = kwargs.get('silent', self.silent)
+#        show = kwargs.get('show', epochs // 10)
+#        
+#        self._X = np.atleast_2d(X)
+#        if self.X.shape[0] == 1:
+#            self._X = self.X.T
+#        self._Y = np.atleast_2d(Y)
+#        if self.Y.shape[0] == 1:
+#            self._Y = self.Y.T
+#        assert self.X.shape[0] == self.Y.shape[0], \
+#            str((self.X.shape, self.Y.shape))
+#    
+#        # TODO Increase number of input
+#        assert self.X.shape[1] == 1, \
+#            'X.shape:' + str(self.X.shape) + ' number of inputs limited to 1' 
+#        assert self.Y.shape[1] == 1, \
+#            'Y.shape:' + str(self.Y.shape) + ' number of outputs limited to 1'  
+#        
+#        
+#        n_center = len(self.centers)
+#        self.sigma = 1
+#        self.weights = 1
+#        self.bias = 1
+#        L2_history = []
+#        
+#        for epoch in range(epochs):
+#            for x, y in zip(self.X, self.Y):
+#                a = self.basis(x, self.centers, self.sigma)
+#                a = np.atleast_2d(a)
+#                r = a.dot(self.weights) + self.bias                
+#                pseudo = np.hstack((a, np.ones([1, 1])))
+#                delta = pinv(pseudo) * np.array([r[0] - y])
+#                self.weights -= delta[0:n_center] * rate
+#                self.bias -= delta[n_center] * rate
+#
+#            y = self.predict(self.X)
+#            L2_norm = np.sqrt(np.mean(np.square(y - Y)))
+#            L2_history.append(L2_norm)
+#            if not self.silent:
+#                if show is not None and epoch % show == 0:
+#                    print('+++ epoch: {:3} L2: {}'.format(epoch, L2_norm))
+#            if L2_norm < goal:
+#                break
+#        self._ready = L2_norm < 1.
+#
+#        if not self.silent and plot:
+#            plt.title('Training history, L2:' + str(np.round(L2_norm, 4)) + 
+#                      ', rate: ' + str(rate))
+#            plt.xlabel('epochs')
+#            plt.ylabel('$L_2$-norm')
+#            plt.yscale('log')
+#            plt.grid()
+#            plt.plot(L2_history)
+#            plt.show()
+#
+#        return {'L2': L2_norm, 'epochs': epoch, 
+#                'abs': None, 'iAbs': None, 'trainer': None}
+#            
+#    def predict(self, x, **kwargs):
+#        """
+#        Executes network, stores input as self.x and output as self.y
+#
+#        Args:
+#            x (2D or 1D array_like of float):
+#                prediction input, shape: (n_point, n_inp) or (n_inp,)
+#
+#        Kwargs:
+##            silent (bool):
+##                if True then no printing
+##                default: self.silent
+#
+#        Returns:
+#            (2D array of float):
+#                prediction y = model(x) if x is not None
+#            or
+#            (None):
+#                if x is None
+#
+#        Note:
+#            - Shape of x is corrected to: (n_point, n_inp)
+#            - Input x and output net(x) are stored as self.x and self.y
+#        """
+#        if x is None:
+#            return None
+#
+#        self._x = np.atleast_2d(x)        
+#        y = []
+#        for i, _x in enumerate(self.x):
+#            a_all_centers = self.basis(_x, self.centers, self.sigma)
+#            y.append(a_all_centers.T.dot(self.weights[:, 4]) + self.bias[0])
+#            
+#        self._y = np.atleast_2d(y).T
+#        return self.y
