@@ -32,7 +32,7 @@ sys.path.append(os.path.abspath('../grayboxes'))
 
 from grayboxes.darkgray import DarkGray
 from grayboxes.plotarrays import plot_isomap, plot_wireframe
-from grayboxes.boxmodel import frame_to_arrays
+from grayboxes.arrays import frame_to_arrays
 from grayboxes.black import Black
 
 

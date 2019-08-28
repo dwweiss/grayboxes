@@ -17,21 +17,22 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-15 DWW
+      2018-08-28 DWW
 """
 
 import unittest
-import sys
 import os
-
+import sys
 sys.path.append(os.path.abspath('..'))
-from grayboxes.xyz import xyz, xyzt
-
-
+from grayboxes.dialog import (dialog_yes_no, dialog_load_filenames, 
+                              dialog_save_filename, dialog_directory)
+    
 class TestUM(unittest.TestCase):
     """
-    Test of point in 3D space
-    """
+    Tests involve user interaction; The name of this file starts with 
+    letter '_' in order to avoid execution by test_All.py
+    
+    
     def setUp(self):
         pass
 
@@ -39,42 +40,32 @@ class TestUM(unittest.TestCase):
         pass
 
     def test1(self):
-        P0 = xyz(2.2, -1)
-        print('P0:', P0)
-        P1 = xyz(x=1, z=4)
-        print('P1:', P1)
-        P2 = xyz(point=P1)
-        print('P2:', P2)
-        P3 = xyz(point=[])                        # invalid
-        print('P3:', P3)
-
-        print('P0.at(1)=P0.y:', P0.at(1))
-        print('P0, P1:', P0, P1)
-        print('P0 + 1:', P0 + 1)
-        print('P0 + P1:', P0 + P1)
-        print('P0 - 1:', P0 - 1)
-        print('P0 - P1:', P0 - P1)
-        print('P0 * 2:', P0 * 2)
-        print('P0 * (1/2.):', P0 * (1/2.))
-        print('P0 * P1:', P0 * P1)
-
+        yes_no = dialog_yes_no(title='Question to be answered',
+                               icon='question')
+        print('yes_no:', yes_no)
         self.assertTrue(True)
 
     def test2(self):
-        P1 = xyz(x=1, z=4)
-        P4 = xyzt(2.2, -1, t=7)
-        print('P4:', P4)
-        P5 = xyzt(point=P1)
-        print('P5:', P5)
-        P6 = xyzt(point=P4)
-        print('P6:', P6)
-        P7 = xyzt(point={'a': 1, 'b': 2})         # invalid
-        print('P7:', P7)
+        List = dialog_load_filenames(default_ext='data', initial_dir=None,
+                                     min_files=2)
+        print('List:', List)
+        self.assertTrue(True)
 
-        self.assertTrue(P5 == P1)
-        self.assertFalse(P5 != P1)
-        self.assertTrue(P7.x is None)
-   
+    def test3(self):
+        filename = dialog_save_filename(default_ext='data', initial_dir=None,
+                                        confirm_overwrite=True)
+        print('fn:', filename)
+        foo = open(filename, 'w')
+        result = foo is not None
+        foo.write('foo')
+        foo.close()
+        self.assertTrue(result)
+
+    def test4(self):
+        Dir = dialog_directory(initial_dir=None)
+        print('Dir:', Dir)
+        self.assertTrue(True)
+
 
 if __name__ == '__main__':
     unittest.main()

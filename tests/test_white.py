@@ -28,7 +28,7 @@ import numpy as np
 sys.path.append(os.path.abspath('..'))
 from grayboxes.white import White
 from grayboxes.plotarrays import plot_isomap
-from grayboxes.boxmodel import grid, cross
+from grayboxes.arrays import grid, cross
 from grayboxes.forward import Forward
 
 
@@ -43,6 +43,9 @@ x = grid((8, 8), [-1, 8], [0, 3])
 
 
 class TestUM(unittest.TestCase):
+    """
+    Test of white box model class
+    """
     def setUp(self):
         pass
 

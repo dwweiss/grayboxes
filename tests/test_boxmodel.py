@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 sys.path.append(os.path.abspath('..'))
 from grayboxes.boxmodel import BoxModel
 from grayboxes.plotarrays import plot_isomap, plot_surface, plot_isolines
-from grayboxes.boxmodel import rand, noise, grid, frame_to_arrays
+from grayboxes.arrays import rand, noise, grid, frame_to_arrays
 from grayboxes.white import White
 from grayboxes.lightgray import LightGray
 

@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.black import Black
-from grayboxes.boxmodel import grid, noise
+from grayboxes.arrays import grid, noise
 from grayboxes.white import White
 
 

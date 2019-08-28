@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-06-03 DWW
+      2018-07-17 DWW
 """
 
 import os
@@ -33,7 +33,7 @@ Extends sys.path with subdirectories and directory where this file is located
 # if False, search starts from '/x'
 fromInitFileLocation = True
 
-# subdirectories containing a member of blackList wont be added to sys.path
+# subdirectories containing an element of blackList wont be added to sys.path
 blackList = ['/archive', '/doc', '/temp', '/tmp', '/workbench', '/.', '/_']
 
 # get start directory

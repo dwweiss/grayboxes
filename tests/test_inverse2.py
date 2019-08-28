@@ -17,21 +17,23 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-05-03 DWW
+      2019-05-08 DWW
 """
 
 import unittest
 import sys
 import os
 import numpy as np
+
 sys.path.append(os.path.abspath('..'))
-from grayboxes.boxmodel import grid, noise
+
+from grayboxes.arrays import grid, noise
 from grayboxes.white import White
 from grayboxes.lightgray import LightGray
 from grayboxes.darkgray import DarkGray
 from grayboxes.black import Black
 from grayboxes.inverse import Inverse
-from grayboxes.neural import RadialBasis
+#from grayboxes.neural import RadialBasis
 
 """
     Demonstrating of use of class Inverse with box models:
@@ -44,7 +46,7 @@ from grayboxes.neural import RadialBasis
 
 def f(self, x, *args, **kwargs):
     """
-    Theoretical submodel for single data point
+    Theoretical submodel for single data point, x = (x_0, x_1), y = (y_0)
     
         y = a + b sin(c x_0) + d (x_1 - 1.5)^2
 
@@ -58,7 +60,7 @@ def f(self, x, *args, **kwargs):
         args (float, optional):
             tuning parameters
 
-        kwargs (Union[float, int, str], optional):
+        kwargs (Dict[str, Union[float, int, str]], optional):
             keyword arguments
             
     Returns:
@@ -90,15 +92,15 @@ class TestUM(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test1(self):
-        X_1d = np.atleast_2d(np.linspace(0, 1, 5)).T
-        Y_1d = np.sin(X_1d)
-        phi = RadialBasis()
-        phi.train(X_1d, Y_1d, centers=8, rate=0.5)
-        y = phi.predict(X_1d)
-        print('X y', X_1d, y)
-
-        self.assertTrue(True)
+#    def test1(self):
+#        X_1d = np.atleast_2d(np.linspace(0, 1, 5)).T
+#        Y_1d = np.sin(X_1d)
+#        phi = RadialBasis()
+#        phi.train(X_1d, Y_1d, centers=8, rate=0.5)
+#        y = phi.predict(X_1d)
+#        print('X y', X_1d, y)
+#
+#        self.assertTrue(True)
 
     def test2(self):
         operation = Inverse(White(f))         

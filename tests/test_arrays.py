@@ -17,27 +17,20 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2019-06-04 DWW
 """
 
 import unittest
 import sys
 import os
-import numpy as np
 
 sys.path.append(os.path.abspath('..'))
-from grayboxes.arrays import rand
-from grayboxes.maximum import Maximum
-from grayboxes.white import White
-
-
-# user defined method with theoretical submodel
-def f(self, x, *args):
-    c0, c1, c2 = args if len(args) > 0 else 1, 1, 1
-    return -(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)
+from grayboxes.arrays import cross, grid, rand, xy_rand_split
 
 
 class TestUM(unittest.TestCase):
+
+
     def setUp(self):
         pass
 
@@ -45,16 +38,13 @@ class TestUM(unittest.TestCase):
         pass
 
     def test1(self):
-        s = 'Maximum, assigns series of initial x'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+        x = grid((3, 4), [0., 1.], [2., 3.])
 
-        op = Maximum(White(f), 'test1')
-        x, y = op(x=rand(10, [-5, 5], [-7, 7]), optimizer='nelder-mead')
-        op.plot()
-        print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)
+        x_start = rand(3, [0., 1.], [2., 4.])
+        
+        x = cross((3, 4), [0., 1.], [2., 3.])
 
         self.assertTrue(True)
-
 
 if __name__ == '__main__':
     unittest.main()

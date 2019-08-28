@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-29 DWW
+      2019-06-04 DWW
 """
 
 import unittest
@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.mediumgray import MediumGray
-from grayboxes.boxmodel import grid, noise, rand
+from grayboxes.arrays import grid, noise, rand
 from grayboxes.lightgray import LightGray
 from grayboxes.white import White
 from grayboxes.plotarrays import plot_x_y_y_ref

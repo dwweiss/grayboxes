@@ -31,7 +31,7 @@ sys.path.append(os.path.abspath('..'))
 from grayboxes.black import Black
 from grayboxes.plotarrays import plot_isomap
 from grayboxes.neural import Neural
-from grayboxes.boxmodel import grid, noise
+from grayboxes.arrays import grid, noise
 from grayboxes.white import White
 
 

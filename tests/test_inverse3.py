@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-05-03 DWW
+      2019-07-17 DWW
 """
 
 import sys
@@ -32,14 +32,11 @@ sys.path.append(os.path.abspath('..'))
 from grayboxes.base import Base
 from grayboxes.boxmodel import BoxModel
 from grayboxes.black import Black
-from grayboxes.boxmodel import noise, rand
+from grayboxes.arrays import noise, rand, xy_rand_split
 from grayboxes.darkgray import DarkGray
 from grayboxes.forward import Forward
 from grayboxes.inverse import Inverse
 from grayboxes.white import White
-
-sys.path.append(os.path.abspath('../../coloredlids'))
-from coloredlids.data.xy_rand_split import xy_rand_split
 
 
 def f(x):

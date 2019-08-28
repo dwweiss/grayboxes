@@ -27,7 +27,7 @@ import numpy as np
 
 sys.path.append(os.path.abspath('..'))
 from grayboxes.sensitivity import Sensitivity
-from grayboxes.boxmodel import cross
+from grayboxes.arrays import cross
 from grayboxes.white import White
 
 
@@ -36,6 +36,9 @@ def f(self, x, *args, **kwargs):
 
 
 class TestUM(unittest.TestCase):
+    """
+        
+    """
     def setUp(self):
         pass
 

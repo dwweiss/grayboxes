@@ -29,7 +29,7 @@ import scipy
 sys.path.append(os.path.abspath('..'))
 from grayboxes.minimum import Minimum
 from grayboxes.plotarrays import plot_surface, plot_isomap
-from grayboxes.boxmodel import rand, grid
+from grayboxes.arrays import rand, grid
 from grayboxes.forward import Forward
 from grayboxes.white import White
 

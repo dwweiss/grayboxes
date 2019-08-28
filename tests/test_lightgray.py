@@ -28,7 +28,7 @@ import numpy as np
 sys.path.append(os.path.abspath('..'))
 from grayboxes.lightgray import LightGray
 from grayboxes.plotarrays import plot_x_y_y_ref
-from grayboxes.boxmodel import grid, noise, rand
+from grayboxes.arrays import grid, noise, rand
 from grayboxes.white import White
 
 
