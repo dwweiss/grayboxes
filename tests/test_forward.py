@@ -26,6 +26,7 @@ import os
 import numpy as np
 
 sys.path.append(os.path.abspath('..'))
+
 from grayboxes.forward import Forward
 from grayboxes.plotarrays import plot_isomap
 from grayboxes.arrays import grid, cross, rand

@@ -29,10 +29,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 sys.path.append(os.path.abspath('..'))
+
+from grayboxes.arrays import noise, rand, xy_rand_split
 from grayboxes.base import Base
 from grayboxes.boxmodel import BoxModel
 from grayboxes.black import Black
-from grayboxes.arrays import noise, rand, xy_rand_split
 from grayboxes.darkgray import DarkGray
 from grayboxes.forward import Forward
 from grayboxes.inverse import Inverse

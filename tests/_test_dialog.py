@@ -17,21 +17,23 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-28 DWW
+      2018-08-29 DWW
 """
 
 import unittest
 import os
 import sys
+
 sys.path.append(os.path.abspath('..'))
-from grayboxes.dialog import (dialog_yes_no, dialog_load_filenames, 
-                              dialog_save_filename, dialog_directory)
+
+from grayboxes.dialog import dialog_yes_no, dialog_load_filenames, 
+                             dialog_save_filename, dialog_directory
     
 class TestUM(unittest.TestCase):
     """
     Tests involve user interaction; The name of this file starts with 
     letter '_' in order to avoid execution by test_All.py
-    
+    """
     
     def setUp(self):
         pass

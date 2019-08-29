@@ -25,14 +25,14 @@ import sys
 import os
 import numpy as np
 from pandas import DataFrame
-
 import matplotlib.pyplot as plt
 import neurolab as nl
 
 sys.path.append(os.path.abspath('..'))
+
 from grayboxes.neural import Neural
 from grayboxes.plotarrays import plot_surface, plot_isolines, plot_isomap, \
-    plot_wireframe
+                                 plot_wireframe
 
 
 def L2(y, Y):

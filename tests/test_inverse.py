@@ -26,6 +26,7 @@ import os
 import numpy as np
 
 sys.path.append(os.path.abspath('..'))
+
 from grayboxes.inverse import Inverse
 from grayboxes.plotarrays import plot_x_y_y_ref
 from grayboxes.arrays import grid, rand, noise

@@ -27,6 +27,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 sys.path.append(os.path.abspath('..'))
+
 from grayboxes.mediumgray import MediumGray
 from grayboxes.arrays import grid, noise, rand
 from grayboxes.lightgray import LightGray

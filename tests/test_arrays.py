@@ -17,19 +17,21 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-06-04 DWW
+      2019-08-29 DWW
 """
 
 import unittest
 import sys
 import os
+import numpy as np
+import matplotlib.pyplot as plt
 
 sys.path.append(os.path.abspath('..'))
-from grayboxes.arrays import cross, grid, rand, xy_rand_split
+
+import grayboxes.arrays as arr
 
 
 class TestUM(unittest.TestCase):
-
 
     def setUp(self):
         pass
@@ -38,12 +40,80 @@ class TestUM(unittest.TestCase):
         pass
 
     def test1(self):
-        x = grid((3, 4), [0., 1.], [2., 3.])
+        x = arr.grid((3, 4), [0., 1.], [2., 3.])
+        print('x:', x)
+        plt.title('arrays.grid()')
+        plt.plot(x.T[0], x.T[1], 'o')
+        plt.show()
+        plt.title('arrays.grid()')
+        plt.plot(x.T[0], x.T[1], '-o')
+        plt.show()
 
-        x_start = rand(3, [0., 1.], [2., 4.])
+        self.assertTrue(True)
+
+    def test2(self):
+        x = arr.rand(3, [0., 1.], [2., 4.])
+        print('x:', x)
+        plt.title('arrays.rand()')
+        plt.plot(x.T[0], x.T[1], 'o')
+        plt.show()
         
-        x = cross((3, 4), [0., 1.], [2., 3.])
+        self.assertTrue(True)
 
+    def test3(self):
+        x = arr.cross((3, 4), [0., 1.], [2., 3.])
+        print('x:', x)
+        plt.title('arrays.cross()')
+        plt.plot(x.T[0], x.T[1], 'o')
+        plt.show()
+        plt.title('arrays.cross()')
+        plt.plot(x.T[0], x.T[1], '-o')
+        plt.show()
+
+        self.assertTrue(True)
+
+    def test4(self):
+        x = arr.rand(100, [0., 1.], [2., 4.])
+        x_split = arr.xy_rand_split(x, fractions=[0.8, 0.2])
+        x_train = x_split[0][0]
+        x_test = x_split[0][1]
+
+        print('x_test:', x_test)
+        print('x_train:', x_train)
+        
+        plt.title('arrays.xy_rand_split()')
+        plt.plot(x.T[0], x.T[1], 'o', label='all')
+        plt.legend()
+        plt.show()        
+        plt.title('arrays.xy_rand_split()')
+        plt.plot(x_train.T[0], x_train.T[1], 'x', label='train')
+        plt.plot(x_test.T[0], x_test.T[1], 'o', label='test')
+        plt.legend()
+        plt.show()
+ 
+        self.assertTrue(True)
+
+    def test5(self):
+        x = np.linspace(0., 1., 100)
+        y = np.sin(x * 2 * np.pi)
+        
+        print('x:', x, 'y:', y)
+        
+        x_thin, y_thin = arr.xy_thin_out(x, y, bins=32) 
+        
+        plt.title('arrays.xy_thin_out()')
+        plt.plot(x, y, 'x', label='all')
+        plt.plot(x_thin, y_thin, 'o', label='thin')
+        plt.legend()
+        plt.show()
+        
+        plt.title('arrays.xy_thin_out()')        
+        plt.bar(x_thin, y_thin, width=(x_thin[1] - x_thin[0]) * 0.66, 
+                align='edge')
+        plt.plot(x, y, '-', label='all')
+        plt.legend()
+        plt.show()        
+ 
         self.assertTrue(True)
 
 if __name__ == '__main__':

@@ -27,8 +27,9 @@ import numpy as np
 import psutil
 
 sys.path.append(os.path.abspath('..'))
+
 from grayboxes.parallel import mpi, communicator, predict_scatter, split, \
-    merge, x_demo, x3d_to_str
+                               merge, x_demo, x3d_to_str
 
 
 def f(x, *args, **kwargs):

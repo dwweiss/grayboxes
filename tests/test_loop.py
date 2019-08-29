@@ -27,6 +27,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 sys.path.append(os.path.abspath('..'))
+
 from grayboxes.base import Base
 from grayboxes.loop import Loop
 

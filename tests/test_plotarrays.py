@@ -26,6 +26,7 @@ import os
 import numpy as np
 
 sys.path.append(os.path.abspath('..'))
+
 from grayboxes.plotarrays import plot_curves, plot_surface, plot_wireframe, \
     plot_isomap, plot_isolines, plot_vectors, plot_trajectory, plot_bar_arrays, \
     plot_bars, to_regular_mesh, clip_xyz

@@ -25,6 +25,7 @@ import sys
 import os
 
 sys.path.append(os.path.abspath('..'))
+
 from grayboxes.base import Base
 
 

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-04-01 DWW
+      2019-08-29 DWW
 """
 
 import unittest
@@ -28,11 +28,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 sys.path.append(os.path.abspath('..'))
+
 from grayboxes.black import Black
 from grayboxes.plotarrays import plot_isomap
 from grayboxes.neural import Neural
-from grayboxes.arrays import grid, noise
-from grayboxes.white import White
 
 
 class TestUM(unittest.TestCase):
@@ -51,9 +50,9 @@ class TestUM(unittest.TestCase):
 
         file = 'sin_x_-3..3.5pi'
         n_point = 20
-        max_neurons_in_layer = 3  # 16
-        n_hidden_layers = 2  # 3
-        MAX_HIDDEN_LAYERS = 6  # MUST NOT be modified
+        max_neurons_in_layer = 3     # 16
+        n_hidden_layers = 2          # 3
+        MAX_HIDDEN_LAYERS = 6        # MUST NOT be modified
         assert MAX_HIDDEN_LAYERS >= n_hidden_layers
         max_noise = 0.0
 
