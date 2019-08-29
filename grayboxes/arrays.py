@@ -443,9 +443,16 @@ def xy_thin_out(x: np.ndarray, y: np.ndarray, bins: int=32) \
             
     Returns
         (1D array of float, 1D array of float):
-            array of (x, y) points of coarse array (edge/center) 
+            array of (x, y) points of thinned-out array (edge/center) 
     """
     x, y = np.asfarray(x), np.asfarray(y)
+
+    if len(x) < bins:
+        return x, y
+
+    assert len(x) == len(y), str((x.shape, y.shape))
+    assert len(x.shape) == 1, str((x.shape, y.shape))
+
     x_thin_corner, y_thin_center = [], []
     delta_i = len(x) // bins
     i_beg = 0
