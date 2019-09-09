@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-09-09 DWW
 """
 
 __all__ = ['plot1', 'plot_curves', 'plot_surface', 'plot_wireframe',
@@ -304,7 +304,7 @@ def plot1(x: np.ndarray,
     if not labels:
         labels = ('x', 'y')
     plt_pre(xlabel=labels[0], ylabel=labels[1], title=title,
-            xlog=x_log, ylog=y_log, grid=grid,
+            xlog=xlog, ylog=ylog, grid=grid,
             figsize=figsize, fontsize=fontsize)
     plt.plot(x, y)
     plt_post(file, legend_position=legend_position)
