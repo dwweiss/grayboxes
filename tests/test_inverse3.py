@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.abspath('..'))
 
-from grayboxes.arrays import noise, rand, xy_rand_split
+from grayboxes.array import noise, rand, xy_rand_split
 from grayboxes.base import Base
 from grayboxes.boxmodel import BoxModel
 from grayboxes.black import Black

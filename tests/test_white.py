@@ -28,8 +28,8 @@ import numpy as np
 sys.path.append(os.path.abspath('..'))
 
 from grayboxes.white import White
-from grayboxes.plotarrays import plot_isomap
-from grayboxes.arrays import grid, cross
+from grayboxes.plot import plot_isomap
+from grayboxes.array import grid, cross
 from grayboxes.forward import Forward
 
 

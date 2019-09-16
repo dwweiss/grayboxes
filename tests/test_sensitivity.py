@@ -28,7 +28,7 @@ import numpy as np
 sys.path.append(os.path.abspath('..'))
 
 from grayboxes.sensitivity import Sensitivity
-from grayboxes.arrays import cross
+from grayboxes.array import cross
 from grayboxes.white import White
 
 

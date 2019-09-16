@@ -27,7 +27,7 @@ import numpy as np
 
 sys.path.append(os.path.abspath('..'))
 
-from grayboxes.arrays import rand
+from grayboxes.array import rand
 from grayboxes.maximum import Maximum
 from grayboxes.white import White
 

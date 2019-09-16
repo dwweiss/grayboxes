@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-04-30 DWW
+      2019-09-13 DWW
 """
 
 import unittest
@@ -31,8 +31,8 @@ import neurolab as nl
 sys.path.append(os.path.abspath('..'))
 
 from grayboxes.neural import Neural
-from grayboxes.plotarrays import plot_surface, plot_isolines, plot_isomap, \
-                                 plot_wireframe
+from grayboxes.plot import (plot_surface, plot_isolines, plot_isomap, \
+                            plot_wireframe)
 
 
 def L2(y, Y):

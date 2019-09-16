@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 sys.path.append(os.path.abspath('..'))
 
 from grayboxes.black import Black
-from grayboxes.plotarrays import plot_isomap
+from grayboxes.plot import plot_isomap
 from grayboxes.neural import Neural
 
 

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-29 DWW
+      2018-08-30 DWW
 """
 
 import unittest
@@ -26,8 +26,8 @@ import sys
 
 sys.path.append(os.path.abspath('..'))
 
-from grayboxes.dialog import dialog_yes_no, dialog_load_filenames, 
-                             dialog_save_filename, dialog_directory
+from grayboxes.dialog import dialog_yes_no, dialog_load_filenames, \
+    dialog_save_filename, dialog_directory, dialog_info
     
 class TestUM(unittest.TestCase):
     """
@@ -66,6 +66,10 @@ class TestUM(unittest.TestCase):
     def test4(self):
         Dir = dialog_directory(initial_dir=None)
         print('Dir:', Dir)
+        self.assertTrue(True)
+
+    def test5(self):
+        dialog_info('my title', 'my message')
         self.assertTrue(True)
 
 

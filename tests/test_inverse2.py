@@ -27,7 +27,7 @@ import numpy as np
 
 sys.path.append(os.path.abspath('..'))
 
-from grayboxes.arrays import grid, noise
+from grayboxes.array import grid, noise
 from grayboxes.white import White
 from grayboxes.lightgray import LightGray
 from grayboxes.darkgray import DarkGray
