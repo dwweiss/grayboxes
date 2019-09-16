@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-08-28 DWW
+      2019-08-30 DWW
 
   Note on program arguments:
     - no arguments          : program starts in default mode
@@ -797,8 +797,8 @@ class Base(object):
                 self.write('    Execution time: ' + format(round(exe_time, 2)))
             self.write('*** ' + message)
 
-            if self.gui:
-                messagebox.showinfo(self.program, message)
+#            if self.gui:
+#                messagebox.showinfo(self.program, message)
 
         if logger.handlers:
             logger.info('')

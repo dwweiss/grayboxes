@@ -26,7 +26,7 @@ from typing import Any, Optional, Tuple
 
 from grayboxes.boxmodel import BoxModel
 from grayboxes.forward import Forward
-from grayboxes.plotarrays import plot_bar_arrays
+from grayboxes.plot import plot_bar_arrays
 
 
 class Sensitivity(Forward):

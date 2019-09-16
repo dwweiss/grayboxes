@@ -17,11 +17,11 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-28 DWW
+      2018-08-30 DWW
 """
 
 __all__ = ['dialog_yes_no', 'dialog_load_filenames', 'dialog_save_filename',
-           'dialog_directory']
+           'dialog_directory', 'dialog_info']
 
 import os
 from typing import List
@@ -40,15 +40,16 @@ def dialog_yes_no(title: str='', icon: str='') -> str:
     """
     Asks for Yes/No employing tkinter interface
 
-    Args
+    Args:
         title:
             box title
 
         icon:
             icon to be displayed
 
-    Returns
-        answer: Yes/No
+    Returns:
+        answer: 
+            'Yes' or 'No'
     """
     tkinter.Tk().withdraw()
     result = tkinter.messagebox.askquestion(title=title, icon=icon)
@@ -79,10 +80,15 @@ def dialog_load_filenames(default_ext: str='data', initial_dir: str=None,
 
     tkinter.Tk().withdraw()
     result = []
+    first = True
     while len(result) < min_files:
         filenames = tkinter.filedialog.askopenfilenames(initialdir=initial_dir,
             title='Select files', multiple=True,
             defaultextension=default_ext)
+        if first:
+            first = False
+        if not first:
+            initial_dir = os.path.dirname(filenames[-1])
         for name in filenames:
             if name not in result:
                 result += [name, ]
@@ -128,13 +134,28 @@ def dialog_directory(initial_dir: str=None) -> str:
             directory where selection starts
 
     Returns
-        filepath to selected directory
+        path to selected directory
     """
     if not initial_dir:
         initial_dir = os.getcwd()
 
     tkinter.Tk().withdraw()
     directory = tkinter.filedialog.askdirectory(initialdir=initial_dir,
-        title='Please select diretory')
+        title='Select directory')
 
     return directory
+
+
+def dialog_info(title: str='', message: str='') -> None:
+    """
+    Displays information
+
+    Args:
+        title:
+            box title
+
+        message:
+            text to be displayed
+    """
+    tkinter.Tk().withdraw()
+    tkinter.messagebox.showinfo(title=title)
