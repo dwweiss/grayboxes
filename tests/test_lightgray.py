@@ -20,12 +20,11 @@
       2019-04-01 DWW
 """
 
-import unittest
-import os
-import sys
-import numpy as np
+import __init__
+__init__.init_path()
 
-sys.path.append(os.path.abspath('..'))
+import unittest
+import numpy as np
 
 from grayboxes.lightgray import LightGray
 from grayboxes.plot import plot_x_y_y_ref

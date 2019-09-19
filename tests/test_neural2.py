@@ -20,14 +20,12 @@
       2019-04-30 DWW
 """
 
+import __init__
+__init__.init_path()
+
 import unittest
-import sys
-import os
 import numpy as np
 import matplotlib.pyplot as plt
-
-sys.path.append(os.path.abspath('..'))
-sys.path.append(os.path.abspath('../grayboxes'))
 
 from grayboxes.black import Black
 #from grayboxes.neural import RadialBasis

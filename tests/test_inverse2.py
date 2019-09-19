@@ -20,12 +20,11 @@
       2019-05-08 DWW
 """
 
-import unittest
-import sys
-import os
-import numpy as np
+import __init__
+__init__.init_path()
 
-sys.path.append(os.path.abspath('..'))
+import unittest
+import numpy as np
 
 from grayboxes.array import grid, noise
 from grayboxes.white import White

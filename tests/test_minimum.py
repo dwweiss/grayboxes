@@ -20,13 +20,12 @@
       2018-08-17 DWW
 """
 
+import __init__
+__init__.init_path()
+
 import unittest
-import sys
-import os
 import numpy as np
 import scipy
-
-sys.path.append(os.path.abspath('..'))
 
 from grayboxes.minimum import Minimum
 from grayboxes.plot import plot_surface, plot_isomap

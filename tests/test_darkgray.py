@@ -20,15 +20,13 @@
       2019-03-01 DWW
 """
 
+import __init__
+__init__.init_path()
+
 import unittest
-import sys
-import os
 from io import StringIO
 import numpy as np
 import pandas as pd
-
-sys.path.append(os.path.abspath('..'))
-sys.path.append(os.path.abspath('../grayboxes'))
 
 from grayboxes.darkgray import DarkGray
 from grayboxes.plot import plot_isomap, plot_wireframe

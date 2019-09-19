@@ -20,13 +20,12 @@
       2019-06-04 DWW
 """
 
+import __init__
+__init__.init_path()
+
 import unittest
-import sys
-import os
 import numpy as np
 import matplotlib.pyplot as plt
-
-sys.path.append(os.path.abspath('..'))
 
 from grayboxes.mediumgray import MediumGray
 from grayboxes.array import grid, noise, rand

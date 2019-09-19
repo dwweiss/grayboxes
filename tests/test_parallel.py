@@ -20,13 +20,12 @@
       2018-09-11 DWW
 """
 
+import __init__
+__init__.init_path()
+
 import unittest
-import sys
-import os
 import numpy as np
 import psutil
-
-sys.path.append(os.path.abspath('..'))
 
 from grayboxes.parallel import mpi, communicator, predict_scatter, split, \
                                merge, x_demo, x3d_to_str

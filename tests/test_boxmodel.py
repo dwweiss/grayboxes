@@ -20,13 +20,12 @@
       2019-03-19 DWW
 """
 
+import __init__
+__init__.init_path()
+
 import unittest
-import sys
-import os
 import numpy as np
 import matplotlib.pyplot as plt
-
-sys.path.append(os.path.abspath('..'))
 
 from grayboxes.boxmodel import BoxModel
 from grayboxes.plot import plot_isomap, plot_surface, plot_isolines

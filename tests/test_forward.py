@@ -20,12 +20,11 @@
       2019-04-01 DWW
 """
 
-import unittest
-import sys
-import os
-import numpy as np
+import __init__
+__init__.init_path()
 
-sys.path.append(os.path.abspath('..'))
+import unittest
+import numpy as np
 
 from grayboxes.forward import Forward
 from grayboxes.plot import plot_isomap

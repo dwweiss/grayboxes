@@ -5,7 +5,7 @@
         Only test files with name: test*.py are executed
 
     Version:
-        2018-10-12 DWW
+        2019-09-19 DWW
 """
 
 import os

@@ -20,14 +20,14 @@
       2018-08-30 DWW
 """
 
-import unittest
-import os
-import sys
+import __init__
+__init__.init_path()
 
-sys.path.append(os.path.abspath('..'))
+import unittest
 
 from grayboxes.dialog import dialog_yes_no, dialog_load_filenames, \
     dialog_save_filename, dialog_directory, dialog_info
+    
     
 class TestUM(unittest.TestCase):
     """

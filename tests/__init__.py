@@ -17,44 +17,16 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-16 DWW
+      2018-09-19 DWW
 """
 
-
-import __init__
-__init__.init_path()
-
-import unittest
-import numpy as np
-
-#import sys
-#import os
-#sys.path.append(os.path.abspath('..'))
-
-from grayboxes.___ import ___
+import sys
+import os
 
 
-class TestUM(unittest.TestCase):
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
-    def test1(self):
-        foo = ___()
-        foo()
-
-        self.assertTrue(True)
-
-    def test2(self):
-        foo = ___()
-        foo()
-
-        self.assertFalse(True)
-        self.assertAlmostEqual
-        self.assertDictEqual
+def init_path():
+    sys.path.append(os.path.abspath('..'))
 
 
-if __name__ == '__main__':
-    unittest.main()
+if __file__ == '__main__':
+    init_path()

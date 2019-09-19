@@ -20,14 +20,13 @@
       2019-08-29 DWW
 """
 
+import __init__
+__init__.init_path()
+
 import unittest
-import sys
-import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
-sys.path.append(os.path.abspath('..'))
 
 from grayboxes.black import Black
 from grayboxes.plot import plot_isomap

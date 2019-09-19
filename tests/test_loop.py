@@ -20,13 +20,12 @@
       2018-09-11 DWW
 """
 
+import __init__
+__init__.init_path()
+
 import unittest
-import sys
-import os
 import numpy as np
 import matplotlib.pyplot as plt
-
-sys.path.append(os.path.abspath('..'))
 
 from grayboxes.base import Base
 from grayboxes.loop import Loop

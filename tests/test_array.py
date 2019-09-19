@@ -17,16 +17,16 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-08-29 DWW
+      2019-09-18 DWW
 """
 
+import __init__
+__init__.init_path()
+
 import unittest
-import sys
-import os
 import numpy as np
 import matplotlib.pyplot as plt
-
-sys.path.append(os.path.abspath('..'))
+import pandas as pd
 
 import grayboxes.array as arr
 
@@ -115,6 +115,27 @@ class TestUM(unittest.TestCase):
         plt.show()        
  
         self.assertTrue(True)
+
+    def test6(self):
+        print(arr.ensure2D(np.array([5])))
+        print(arr.ensure2D(np.array([2, 3, 4, 5])))
+        print(arr.ensure2D(np.array([[2, 3, 4, 5]])))
+        print(arr.ensure2D(np.array([[2, 3, 4, 5]]).T))
+        print('------')
+        print(arr.ensure2D(np.array([2, 3, 4, 5]).T, np.array([2, 3, 4, 5])))
+        print('------')
+        print(arr.ensure2D(pd.core.series.Series([2, 3, 4, 5])))
+        print(arr.ensure2D(pd.core.series.Series([2, 3, 4, 5]).T))
+        print('------')
+        print(arr.ensure2D(np.atleast_1d([2, 3, 4, 5])))
+        print(arr.ensure2D(np.atleast_2d([2, 3, 4, 5])))
+        print(arr.ensure2D(np.atleast_2d([[2, 3, 4, 5]])))
+        print(arr.ensure2D(np.atleast_1d([2, 3, 4, 5]).T))
+        print(arr.ensure2D(np.atleast_2d([2, 3, 4, 5]).T))
+        print(arr.ensure2D(np.atleast_2d([[2, 3, 4, 5]]).T))
+
+        self.assertTrue(True)
+
 
 if __name__ == '__main__':
     unittest.main()

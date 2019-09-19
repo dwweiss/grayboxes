@@ -20,15 +20,14 @@
       2019-09-13 DWW
 """
 
+import __init__
+__init__.init_path()
+
 import unittest
-import sys
-import os
 import numpy as np
 from pandas import DataFrame
 import matplotlib.pyplot as plt
 import neurolab as nl
-
-sys.path.append(os.path.abspath('..'))
 
 from grayboxes.neural import Neural
 from grayboxes.plot import (plot_surface, plot_isolines, plot_isomap, \

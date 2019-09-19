@@ -20,15 +20,15 @@
       2019-07-17 DWW
 """
 
-import sys
+import __init__
+__init__.init_path()
+
+import unittest
 import os
 from collections import OrderedDict
-import unittest
 from typing import Any, Dict, Optional, Union
 import numpy as np
 import matplotlib.pyplot as plt
-
-sys.path.append(os.path.abspath('..'))
 
 from grayboxes.array import noise, rand, xy_rand_split
 from grayboxes.base import Base

@@ -20,12 +20,11 @@
       2018-08-17 DWW
 """
 
-import unittest
-import sys
-import os
-import numpy as np
+import __init__
+__init__.init_path()
 
-sys.path.append(os.path.abspath('..'))
+import unittest
+import numpy as np
 
 from grayboxes.inverse import Inverse
 from grayboxes.plot import plot_x_y_y_ref

@@ -20,16 +20,15 @@
       2018-09-11 DWW
 """
 
+import __init__
+__init__.init_path()
+
 import unittest
-import sys
-import os
 import numpy as np
 
-sys.path.append(os.path.abspath('..'))
-
-from grayboxes.plot import plot_curves, plot_surface, plot_wireframe, \
-    plot_isomap, plot_isolines, plot_vectors, plot_trajectory, plot_bar_arrays, \
-    plot_bars, to_regular_mesh, clip_xyz
+from grayboxes.plot import (plot_curves, plot_surface, plot_wireframe, \
+    plot_isomap, plot_isolines, plot_vectors, plot_trajectory, \
+    plot_bar_arrays, plot_bars, to_regular_mesh, clip_xyz)
 
 
 class TestUM(unittest.TestCase):
