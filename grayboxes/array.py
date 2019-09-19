@@ -498,3 +498,43 @@ def scale(X: np.ndarray, lo: float=0., hi: float=1.,
     assert not np.isclose(delta, 0), str(delta)
 
     return hi - (((hi - lo) * (_max - X)) / delta)
+
+
+def ensure2D(x: Sequence[float], 
+             y: Optional[Sequence[float]]=None) \
+        -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+    """
+    Ensures that x is valid 2D array
+    if y is not None:
+        Ensures that y is valid 2D array
+        Checks shape compatibility of x to y
+
+    Args:
+        x (1D or 2D array):
+            array
+
+        y (1D or 2D array):
+            array
+
+    Returns:
+        (2D array of float):
+            corrected array x if y is None, 
+            otherwise corrected arrays x and y
+    """
+    x = np.asfarray(x)
+    if x.ndim == 1:
+        x = np.atleast_2d(x).T
+    else:
+        assert x.ndim == 2, 'x.shape: ' + str(x.shape)
+    if y is None:
+        return x
+
+    y = np.asfarray(y)
+    if y.ndim == 1:
+        y = np.atleast_2d(y).T
+    else:
+        assert y.ndim == 2, 'y.shape: ' + str(y.shape)
+    assert x.shape[0] == y.shape[0], \
+        'x.shape: ' + str(x.shape) + ', y.shape: ' + str(y.shape)
+
+    return x, y

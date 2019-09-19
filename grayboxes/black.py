@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-05-02 DWW
+      2019-09-17 DWW
 """
 
 import sys
