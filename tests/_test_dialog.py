@@ -24,6 +24,7 @@ import __init__
 __init__.init_path()
 
 import unittest
+import os
 
 from grayboxes.dialog import dialog_yes_no, dialog_load_filenames, \
     dialog_save_filename, dialog_directory, dialog_info
@@ -36,7 +37,7 @@ class TestUM(unittest.TestCase):
     """
     
     def setUp(self):
-        pass
+        print('///', os.path.basename(__file__))
 
     def tearDown(self):
         pass
@@ -45,12 +46,14 @@ class TestUM(unittest.TestCase):
         yes_no = dialog_yes_no(title='Question to be answered',
                                icon='question')
         print('yes_no:', yes_no)
+        
         self.assertTrue(True)
 
     def test2(self):
         List = dialog_load_filenames(default_ext='data', initial_dir=None,
                                      min_files=2)
         print('List:', List)
+        
         self.assertTrue(True)
 
     def test3(self):
@@ -61,6 +64,7 @@ class TestUM(unittest.TestCase):
         result = foo is not None
         foo.write('foo')
         foo.close()
+        
         self.assertTrue(result)
 
     def test4(self):
@@ -70,6 +74,7 @@ class TestUM(unittest.TestCase):
 
     def test5(self):
         dialog_info('my title', 'my message')
+        
         self.assertTrue(True)
 
 

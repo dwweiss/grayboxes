@@ -24,6 +24,7 @@ import __init__
 __init__.init_path()
 
 import unittest
+import os
 import numpy as np
 
 from grayboxes.array import rand
@@ -39,7 +40,8 @@ def f(self, x, *args):
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        pass
+        print('///', os.path.basename(__file__))
+
 
     def tearDown(self):
         pass

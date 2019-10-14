@@ -17,13 +17,14 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-10-02 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -79,41 +80,40 @@ class HeatConduction(Loop):
         plt.show()
 
 
-foo = HeatConduction('conduction')
-foo.set_follower([Base('follower 1'), Base('follower 2')])
-foo.silent = False
-
-
 class TestUM(unittest.TestCase):
     def setUp(self):
-        pass
+        print('///', os.path.basename(__file__))
+
+        self.foo = HeatConduction('conduction')
+        self.foo.set_follower([Base('follower 1'), Base('follower 2')])
+        self.foo.silent = False
 
     def tearDown(self):
         pass
 
     def test1(self):
-        print('foo.isTransient:', foo.is_transient())
-        print('foo.isNonLinear:', foo.is_nonlinear())
+        print('foo.isTransient:', self.foo.is_transient())
+        print('foo.isNonLinear:', self.foo.is_nonlinear())
 
         self.assertTrue(True)
 
     def test2(self):
-        foo.set_transient(t_end=0, n=8)
-        foo.set_nonlinear(n_it_max=5, n_it_min=3, epsilon=0.0)
+        self.foo.set_transient(t_end=0, n=8)
+        self.foo.set_nonlinear(n_it_max=5, n_it_min=3, epsilon=0.0)
 
-        print('foo.isTransient:', foo.is_transient())
-        print('foo.isNonLinear:', foo.is_nonlinear())
-        foo()
+        print('foo.isTransient:', self.foo.is_transient())
+        print('foo.isNonLinear:', self.foo.is_nonlinear())
+        self.foo()
 
         self.assertTrue(True)
 
     def test3(self):
-        foo.set_transient(t_end=0.1, n=8)
-        foo.set_nonlinear(n_it_max=0, n_it_min=0, epsilon=0.0)
+        self.foo.set_transient(t_end=0.1, n=8)
+        self.foo.set_nonlinear(n_it_max=0, n_it_min=0, epsilon=0.0)
 
-        print('foo.is_transient:', foo.is_transient())
-        print('foo.is_nonLinear:', foo.is_nonlinear())
-        foo()
+        print('foo.is_transient:', self.foo.is_transient())
+        print('foo.is_nonLinear:', self.foo.is_nonlinear())
+        self.foo()
 
         self.assertTrue(True)
 

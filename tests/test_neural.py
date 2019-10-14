@@ -24,6 +24,7 @@ import __init__
 __init__.init_path()
 
 import unittest
+import os
 import numpy as np
 from pandas import DataFrame
 import matplotlib.pyplot as plt
@@ -44,7 +45,7 @@ def str_L2(y, Y):
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        pass
+        print('///', os.path.basename(__file__))
 
     def tearDown(self):
         pass

@@ -17,44 +17,53 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-15 DWW
+      2018-10-04 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
+import os
+import sys
+from typing import Any, List, Optional
 
 from grayboxes.base import Base
 
 
+class Foo(Base):
+    def __init__(self, identifier: str='Foo',
+                 argv: Optional[List[str]]=None) -> None:
+        super().__init__(identifier=identifier, argv=argv)
+        self.x = 3.0
+
+    def pre(self, **kwargs: Any) -> bool:
+        super().pre()
+        
+        return True
+
+    def task(self, **kwargs: Any) -> float:
+        super().task()
+
+        self.x *= 2.0
+        b = 7.0
+        for i in range(int(1e6)):
+            b = b / 3.0
+        self.y = b
+        
+        return 0.0
+
+    def post(self, **kwargs: Any) -> bool:
+        super().post()
+        self.write('    x(' + self.identifier + '): ' + str(self.x))
+        self.write('    y(' + self.identifier + '): ' + str(self.y))
+        
+        return True
+
+
 class TestUM(unittest.TestCase):
-
-    class Foo(Base):
-        def __init__(self, identifier=''):
-            super().__init__(identifier=identifier)
-            self.x = 3.0
-
-        def pre(self, **kwargs):
-            super().pre()
-
-        def task(self, **kwargs):
-            super().task()
-
-            self.x *= 2.0
-            b = 7.0
-            for i in range(int(1e6)):
-                b = b / 3.0
-            self.y = b
-            return 0.0
-
-        def post(self, **kwargs):
-            super().post()
-            self.write('    x(' + self.identifier + '): ' + str(self.x))
-            self.write('    y(' + self.identifier + '): ' + str(self.y))
-
     def setUp(self):
-        pass
+        print('///', os.path.basename(__file__))
 
     def tearDown(self):
         pass
@@ -62,19 +71,19 @@ class TestUM(unittest.TestCase):
     def test1(self):
         # creates instance
 
-        foo = self.Foo('root1')
+        foo = Foo('root1', sys.argv)
         foo.gui = False
 
         # assigns path to files
 
         # creates objects
-        f1 = self.Foo('follower 1')
-        f11 = self.Foo('follower 1->1')
-        f12 = self.Foo('follower 1->2')
-        f13 = self.Foo('follower 1->3')
-        f2 = self.Foo('follower 2')
-        f21 = self.Foo('follower 2->1 and cooperator 1--2')
-        f22 = self.Foo('follower 2->2')
+        f1 = Foo('follower 1')
+        f11 = Foo('follower 1->1')
+        f12 = Foo('follower 1->2')
+        f13 = Foo('follower 1->3')
+        f2 = Foo('follower 2')
+        f21 = Foo('follower 2->1 and cooperator 1--2')
+        f22 = Foo('follower 2->2')
 
         # connects objects                                   foo
         foo.set_follower([f1, f2])           # .            /     \
@@ -101,18 +110,20 @@ class TestUM(unittest.TestCase):
 
         # prints content of root and its followers
         print('\nPrint(foo): ' + str(foo))
-        self.assertTrue(True)
         del foo
 
+        self.assertTrue(True)
+
     def test2(self):
-        foo = self.Foo('root2')
+        foo = Foo('root2')
         foo()
         foo.write(str('my write id:' + foo.identifier))
+        
         self.assertTrue(True)
 
     def test3(self):
         # searches for specific follower in tree
-        foo = self.Foo('root3')
+        foo = Foo('root3')
         identifier = 'follower 11'
         p = foo.get_follower_downwards(identifier=identifier)
         if p is None:
@@ -120,20 +131,22 @@ class TestUM(unittest.TestCase):
         else:
             print('identifier found:', p.identifier == identifier)
             print('downward search, p.identifier:', p.identifier)
+        
         self.assertTrue(True)
 
     def test4(self):
         # destructs tree
-        foo = self.Foo('root4')
+        foo = Foo('root4')
         foo()
         print('*** destruct')
         print('foo 4:', foo)
         foo.destruct()
+        
         self.assertTrue(True)
 
     def test5(self):
         # sends warning and termination of program
-        foo = self.Foo('root5')
+        foo = Foo('root5')
         print('foo 5:', foo)
         foo.gui = not True  # TODO toggle foo.gui if TKinter interface
         foo.warn('my warning1')
@@ -144,11 +157,12 @@ class TestUM(unittest.TestCase):
 
     def test6(self):
         # sends warning
-        foo = self.Foo('root6')
+        foo = Foo('root6')
         foo.gui = False
         foo()
         print('foo 6:', foo)
         foo.warn('my warning1')
+        
         self.assertTrue(True)
 
 

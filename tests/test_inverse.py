@@ -24,6 +24,7 @@ import __init__
 __init__.init_path()
 
 import unittest
+import os
 import numpy as np
 
 from grayboxes.inverse import Inverse
@@ -42,7 +43,7 @@ def f(self, x, *args, **kwargs):
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        pass
+        print('///', os.path.basename(__file__))
 
     def tearDown(self):
         pass

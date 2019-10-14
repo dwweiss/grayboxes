@@ -24,6 +24,7 @@ import __init__
 __init__.init_path()
 
 import unittest
+import os
 import numpy as np
 
 from grayboxes.white import White
@@ -47,7 +48,7 @@ class TestUM(unittest.TestCase):
     Test of white box model class
     """
     def setUp(self):
-        pass
+        print('///', os.path.basename(__file__))
 
     def tearDown(self):
         pass

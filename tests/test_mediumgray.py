@@ -24,6 +24,7 @@ import __init__
 __init__.init_path()
 
 import unittest
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -34,7 +35,7 @@ from grayboxes.white import White
 from grayboxes.plot import plot_x_y_y_ref
 
 
-nTun = 3
+n_tun = 3
 
 
 def f(self, x, *args, **kwargs):
@@ -52,23 +53,12 @@ def f(self, x, *args, **kwargs):
             keyword arguments {str: float/int/str}
     """
     if x is None:
-        return np.ones(nTun)
-    tun = args if len(args) >= nTun else np.ones(nTun)
+        return np.ones(n_tun)
+    tun = args if len(args) >= n_tun else np.ones(n_tun)
 
     y0 = tun[0] + tun[1] * np.sin(tun[2] * x[0]) + tun[1] * (x[1] - 1.5)**2
     return [y0]
 
-
-s = 'Creates exact output y_exa(X) and adds noise. Target is Y(X)'
-print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-noise_abs = 0.1
-noise_rel = 5e-2
-X = grid(10, [-1., 2.], [0., 3.])
-y_exa = White(f)(x=X, silent=True)
-Y = noise(y_exa, absolute=noise_abs, relative=noise_rel)
-if 0:
-    plot_x_y_y_ref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
 
 trainer = [
            # 'all',
@@ -84,14 +74,28 @@ trainer = [
 
 class TestUM(unittest.TestCase):
     def setUp(self):
+        print('///', os.path.basename(__file__))
+
+        s = 'Creates exact output y_exa(X) and adds noise. Target is Y(X)'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+        
+        noise_abs = 0.1
+        noise_rel = 5e-2
+        self.X = grid(10, [-1., 2.], [0., 3.])
+        self.y_exa = White(f)(x=self.X, silent=True)
+        self.Y = noise(self.y_exa, absolute=noise_abs, relative=noise_rel)
+        if 0:
+            plot_x_y_y_ref(self.X, self.Y, self.y_exa, ['X', 'Y_{nse}', 
+                                                        'y_{exa}'])
+
         pass
 
     def tearDown(self):
         pass
 
     def test1(self):
-        message = 'Tunes model, compare: y(X) vs y_exa(X)'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(message))
+        s = 'Tunes model, compare: y(X) vs y_exa(X)'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         # train with n1 random initial tuning parameter help, each of size n2
         local, n1, n2 = 10, 1, 3
@@ -103,8 +107,9 @@ class TestUM(unittest.TestCase):
         y_mgr, tun_mgr = None, None
         for local in range(1, 3):
             for neurons in range(2, 4):
-                y = mgr(X=X, Y=Y, x=X, trainer=trainer, tun0=tun0, nItMax=5000,
-                        bounds=nTun*[(-1., 3.)], neurons=[neurons], trials=3,
+                y = mgr(X=self.X, Y=self.Y, x=self.X, trainer=trainer, 
+                        tun0=tun0, nItMax=5000,
+                        bounds=n_tun*[(-1., 3.)], neurons=[neurons], trials=3,
                         local=local)
                 print('l2(neurons:', str(neurons)+'): ', mgr.metrics['L2'],
                       end='')
@@ -116,11 +121,12 @@ class TestUM(unittest.TestCase):
 
         self.assertFalse(y_mgr is None)
 
-        y_lgr = lgr(X=X, Y=Y, x=X, trainer=trainer, nItMax=5000, tun0=tun0)
+        y_lgr = lgr(X=self.X, Y=self.Y, x=self.X, trainer=trainer, 
+                    nItMax=5000, tun0=tun0)
         print('lgr.w:', lgr.weights)
 
         if mgr.weights is None:
-            x_tun = mgr._black.predict(x=X)
+            x_tun = mgr._black.predict(x=self.X)
             for i in range(x_tun.shape[1]):
                 plt.plot(x_tun[:, i], ls='-',
                          label='$x^{loc}_{tun,'+str(i)+'}$')
@@ -132,8 +138,8 @@ class TestUM(unittest.TestCase):
         plt.legend(bbox_to_anchor=(1.1, 1.05))
         plt.show()
 
-        plot_x_y_y_ref(X, y_lgr, y_exa, ['X', 'y_{lgr}', 'y_{exa}'])
-        plot_x_y_y_ref(X, y_mgr, y_exa, ['X', 'y_{mgr}', 'y_{exa}'])
+        plot_x_y_y_ref(self.X, y_lgr, self.y_exa, ['X', 'y_{lgr}', 'y_{exa}'])
+        plot_x_y_y_ref(self.X, y_mgr, self.y_exa, ['X', 'y_{mgr}', 'y_{exa}'])
 
         self.assertTrue(True)
 

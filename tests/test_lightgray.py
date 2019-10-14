@@ -24,6 +24,7 @@ import __init__
 __init__.init_path()
 
 import unittest
+import os
 import numpy as np
 
 from grayboxes.lightgray import LightGray
@@ -78,17 +79,19 @@ trainer = [
            ]
 
 
-noise_abs = 0.25
-noise_rel = 10e-2
-X = grid(8, (-1, 8), (0, 3))
-y_exa = White(f)(x=X, silent=True)
-Y = noise(y_exa, absolute=noise_abs, relative=noise_rel)
-plot_x_y_y_ref(X, Y, y_exa, ['X', 'Y_{nse}', 'y_{exa}'])
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        pass
+        print('///', os.path.basename(__file__))
+
+        noise_abs = 0.25
+        noise_rel = 10e-2
+        self.X = grid(8, (-1, 8), (0, 3))
+        self.y_exa = White(f)(x=self.X, silent=True)
+        self.Y = noise(self.y_exa, absolute=noise_abs, relative=noise_rel)
+        plot_x_y_y_ref(self.X, self.Y, self.y_exa, ['X', 'Y_{nse}', 
+                                                    'y_{exa}'])
 
     def tearDown(self):
         pass
@@ -107,13 +110,14 @@ class TestUM(unittest.TestCase):
         for _tun0 in [tun0, None]:
             print('+++ tun0:\n', _tun0, '\n', '*'*40)
 
-            y = model(X=X, Y=Y, tun0=_tun0, x=X, trainer=trainer,
-                      detailed=True, nItMax=5000, bounds=4*[(0, 2)])
+            y = model(X=self.X, Y=self.Y, tun0=_tun0, x=self.X, 
+                      trainer=trainer, detailed=True, nItMax=5000, 
+                      bounds=4*[(0, 2)])
 
-            y = LightGray(f2, 'test1b')(X=X, Y=Y, x=X, trainer=trainer,
-                                        nItMax=5000, tun0=_tun0,
-                                        silent=not True, detailed=True)
-            plot_x_y_y_ref(X, y, y_exa, ['X', 'y', 'y_{exa}'])
+            y = LightGray(f2, 'test1b')(X=self.X, Y=self.Y, x=self.X, 
+                         trainer=trainer, nItMax=5000, tun0=_tun0,
+                         silent=not True, detailed=True)
+            plot_x_y_y_ref(self.X, y, self.y_exa, ['X', 'y', 'y_{exa}'])
             if 1:
                 print('metrics:', model.metrics)
                 df = model.xy_to_frame()
@@ -122,13 +126,16 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test2(self):
-        # train with single initial tuning parameter set, nTun from f2(None)
-        if 1:
-            y = LightGray(f2, 'test2')(X=X, Y=Y, x=X, tun0=np.ones(4),
-                                       silent=not True, trainer=trainer,
-                                       detailed=False)
+        # train with single ini tun parameter set, n_tun from f2(None)
+        variant_a = True
 
-        y = LightGray(f2, 'test2b')(X=X, Y=Y, x=X, silent=False, trainer='all')
+        if variant_a:
+            y = LightGray(f2, 'test2')(X=self.X, Y=self.Y, x=self.X, 
+                         tun0=np.ones(4), silent=not True, trainer=trainer,
+                         detailed=False)
+        else:
+            y = LightGray(f2, 'test2b')(X=self.X, Y=self.Y, x=self.X, 
+                         silent=False, trainer='all')
 
         self.assertTrue(y is not None)
 

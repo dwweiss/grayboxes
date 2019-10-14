@@ -24,6 +24,7 @@ import __init__
 __init__.init_path()
 
 import unittest
+import os
 
 from grayboxes.xyz import xyz, xyzt
 
@@ -33,7 +34,7 @@ class TestUM(unittest.TestCase):
     Test of point in 3D space
     """
     def setUp(self):
-        pass
+        print('///', os.path.basename(__file__))
 
     def tearDown(self):
         pass

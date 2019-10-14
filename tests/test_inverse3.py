@@ -300,6 +300,7 @@ class Foo(Base):
 
 class TestUM(unittest.TestCase):
     def setUp(self):
+        print('///', os.path.basename(__file__))
 
         plot_f()
         

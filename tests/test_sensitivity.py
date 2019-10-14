@@ -24,6 +24,7 @@ import __init__
 __init__.init_path()
 
 import unittest
+import os
 import numpy as np
 
 from grayboxes.sensitivity import Sensitivity
@@ -40,7 +41,7 @@ class TestUM(unittest.TestCase):
         
     """
     def setUp(self):
-        pass
+        print('///', os.path.basename(__file__))
 
     def tearDown(self):
         pass

@@ -24,6 +24,7 @@ import __init__
 __init__.init_path()
 
 import unittest
+import os
 import numpy as np
 import psutil
 
@@ -39,23 +40,22 @@ def f(x, *args, **kwargs):
     return [x[0] * 2, x[1]**2]
 
 
-comm = communicator()
-if comm is None:
-    n_proc = 4
-    n_core = 2
-else:
-    n_proc = comm.Get_size()
-    n_core = psutil.cpu_count(logical=False)
-
-n_point, nInp = 5, 2
-print('mpi():', mpi())
-print('communicator():', communicator())
-print('n_core n_proc:', n_core, n_proc)
-
-
 class TestUM(unittest.TestCase):
     def setUp(self):
-        pass
+        print('///', os.path.basename(__file__))
+
+        comm = communicator()
+        if comm is None:
+            self.n_proc = 4
+            self.n_core = 2
+        else:
+            self.n_proc = comm.Get_size()
+            self.n_core = psutil.cpu_count(logical=False)
+        
+        self.n_point, self.nInp = 5, 2
+        print('mpi():', mpi())
+        print('communicator():', communicator())
+        print('n_core n_proc:', self.n_core, self.n_proc)
 
     def tearDown(self):
         pass
@@ -90,7 +90,7 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
     def test2(self):
-        x = x_demo(n_point, nInp)
+        x = x_demo(self.n_point, self.nInp)
         print('x:', x)
 
         if communicator() is not None:
@@ -113,15 +113,15 @@ class TestUM(unittest.TestCase):
     def test3(self):
         s = 'Generates example input'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-        x = x_demo(n_point, nInp)
-        if n_point <= 20:
+        x = x_demo(self.n_point, self.nInp)
+        if self.n_point <= 20:
             print('x:', x.tolist(), '\n')
 
         s = 'Split input into sequence of input groups for multiple cores'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-        x_all = split(x, n_proc)
+        x_all = split(x, self.n_proc)
         print(x3d_to_str(x_all))
-        if n_point <= 20:
+        if self.n_point <= 20:
             print('x_all:', x_all.tolist())
 
         if communicator() is None:
@@ -136,22 +136,22 @@ class TestUM(unittest.TestCase):
                 n_all.append(y_proc)
             n_all = np.array(n_all)
             print(x3d_to_str(n_all))
-            if n_point <= 20:
+            if self.n_point <= 20:
                 print('n_all:', n_all.tolist(), '\n')
 
             s = "Merges output from multiple cores and removes 'inf'-rows"
             print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
             y = merge(n_all)
-            if n_point <= 20:
+            if self.n_point <= 20:
                 print('x:', x.tolist())
-            if n_point <= 20:
+            if self.n_point <= 20:
                 print('y:', y.tolist())
         else:
             s = 'Computes output on multiple cores'
             print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
             y = predict_scatter(f, x, silent=False)
 
-        if n_point <= 20:
+        if self.n_point <= 20:
             print('x:', x.tolist())
             print('y:', y.tolist())
 

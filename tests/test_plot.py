@@ -24,6 +24,7 @@ import __init__
 __init__.init_path()
 
 import unittest
+import os
 import numpy as np
 
 from grayboxes.plot import (plot_curves, plot_surface, plot_wireframe, \
@@ -33,7 +34,7 @@ from grayboxes.plot import (plot_curves, plot_surface, plot_wireframe, \
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        pass
+        print('///', os.path.basename(__file__))
 
     def tearDown(self):
         pass

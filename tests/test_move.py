@@ -24,6 +24,7 @@ import __init__
 __init__.init_path()
 
 import unittest
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -41,71 +42,72 @@ way = [xyz(.0,  .0, .0),     #   ^
        xyz(.7, -.1, .0),     # -1|                   \/
        xyz(.8,  .0, .0)]     #   | trajectory W=W(t)
 
-orien = [xyz(20 * np.sin(i*3), 4*i-20, i*i-30) for i in range(len(way))]
-print(len(orien), [str(orien[i]) for i in range(9)])
-
-foo = Move('move')
-speed = 0.8
-foo.set_trajectory(way=way, orientations=orien, speed=speed)
-
-print('-' * 40)
-print('test:', foo)
-print('-' * 40)
-
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        pass
+        print('///', os.path.basename(__file__))
+        
+        self.orien = [xyz(20 * np.sin(i*3), 4*i-20, i*i-30) for i in range(len(way))]
+        print(len(self.orien), [str(self.orien[i]) for i in range(9)])
+        
+        self.foo = Move('move')
+        self.speed = 0.8
+        self.foo.set_trajectory(way=way, orientations=self.orien, 
+                                speed=self.speed)
+        
+        print('-' * 40)
+        print('test:', self.foo)
+        print('-' * 40)
 
     def tearDown(self):
         pass
 
     def test1(self):
-        foo.set_trajectory(way, orientations=orien, speed=speed)
+        self.foo.set_trajectory(way, orientations=self.orien, speed=self.speed)
 
         print('-' * 40)
-        print('test:', foo)
+        print('test:', self.foo)
         print('-' * 40)
 
         self.assertTrue(True)
 
     def test2(self):
-        i_way = foo.i_waypoint_ahead(t=0.3)
+        i_way = self.foo.i_waypoint_ahead(t=0.3)
         print('t=0.3 i:', i_way)
-        i_way = foo.i_waypoint_ahead(t=0.0)
+        i_way = self.foo.i_waypoint_ahead(t=0.0)
         print('t=0 i:', i_way)
         print('-' * 40)
 
         t_range = np.linspace(0, 5, 8)
         for t in t_range:
-            i_way = foo.i_waypoint_ahead(t)
+            i_way = self.foo.i_waypoint_ahead(t)
             print('t:', t, 'i:', i_way)
         print('-' * 40)
 
-        t_end = np.sqrt((2*(1-(-1)))**2 + 0.8**2) / speed
-        foo.set_transient(t_end=t_end, n=100)
+        t_end = np.sqrt((2*(1-(-1)))**2 + 0.8**2) / self.speed
+        self.foo.set_transient(t_end=t_end, n=100)
 
-        foo()
+        self.foo()
 
         print('-' * 40)
-        foo.plot()
+        self.foo.plot()
         print('-' * 40)
 
         self.assertTrue(True)
 
     def test3(self):
-        print('foo._waypoints[-1].t:', foo._waypoints[-1].t)
+        print('foo._waypoints[-1].t:', self.foo._waypoints[-1].t)
         T = np.linspace(0., 2, 100)
-        p = foo.position(t=0.1)
+        p = self.foo.position(t=0.1)
         print('p:', p)
 
-        x = [p.x for p in foo._waypoints]
-        y = [p.y for p in foo._waypoints]
-        t = [p.t for p in foo._waypoints]
+        x = [p.x for p in self.foo._waypoints]
+        y = [p.y for p in self.foo._waypoints]
+        t = [p.t for p in self.foo._waypoints]
 
         P = []
         for time in T:
-            p = foo.position(time)
+            p = self.foo.position(time)
             p.t = time
             P.append(p)
         X = [p.x for p in P]

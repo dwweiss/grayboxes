@@ -24,18 +24,19 @@ import __init__
 __init__.init_path()
 
 import unittest
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from grayboxes.black import Black
 from grayboxes.array import grid, noise
+from grayboxes.black import Black
 from grayboxes.white import White
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
+        print('///', os.path.basename(__file__))
         self.saveFigures = True
-        pass
 
     def tearDown(self):
         pass
