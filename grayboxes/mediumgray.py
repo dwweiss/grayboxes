@@ -81,7 +81,7 @@ class MediumGray(BoxModel):
                 training input X_prc, shape: (n_point, n_inp)
 
             Y (2D array of float):
-                training target Y_com, shape: (n_point, nOut)
+                training target Y_com, shape: (n_point, n_out)
 
         Kwargs:
             bounds (2-tuple of float or 2-tuple of 1D array of float):
