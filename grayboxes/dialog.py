@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-30 DWW
+      2019-10-14 DWW
 """
 
 __all__ = ['dialog_yes_no', 'dialog_load_filenames', 'dialog_save_filename',
@@ -27,8 +27,6 @@ import os
 from typing import List
 try:
     import tkinter
-    from tkinter import messagebox
-    from tkinter import filedialog
 except ImportError:
     import sys
     print("\n!!! Wrong Python interpreter (version: '" +

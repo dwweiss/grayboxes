@@ -17,16 +17,17 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-08-21 DWW
+      2019-10-14 DWW
 """
 
 __all__ = ['grid', 'cross', 'rand', 'noise', 'xy_rand_split', \
-           'xy_thin_out', 'frame_to_arrays', 'scale', ]
+           'xy_thin_out', 'frame_to_arrays', 'scale', 'smooth', ]
 
 import random
 import numpy as np
 from pandas import DataFrame
 from typing import Optional, List, Sequence, Tuple, Union
+from statsmodels.nonparametric.smoothers_lowess import lowess
 
 
 def grid(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
@@ -111,7 +112,6 @@ def grid(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
 
 def cross(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
         -> np.ndarray:
-
     """
     Sets initial (uniformly spaced) cross input, for instance for 2 
     input with 5 nodes per axis: cross(5, [3., 7.], [-4., -2.])
@@ -164,7 +164,6 @@ def cross(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
 
 def rand(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
         -> np.ndarray:
-
     """
     Sets initial (uniformly distributed) random input, for instance for
     2 input with 12 trials: rand(12, [1., 3.], [-7., -5.])
@@ -232,8 +231,6 @@ def noise(y: np.ndarray, absolute: float=0.0, relative: float=0e-2,
         absolute:
             upper boundary of interval of absolute values of noise to be 
             added. The lower boundary is the opposite of 'absolute'
-            
-            default: 0.0
 
         relative:
             upper boundary of interval of relative noise to be added.
@@ -242,16 +239,12 @@ def noise(y: np.ndarray, absolute: float=0.0, relative: float=0e-2,
             'relative = 20e-2' adds noise out of the range from -20% to 
             20% to 'y'
 
-            default: 0.0
-
         uniform:
             if True then noise is uniformly distributed between the upper 
             and lower boundaries given by 'absolute' and/or 'relative'.
             Otherwise these upper boundaries represent the standard 
             deviation of a Gaussian distribution (at given boundary 
             noise value is 60.7% of max noise )
-            
-            default: True
 
     Returns:
         (array of float of same shape as y):
@@ -325,8 +318,9 @@ def frame_to_arrays(df: DataFrame,
 
     Returns:
         (list of 1D arrays of float):
-            column arrays of shape: (n_points, len(key?)). Size of tuple equals
-            number of keys 'keys0, key1,  .., keys7' which are not None
+            column arrays of shape: (n_points, len(key?)). Size of tuple 
+            equals number of keys 'keys0, key1,  .., keys7' which are 
+            not None
         or
         (None):
             if all(keys0..7 not in df)
@@ -365,7 +359,7 @@ def xy_rand_split(x: np.ndarray, y: Optional[np.ndarray]=None,
                   fractions: Optional[Sequence[float]]=None) \
         -> Tuple[np.ndarray, Optional[np.ndarray]]:
     """
-    Splits randomly one or two 2D arrays into sub-arrays, size of the sub 
+    Splits randomly one or two 2D arrays into sub-arrays, size of sub 
     arrays is defined by a list of 'fractions'
 
     Example:
@@ -391,8 +385,8 @@ def xy_rand_split(x: np.ndarray, y: Optional[np.ndarray]=None,
             data array, first index is point index
 
         fractions:
-            size of sub arrays is defined by ratios of elements of fractions 
-            list relative to sum of fractions
+            size of sub arrays is defined by ratios of elements of 
+            fractions list relative to sum of fractions
             
     Returns:
         Pair of lists of 2D sub-arrays of float
@@ -485,8 +479,8 @@ def scale(X: np.ndarray, lo: float=0., hi: float=1.,
             maximum of returned array
 
         axis:
-            if not None, minimum and maximum are taken from axis given by 
-            axis index (for 2D array: column=0, row=1)
+            if not None, minimum and maximum are taken from axis given 
+            by axis index (for 2D array: column=0, row=1)
 
     Returns:
         (array of float):
@@ -517,9 +511,12 @@ def ensure2D(x: Sequence[float],
             array
 
     Returns:
-        (2D array of float):
-            corrected array x if y is None, 
-            otherwise corrected arrays x and y
+        if y is None:
+            (2D array of float):
+                corrected array x 
+        else:
+            (two 2D arrays of float):
+                corrected arrays x and y 
     """
     x = np.asfarray(x)
     if x.ndim == 1:
@@ -538,3 +535,41 @@ def ensure2D(x: Sequence[float],
         'x.shape: ' + str(x.shape) + ', y.shape: ' + str(y.shape)
 
     return x, y
+
+
+def smooth(x: Optional[Sequence[float]], y: np.ndarray,  
+           frac: float=0.2, it: int=3) -> np.ndarray:
+    """
+    Smoothes array elements
+    
+    Args:                        
+        x (1D array of float):
+            optional arguments of array y(x)
+            
+        y (1D array of float):
+            array to be averaged
+
+        frac:
+            fraction, see: statsmodels.org/stable/generated/statsmodels
+                .nonparametric.smoothers_lowess.lowess.html
+            
+        it:
+           number of iterations, see: statsmodels.org/stable/generated
+               /statsmodels.nonparametric.smoothers_lowess.lowess.html
+           
+    Returns:
+        (1D array of float)
+            smoothed array
+        
+    Note: 
+        lowess() returns a 2D array if argument 'return_sorted' is True
+        In this case, the returned is returned as 
+        y_smooth = lowess(y, x, return_sorted=True)[:, 1] 
+    """   
+    if x is None:
+        y_smooth = lowess(y, range(len(y)), frac=frac, it=it, 
+                          return_sorted=False)
+    else:
+        y_smooth = lowess(y, x, frac=frac, it=it, return_sorted=False)
+
+    return y_smooth

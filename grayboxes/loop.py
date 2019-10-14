@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-10-02 DWW
 """
 
 from time import time
@@ -39,15 +39,15 @@ class Loop(Base):
 
         # iteration settings are only relevant if nItMax > 0
         self.it = 0                     # actual number of iterations
-        self.n_it_min = 0                 # minimum number of iterations
-        self.n_it_max = 0                 # maximum number of iterations
+        self.n_it_min = 0               # minimum number of iterations
+        self.n_it_max = 0               # maximum number of iterations
         self.epsilon = 0.               # maximum residuum tolerated
         self.omega = 1.                 # relaxation factor
 
-        # transient settings are only relevant if tEnd > 0
+        # transient settings are only relevant if t_end > 0
         self.t = 0.                     # actual time
-        self.t_begin = 0.                # start time
-        self.tEnd = 0.                  # final time
+        self.t_begin = 0.               # start time
+        self.t_end = 0.                 # final time
         self.dt = 1e-2                  # time step size
         self.theta = 0.5                # time discretization scheme
 
@@ -57,15 +57,15 @@ class Loop(Base):
         if self.is_nonlinear():
             s += '\n'
             s += "{nonLinear: {id: '" + self.identifier + "', " + \
-                "it: '" + str(self.it) + "', nItMin: '" + str(self.n_it_min) + \
+                "it: '" + str(self.it) + "', nItMin: '" + str(self.n_it_min) +\
                 "', nItMax: '" + str(self.n_it_max) + "', epsilon: '" + \
                  str(self.epsilon) + "', omega: '" + str(self.omega) + "'}}"
         if self.is_transient():
             if self.tree_level() == 0:
                 s += '\n'
                 s += "{transient: {t: '" + '{:f}'.format(self.t) + \
-                    "', tBegin: '" + str(self.t_begin) + "', tEnd: '" + \
-                     str(self.tEnd) + "', dt: '" + str(self.dt) + \
+                    "', tBegin: '" + str(self.t_begin) + "', t_end: '" + \
+                     str(self.t_end) + "', dt: '" + str(self.dt) + \
                     "', theta: '" + str(self.theta) + "'}}"
             else:
                 s += "{steady}"
@@ -75,7 +75,7 @@ class Loop(Base):
         return self.n_it_max > 0
 
     def is_transient(self) -> bool:
-        return self.tEnd > 0.0
+        return self.t_end > 0.0
 
     def set_nonlinear(self, n_it_min: int=0, n_it_max: int=0,
                       epsilon: float=0., omega: float=1.) -> None:
@@ -93,20 +93,34 @@ class Loop(Base):
 
     def set_transient(self, t_begin: float=0., t_end: float=0., dt: float=0.,
                       theta: float=0.5, n: int=100) -> None:
-        self.tEnd = t_end if t_end is not None else 0.
-        self.tEnd = np.clip(self.tEnd, 0, int(1e6))
+        """
+        transient loops can be set with two parameter combinations:
+            1. dt and n
+            2. dt and t_end 
+        optionally, the start time t_begin can be set
+            
+        """
+        self.t_end = t_end if t_end is not None else 0.
+        self.t_end = np.clip(self.t_end, 0., int(1e9))
+        self.t_begin = t_begin if t_begin is not None else 0.
+        self.t_begin = np.clip(self.t_begin, 0., self.t_end)
 
-        if self.tEnd > 0.:
+        if self.t_end == 0.:
+            if dt > 0. and n > 0:
+                self.t_end = self.t_begin + n * dt
+
+        if self.t_end > 0.:
             if dt < 1e-20:
                 assert n > 0, 'n must be greater zero'
-            dt = (self.tEnd - t_begin) / n
+            dt = (self.t_end - t_begin) / n
             theta = np.clip(theta, 0., 1.)
             t_begin = np.clip(t_begin, 0., t_end)
 
             self.t_begin = t_begin
             self.dt = dt
             self.theta = theta
-
+                
+            
     def initial_condition(self) -> None:
         for x in self.followers:
             x.initial_condition()
@@ -143,7 +157,7 @@ class Loop(Base):
         if not self.is_transient():
             s = ' (steady & non-linear: ' + str(self.n_it_max) + ')'
         else:
-            s = ' (transient: ' + str(self.tEnd)
+            s = ' (transient: ' + '{:f}'.format(self.t_end)
             if self.is_nonlinear():
                 s += ' & non-linear: ' + str(self.n_it_max) + ')'
             else:
@@ -175,7 +189,7 @@ class Loop(Base):
         else:
             self.t = 0.0
             res = np.inf
-            while (self.t + 1e-10) < self.tEnd:
+            while (self.t + 1e-10) < self.t_end:
                 self.t += self.dt
                 self.write('### Physical time: {:f}'.format(self.t))
                 self.update_transient()

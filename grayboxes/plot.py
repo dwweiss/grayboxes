@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-09-09 DWW
+      2019-10-04 DWW
 """
 
 __all__ = ['plot1', 'plot_curves', 'plot_surface', 'plot_wireframe',
