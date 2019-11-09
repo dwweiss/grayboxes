@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(name='grayboxes',
       version='0.1',
       description='Gray box modeling',
-      url='https://github.com/dwweiss/grayBoxes',
+      url='https://github.com/dwweiss/grayboxes',
       keywords='modelling, modeling, gray box, grey box, hybrid model',
       author='Dietmar Wilhelm Weiss',
       license='GLGP 3.0',
