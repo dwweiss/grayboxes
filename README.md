@@ -28,7 +28,7 @@ _grayboxes_  is the base of the extension package [_coloredlids_](https://github
         Training of gray box models, sensitivity analysis
         Optimization and inverse problem solution with white box, gray box and black box models
 
-    tests
+    test
         Module tests
 
     doc
