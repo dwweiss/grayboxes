@@ -143,9 +143,9 @@ def clip_xyz(x: np.ndarray,
              y: np.ndarray,
              z: np.ndarray,
              z2: Optional[np.ndarray]=None,
-             xrange: Optional[Tuple[float, float]]=None,
-             yrange: Optional[Tuple[float, float]]=None,
-             zrange: Optional[Tuple[float, float]]=None) \
+             xrange: Optional[Tuple[Optional[float], Optional[float]]]=None,
+             yrange: Optional[Tuple[Optional[float], Optional[float]]]=None,
+             zrange: Optional[Tuple[Optional[float], Optional[float]]]=None) \
         -> Union[Tuple[np.ndarray, np.ndarray, np.ndarray],
                  Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
     """
@@ -850,7 +850,7 @@ def plot_bar_arrays(x: Optional[np.ndarray]=None,
                     grid: bool=False,
                     figsize: Optional[Tuple[float, float]]=None,
                     fontsize: int=14,
-                    legend_position: Optional[str]=None,
+                    legend_position: Optional[Tuple[float, float]]=None,
                     show_ylabel: bool=True,
                     width: float=0.15,
                     file: str=''):

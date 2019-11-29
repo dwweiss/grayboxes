@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-03-20 DWW
+      2019-11-21 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -26,8 +26,9 @@
 import sys
 import numpy as np
 import scipy.optimize
-from typing import Any, Callable, Dict, Sequence
+from typing import Any, Dict, List, Sequence, Union
 
+from grayboxes.base import Float1D, Float2D, Function
 from grayboxes.boxmodel import BoxModel
 try:
     import modestga
@@ -94,7 +95,7 @@ class LightGray(BoxModel):
         y = model(X=X, Y=Y, tun0=4, x=x)             # train and predict
     """
 
-    def __init__(self, f: Callable, identifier: str='LightGray') -> None:
+    def __init__(self, f: Function, identifier: str = 'LightGray') -> None:
         """
         Args:
             f:
@@ -107,56 +108,59 @@ class LightGray(BoxModel):
         """
         super().__init__(identifier=identifier, f=f)
 
-        self._n_max_out = 1  # max n_out is '1' due to implementation
+        self._n_max_out: int = 1  # max n_out is '1' due to implementation
 
         # populate list of valid trainers
-        self.scipy_minimizers = ['BFGS',
-                                'L-BFGS-B',      # BFGS with less memory
-                                'Nelder-Mead',   # gradient-free simplex
-                                'Powell',       # gradient-free shooting
-                                'CG',
-                                 # 'Newton-CG',      # requires Jacobian
-                                'TNC',
-                                 # 'COBYLA',  # failed in grayBoxes test
-                                'SLSQP',
-                                 # 'dogleg',         # requires Jacobian
-                                 # 'trust-ncg',      # requires Jacobian
-                                 'basinhopping',   # global (brute) opt.
-                                 'differential_evolution',  # global opt
-                                 ]
-        self.scipy_root_finders = ['lm',
-                                   # 'hybr', 'broyden1', 'broyden2',
-                                   # 'anderson', 'linearmixing',
-                                   # 'diagbroyden', 'excitingmixing',
-                                   # 'krylov', 'df-sane'
-                                   ]
-        self.scipy_equ_minimizers = ['least_squares',
-                                     # Levenberg-Marquardt
-                                     'leastsq',
-                                     ]
-        self.genetic_minimizers = ['genetic', 'ga'] if 'modestga' \
-                                                       in sys.modules else []
+        self.scipy_minimizers: List[str] = [
+                'BFGS',
+                'L-BFGS-B',      # BFGS with less memory
+                'Nelder-Mead',   # gradient-free simplex
+                'Powell',       # gradient-free shooting
+                'CG',
+                # 'Newton-CG',      # requires Jacobian
+                'TNC',
+                # 'COBYLA',  # failed in grayBoxes test
+                'SLSQP',
+                # 'dogleg',         # requires Jacobian
+                # 'trust-ncg',      # requires Jacobian
+                'basinhopping',   # global (brute) opt.
+                'differential_evolution',  # global opt
+                ]
+        self.scipy_root_finders: List[str] = [
+                'lm',
+                # 'hybr', 'broyden1', 'broyden2',
+                # 'anderson', 'linearmixing',
+                # 'diagbroyden', 'excitingmixing',
+                # 'krylov', 'df-sane'
+                ]
+        self.scipy_equ_minimizers: List[str] = [
+                'least_squares',
+                # Levenberg-Marquardt
+                'leastsq',
+                ]
+        self.genetic_minimizers: List[str] = \
+            ['genetic', 'ga'] if 'modestga' in sys.modules else []
 
-        self.valid_trainers = self.scipy_minimizers + \
-                              self.scipy_root_finders + \
-                              self.scipy_equ_minimizers + \
-                              self.genetic_minimizers
+        self.valid_trainers: List[str] = self.scipy_minimizers + \
+                                         self.scipy_root_finders + \
+                                         self.scipy_equ_minimizers + \
+                                         self.genetic_minimizers
 
     # function wrapper for scipy minimize
     def _mean_square_errror(self, weights: Sequence[float], **kwargs: Any) \
-            -> np.ndarray:
-        y = BoxModel.predict(self, self.X, *weights,
-                             **self.kwargs_del(kwargs, 'x'))
+            -> Float2D:
+        y: Float2D = BoxModel.predict(self, self.X, *weights,
+                                      **self.kwargs_del(kwargs, 'x'))
         return np.mean((y - self.Y)**2)
 
     # function wrapper for scipy least_square and leastsq
-    def _difference(self, weights: Sequence[float], **kwargs: Any) \
-            -> np.ndarray:
-        return (BoxModel.predict(self, self.X, *weights,
-                                 **self.kwargs_del(kwargs, 'x')) -
-                self.Y).ravel()
+    def _difference(self, weights: Sequence[float], 
+                    **kwargs: Any) -> Float2D:
+        y = BoxModel.predict(self, self.X, *weights,
+                                 **self.kwargs_del(kwargs, 'x'))
+        return (y - self.Y).ravel()
 
-    def _minimize_least_squares(self, trainer: str, tun0: np.ndarray,
+    def _minimize_least_squares(self, trainer: str, tun0: Sequence[float],
                                 **kwargs: Any) -> Dict[str, Any]:
         """
         Minimizes least squares: sum(self.f(self.X)-self.Y)^2) / X.size
@@ -180,8 +184,7 @@ class LightGray(BoxModel):
             ... specific optimizer options
 
         Returns:
-            (dictionary):
-                results, see BoxModel.train()
+            results, see BoxModel.train()
 
         """
         results = self.init_metrics('trainer', trainer)
@@ -223,7 +226,7 @@ class LightGray(BoxModel):
                     self.write(4 * ' ' + '!!! ' + res.message)
             else:
                 valid_keys = ['n_it_max', 'adaptive', 'goal']
-                kw = {}
+                kw: Dict[str, Any] = {}
                 if any(k in kwargs for k in valid_keys):
                     kw['options'] = {}
                     if trainer in ('SLSQP', 'Nelder-Mead', 'L-BFGS-B'):
@@ -315,18 +318,17 @@ class LightGray(BoxModel):
 
         return results
 
-    def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) \
-            -> Dict[str, Any]:
+    def train(self, X: Float2D, Y: Float2D, **kwargs: Any) -> Dict[str, Any]:
         """
         Trains model, stores X and Y as self.X and self.Y, and stores 
         result of best training trial as self.metrics
         The tuning parameter set is stored as self._weights
 
         Args:
-            X (2D array of float):
+            X:
                 training input, shape: (n_point, n_inp)
 
-            Y (2D array of float):
+            Y:
                 training target, shape: (n_point, n_out)
 
         Kwargs:
@@ -347,8 +349,7 @@ class LightGray(BoxModel):
                 list of pairs (x_min, x_max) limiting x
 
         Returns:
-            (dictionary):
-                results, see BoxModel.train()
+            results, see BoxModel.train()
 
         Note:
             If argument 'tun0' is not given, self.f(None) must return an
@@ -443,7 +444,8 @@ class LightGray(BoxModel):
 
         return self.metrics
 
-    def predict(self, x: np.ndarray, *args: float, **kwargs) -> np.ndarray:
+    def predict(self, x: Union[Float1D, Float2D], *args: float, **kwargs) \
+            -> Float2D:
         """
         Executes box model,stores input x as self.x and output as self.y
 
@@ -458,8 +460,7 @@ class LightGray(BoxModel):
             Keyword arguments
 
         Returns:
-            (2D array of float):
-                prediction output, shape: (n_point, n_out)
+            prediction output, shape: (n_point, n_out)
         """
         args = self.weights if self.weights is not None else args
         return BoxModel.predict(self, x, *args, **self.kwargs_del(kwargs, 'x'))

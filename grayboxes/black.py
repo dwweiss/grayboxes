@@ -17,13 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-09-17 DWW
+      2019-11-20 DWW
 """
 
 import sys
-import numpy as np
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
+from grayboxes.base import Float1D, Float2D
 from grayboxes.boxmodel import BoxModel
 from grayboxes.neural import Neural    # , RadialBasis
 try:
@@ -60,15 +60,17 @@ class Black(BoxModel):
         y_tst = model(x=x)                  # prediction with test input
     """
 
-    def __init__(self, identifier: str='Black') -> None:
+    def __init__(self, identifier: str = 'Black') -> None:
         """
         Args:
             identifier:
                 Unique object identifier
         """
         super().__init__(f=None, identifier=identifier)
-        self._empirical = None   # Neural, Splines, RadialBasis instance
-        self.metrics = None               # measure of model performance
+        self._empirical:Optional[Union[Neural, ]] = None 
+                                       # Instance of Neural, Splines etc
+        self.metrics: Dict[str, Any] = self.init_metrics()
+                                          # measure of model performance
 
     @property
     def silent(self) -> bool:
@@ -80,17 +82,16 @@ class Black(BoxModel):
         if self._empirical is not None:
             self._empirical._silent = value
 
-    def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) \
-            -> Optional[Dict[str, Any]]:
+    def train(self, X: Float2D, Y: Float2D, **kwargs: Any) -> Dict[str, Any]:
         """
         Trains model, stores X and Y as self.X and self.Y, and stores
         performance of best training trial as self.metrics
 
         Args:
-            X (2D array of float):
+            X:
                 training input, shape: (n_point, n_inp)
 
-            Y (2D array of float):
+            Y:
                 training target, shape: (n_point, n_out)
 
         Kwargs:
@@ -114,8 +115,8 @@ class Black(BoxModel):
                 None
         """
         if X is None or Y is None:
-            self.metrics = None
-            return None
+            self.metrics = self.init_metrics()
+            return self.metrics
 
         self.set_XY(X, Y)
 
@@ -144,20 +145,20 @@ class Black(BoxModel):
 
         return self.metrics
 
-    def predict(self, x: np.ndarray, **kwargs: Any) -> np.ndarray:
+    def predict(self, x: Float2D, **kwargs: Any) -> Float2D:
         """
         Executes box model, stores input as self.x and output as self.y
 
         Args:
-            x (2D or 1D array of float):
-                prediction input, shape: (n_point, n_inp) or (n_inp,)
+            x:
+                prediction input, shape: (n_point, n_inp)
+                shape: (n_inp,) is tolerated
 
         Kwargs:
             Keyword arguments
 
         Returns:
-            (2D array of float):
-                prediction output, shape: (n_point, n_out)
+            prediction output, shape: (n_point, n_out)
         """
         assert self.ready, str(self.ready)
         assert self._empirical is not None

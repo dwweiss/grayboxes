@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-10-14 DWW
+      2019-11-20 DWW
 """
 
 __all__ = ['grid', 'cross', 'rand', 'noise', 'xy_rand_split', \
@@ -26,12 +26,14 @@ __all__ = ['grid', 'cross', 'rand', 'noise', 'xy_rand_split', \
 import random
 import numpy as np
 from pandas import DataFrame
+from nptyping import Array
 from typing import Optional, List, Sequence, Tuple, Union
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 
-def grid(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
-        -> np.ndarray:
+def grid(n: Union[int, Sequence[int]], 
+         *ranges: Union[Tuple[float, float], Sequence[float]]) \
+        -> Array[float, ..., ...]:
     """
     Sets initial (uniformly spaced) grid input, for instance for 2 input
     with 4 nodes per axis: grid(4, [3., 6.], [-7., -5.5])
@@ -57,47 +59,45 @@ def grid(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
             Variable length argument list of (min, max) pairs
 
     Returns:
-        (2D array of float):
-            Grid-like initial values, first index is point index, second
-            index is input index
+        Grid-like initial values, first index is point index, second
+        index is input index
     """
-    ranges = list(ranges)
+    ranges_ = np.asfarray(list(ranges))
     N = list(np.atleast_1d(n))
-    n = N + [N[-1]] * (len(ranges) - len(N))  # fill n-array up to: len(ranges)
-    assert len(n) == len(ranges), 'n:' + str(n) + ' ranges:' + str(ranges)
+    n = N + [N[-1]] * (len(ranges_) - len(N))  # fill array up to: len(ranges)
+    assert len(n) == len(ranges_), 'n:' + str(n) + ' ranges_:' + str(ranges_)
 
-    ranges = np.asfarray(ranges)
-    xVar: List[np.ndarray] = []
-    for rng, _n in zip(ranges, n):
+    xVar: List[Array[float]] = []
+    for rng, _n in zip(ranges_, n):
         rng_min = min(rng[0], rng[1])
         rng_max = max(rng[0], rng[1])
         xVar.append(np.linspace(rng_min, rng_max, abs(_n)))
 
-    if ranges.shape[0] == 1:
+    if ranges_.shape[0] == 1:
         x = xVar[0]
         # if argument n is a negative int:
         if n[0] < 0:
             x = np.atleast_2d(x).T
-    elif ranges.shape[0] == 2:
+    elif ranges_.shape[0] == 2:
         x0, x1 = np.meshgrid(xVar[0], xVar[1])
         x = [(a0, a1) for a0, a1 in zip(x0.ravel(), x1.ravel())]
-    elif ranges.shape[0] == 3:
+    elif ranges_.shape[0] == 3:
         x0, x1, x2 = np.meshgrid(xVar[0], xVar[1], xVar[2])
         x = [(a0, a1, a2) for a0, a1, a2 in
              zip(x0.ravel(), x1.ravel(), x2.ravel())]
-    elif ranges.shape[0] == 4:
+    elif ranges_.shape[0] == 4:
         x0, x1, x2, x3 = \
             np.meshgrid(xVar[0], xVar[1], xVar[2], xVar[3])
         x = [(a0, a1, a2, a3) for a0, a1, a2, a3 in
              zip(x0.ravel(), x1.ravel(), x2.ravel(),
                  x3.ravel())]
-    elif ranges.shape[0] == 5:
+    elif ranges_.shape[0] == 5:
         x0, x1, x2, x3, x4 = \
             np.meshgrid(xVar[0], xVar[1], xVar[2], xVar[3], xVar[4])
         x = [(a0, a1, a2, a3, a4) for a0, a1, a2, a3, a4 in
              zip(x0.ravel(), x1.ravel(), x2.ravel(),
                  x3.ravel(), x4.ravel())]
-    elif ranges.shape[0] == 6:
+    elif ranges_.shape[0] == 6:
         x0, x1, x2, x3, x4, x5 = \
             np.meshgrid(xVar[0], xVar[1], xVar[2], xVar[3], xVar[4],
                         xVar[5])
@@ -105,13 +105,13 @@ def grid(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
              zip(x0.ravel(), x1.ravel(), x2.ravel(),
                  x3.ravel(), x4.ravel(), x5.ravel())]
     else:
-        assert 0, 'ranges: ' + str(ranges)
+        assert 0, 'ranges_: ' + str(ranges_)
 
     return np.asfarray(x)
 
 
-def cross(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
-        -> np.ndarray:
+def cross(n: Union[int, Sequence[int]], 
+          *ranges: Tuple[float, float]) -> Array[float, ..., ...]:
     """
     Sets initial (uniformly spaced) cross input, for instance for 2 
     input with 5 nodes per axis: cross(5, [3., 7.], [-4., -2.])
@@ -130,26 +130,25 @@ def cross(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
             number of nodes per axis for which initial values generated
             n is corrected to the next odd number if n is even
 
-        ranges (variable length argument list of pairs of float):
-            list of (min, max) pairs
+        ranges:
+            Variable length argument list of (min, max) pairs
 
     Returns:
-        (2D array of float):
-            Cross-like initial values, shape: (n_point, n_inp). First 
-            point is reference point in cross center, see figure
+        Cross-like initial values, shape: (n_point, n_inp). First 
+        point is reference point in cross center, see figure
     """
-    ranges = list(ranges)
+    ranges_ = list(ranges)
     N = list(np.atleast_1d(n))
 
     # ensures odd number of nodes per axis
     N = [2 * (n // 2) + 1 for n in N]
-    n = N + [N[-1]] * (len(ranges) - len(N))
-    assert len(n) == len(ranges), 'n:' + str(n) + ' ranges:' + str(ranges)
+    n = N + [N[-1]] * (len(ranges_) - len(N))
+    assert len(n) == len(ranges_), 'n:' + str(n) + ' ranges_:' + str(ranges_)
 
-    x: List[np.ndarray] = []
-    x_center = [np.mean(rng) for rng in ranges]
+    x = []
+    x_center = [np.mean(rng) for rng in ranges_]
     x.append(x_center)
-    for i, rng in enumerate(ranges):
+    for i, rng in enumerate(ranges_):
         if rng[0] != rng[1]:
             x_point = x_center.copy()
             rng_min = min(rng[0], rng[1])
@@ -162,8 +161,7 @@ def cross(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
     return np.asfarray(x)
 
 
-def rand(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
-        -> np.ndarray:
+def rand(n: int, *ranges: Tuple[float, float]) -> Array[float, ..., ...]:
     """
     Sets initial (uniformly distributed) random input, for instance for
     2 input with 12 trials: rand(12, [1., 3.], [-7., -5.])
@@ -181,27 +179,27 @@ def rand(n: Union[int, Sequence[int]], *ranges: Tuple[float, float]) \
         n:
             number of trials for which initial values random generated
 
-        ranges (variable length argument list of pairs of float):
-            list of (min, max) pairs
+        ranges:
+            Variable length argument list of (min, max) pairs
 
     Returns:
-        (2D array of float):
-            Random initial values, first index is trial index, second 
-            index is input index
+        Random initial values, first index is trial index, second 
+        index is input index
     """
-    ranges = list(ranges)
-    ranges = np.atleast_2d(ranges)
-    assert ranges.shape[1] == 2, 'ranges: ' + str(ranges)
+    ranges_ = np.atleast_2d(list(ranges))
+    assert ranges_.shape[1] == 2, 'ranges_: ' + str(ranges_)
     assert n > 0, 'n: ' + str(n)
-    assert all(x[0] <= x[1] for x in ranges), 'ranges: ' + str(ranges)
+    assert all(x[0] <= x[1] for x in ranges_), 'ranges_: ' + str(ranges_)
 
     x = np.array([[random.uniform(min(rng[0], rng[1]), max(rng[0], rng[1]))
-                  for rng in ranges] for _ in range(n)])
+                  for rng in ranges_] for _ in range(n)])
     return x
 
 
-def noise(y: np.ndarray, absolute: float=0.0, relative: float=0e-2,
-          uniform: bool=True) -> Optional[np.ndarray]:
+def noise(y: Sequence[float], 
+          absolute: float = 0.0, 
+          relative: float = 0e-2,
+          uniform: bool = True) -> Optional[Array[float]]:
     """
     Adds noise to an array_like argument 'y'. The noise can be:
         - normally distributed or
@@ -247,44 +245,44 @@ def noise(y: np.ndarray, absolute: float=0.0, relative: float=0e-2,
             noise value is 60.7% of max noise )
 
     Returns:
-        (array of float of same shape as y):
-            result is a copy of y plus noise if y is not None
+        copy of y plus noise if y is not None. Dimension i same as that of x
         or
-        (None):
-            if y is None
+        None if y is None
 
     Note:
         Result can be clipped with: y = np.clip(y, [lo0, up0], [lo1, up1], ...)
     """
     if y is None:
         return None
-    y = np.asfarray(y).copy()
+    y_ = np.asfarray(y).copy()
 
     if absolute is not None and absolute > 0.:
         if uniform:
-            y += np.random.uniform(low=-absolute, high=absolute, size=y.shape)
+            y_ += np.random.uniform(low=-absolute, high=absolute, 
+                                    size=y_.shape)
         else:
-            y += np.random.normal(loc=0., scale=absolute, size=y.shape)
+            y_ += np.random.normal(loc=0., scale=absolute, size=y_.shape)
 
     if relative is not None and relative > 0.:
         if uniform:
-            y *= 1. + np.random.uniform(low=-relative, high=relative,
-                                        size=y.shape)
+            y_ *= 1. + np.random.uniform(low=-relative, high=relative,
+                                         size=y_.shape)
         else:
-            y *= 1. + np.random.normal(loc=0., scale=relative, size=y.shape)
-    return y
+            y_ *= 1. + np.random.normal(loc=0., scale=relative, size=y_.shape)
+
+    return y_
 
 
 def frame_to_arrays(df: DataFrame,
                     keys0: Union[str, Sequence[str]],
-                    keys1: Union[str, Sequence[str], None]=None,
-                    keys2: Union[str, Sequence[str], None]=None,
-                    keys3: Union[str, Sequence[str], None]=None,
-                    keys4: Union[str, Sequence[str], None]=None,
-                    keys5: Union[str, Sequence[str], None]=None,
-                    keys6: Union[str, Sequence[str], None]=None,
-                    keys7: Union[str, Sequence[str], None]=None) \
-        -> Optional[List[np.ndarray]]:
+                    keys1: Union[str, Sequence[str], None] = None,
+                    keys2: Union[str, Sequence[str], None] = None,
+                    keys3: Union[str, Sequence[str], None] = None,
+                    keys4: Union[str, Sequence[str], None] = None,
+                    keys5: Union[str, Sequence[str], None] = None,
+                    keys6: Union[str, Sequence[str], None] = None,
+                    keys7: Union[str, Sequence[str], None] = None) \
+        -> Optional[List[Array[float]]]:
     """
     Extracts 1D arrays of float from columns of a pandas DataFrame
 
@@ -317,13 +315,11 @@ def frame_to_arrays(df: DataFrame,
             keys(s) of column 7 for data selection
 
     Returns:
-        (list of 1D arrays of float):
-            column arrays of shape: (n_points, len(key?)). Size of tuple 
-            equals number of keys 'keys0, key1,  .., keys7' which are 
-            not None
+        Column arrays of shape: (n_points, len(key?)). Size of tuple 
+        equals number of keys 'keys0, key1,  .., keys7' which are 
+        not None
         or
-        (None):
-            if all(keys0..7 not in df)
+        Nonecif all(keys0..7 not in df)
     """
     keys_list = [keys0, keys1, keys2, keys3, keys4, keys5, keys6, keys7]
     keys_list = [x for x in keys_list if x is not None]
@@ -355,9 +351,11 @@ def frame_to_arrays(df: DataFrame,
         return [col[0], col[1], col[2], col[3], col[4], col[5], col[6], col[7]]
 
 
-def xy_rand_split(x: np.ndarray, y: Optional[np.ndarray]=None,
-                  fractions: Optional[Sequence[float]]=None) \
-        -> Tuple[np.ndarray, Optional[np.ndarray]]:
+def xy_rand_split(x: Array[float, ..., ...],
+                  y: Optional[Array[float, ..., ...]] = None,
+                  fractions: Optional[Sequence[float]] = None) \
+        -> Tuple[Array[float, ..., ...], 
+                 Optional[Array[float, ..., ...]]]:
     """
     Splits randomly one or two 2D arrays into sub-arrays, size of sub 
     arrays is defined by a list of 'fractions'
@@ -378,10 +376,10 @@ def xy_rand_split(x: np.ndarray, y: Optional[np.ndarray]=None,
             Y = [[6, 8, 4], [3], [5, 7]]
  
     Args:
-        x (2D array of float):
+        x:
             data array, first index is point index
 
-        y (2D array of float):
+        y:
             data array, first index is point index
 
         fractions:
@@ -410,8 +408,8 @@ def xy_rand_split(x: np.ndarray, y: Optional[np.ndarray]=None,
         end = begin + subset_sizes[i]
         subset_indices.append(all_indices[begin:end])
         begin += subset_sizes[i]
-    x_split = []
-    y_split = [] if y is not None else None
+    x_split: Array[float, ..., ...] = []
+    y_split: Optional[Array[float, ..., ...]] = [] if y is not None else None
     for indices in subset_indices:
         x_split.append(x[indices, :])
         if y is not None:
@@ -420,24 +418,25 @@ def xy_rand_split(x: np.ndarray, y: Optional[np.ndarray]=None,
     return x_split, y_split
 
 
-def xy_thin_out(x: np.ndarray, y: np.ndarray, bins: int=32) \
-        -> Tuple[np.ndarray, np.ndarray]:
+def xy_thin_out(x: Sequence[float], 
+                y: Sequence[float], 
+                bins: int = 32) \
+        -> Tuple[Array[float], Array[float]]:
     """
     Thinning out an a fine array of (x, y) points -> to coarse array
     
     Args
-        x (1D array of float):
+        x:
             arguments of fine array of (x, y) points
             
-        y (1D array of float):
+        y:
             values of fine array of (x, y) points
             
         bins:
             number of (x, y) points of coarse array
             
-    Returns
-        (1D array of float, 1D array of float):
-            array of (x, y) points of thinned-out array (edge/center) 
+    Returns:
+        pair of arrays of (x, y) points of thinned-out array (edge/center) 
     """
     x, y = np.asfarray(x), np.asfarray(y)
 
@@ -463,8 +462,10 @@ def xy_thin_out(x: np.ndarray, y: np.ndarray, bins: int=32) \
     return np.asfarray(x_thin_corner), np.asfarray(y_thin_center)
 
 
-def scale(X: np.ndarray, lo: float=0., hi: float=1., 
-          axis: Optional[int]=None) -> np.ndarray:
+def scale(X: Sequence[float], 
+          lo: float = 0., 
+          hi: float = 1., 
+          axis: Optional[int] = None) -> Array[float]:
     """
     Normalizes elements of array to [lo, hi] interval (linear)
 
@@ -483,8 +484,7 @@ def scale(X: np.ndarray, lo: float=0., hi: float=1.,
             by axis index (for 2D array: column=0, row=1)
 
     Returns:
-        (array of float):
-            normalized array
+        normalized array
     """
     np.asarray(X)
     _max = np.max(X, axis=axis)
@@ -495,8 +495,9 @@ def scale(X: np.ndarray, lo: float=0., hi: float=1.,
 
 
 def ensure2D(x: Sequence[float], 
-             y: Optional[Sequence[float]]=None) \
-        -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+             y: Optional[Sequence[float]] = None) \
+        -> Union[Array[float, ..., ...], 
+                 Tuple[Array[float, ..., ...], Array[float, ..., ...]]]:
     """
     Ensures that x is valid 2D array
     if y is not None:
@@ -504,19 +505,16 @@ def ensure2D(x: Sequence[float],
         Checks shape compatibility of x to y
 
     Args:
-        x (1D or 2D array):
+        x:
             array
 
-        y (1D or 2D array):
+        y:
             array
 
     Returns:
-        if y is None:
-            (2D array of float):
-                corrected array x 
-        else:
-            (two 2D arrays of float):
-                corrected arrays x and y 
+        corrected x-array if y is None
+        or
+        corrected x-array and y-array 
     """
     x = np.asfarray(x)
     if x.ndim == 1:
@@ -537,16 +535,18 @@ def ensure2D(x: Sequence[float],
     return x, y
 
 
-def smooth(x: Optional[Sequence[float]], y: np.ndarray,  
-           frac: float=0.2, it: int=3) -> np.ndarray:
+def smooth(x: Optional[Sequence[float]], 
+           y: Sequence[float],  
+           frac: float = 0.2, 
+           it: int = 3) -> Array[float]:
     """
     Smoothes array elements
     
     Args:                        
-        x (1D array of float):
+        x:
             optional arguments of array y(x)
             
-        y (1D array of float):
+        y:
             array to be averaged
 
         frac:
@@ -558,8 +558,7 @@ def smooth(x: Optional[Sequence[float]], y: np.ndarray,
                /statsmodels.nonparametric.smoothers_lowess.lowess.html
            
     Returns:
-        (1D array of float)
-            smoothed array
+        smoothed array
         
     Note: 
         lowess() returns a 2D array if argument 'return_sorted' is True

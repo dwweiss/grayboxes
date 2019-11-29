@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-11-21 DWW
 """
 
 __all__ = ['mpi', 'communicator', 'rank', 'predict_scatter', 'split', 'merge']
@@ -25,7 +25,8 @@ __all__ = ['mpi', 'communicator', 'rank', 'predict_scatter', 'split', 'merge']
 import numpy as np
 import psutil
 import sys
-from typing import Any, Callable, Optional, Union
+from nptyping import Array
+from typing import Any, Callable, List, Optional, Union
 import os
 if os.name == 'posix':
     try:
@@ -94,8 +95,11 @@ def rank() -> Optional[int]:
     return comm.Get_rank()
 
 
-def predict_scatter(f: Callable, x: np.ndarray, *args: float, **kwargs: Any) \
-        -> np.ndarray:
+def predict_scatter(f: Callable[..., List[float]], 
+                    x: Union[Array[float, ..., ...], Array[float, ...]], 
+                    *args: float, 
+                    **kwargs: Any) \
+        -> Union[Array[float, ..., ...], Array[None]]:
     """
     Parallelizes prediction of model y = f(x) employing scatter() and 
     gather()
@@ -104,8 +108,8 @@ def predict_scatter(f: Callable, x: np.ndarray, *args: float, **kwargs: Any) \
         f:
             generic function f(x) without 'self' argument
 
-        x (2D or 1D array_like of float):
-            prediction input, shape: (n_point, n_inp)
+        x:
+            prediction input, shape: (n_point, n_inp) or (n_inp,)
 
         args:
             positional arguments
@@ -115,9 +119,9 @@ def predict_scatter(f: Callable, x: np.ndarray, *args: float, **kwargs: Any) \
             If silent is True then supress printing
 
     Returns:
-        y (2D array of float):
-            output array, shape: (n_point, n_out)
-            or np.array((None)) if no MPI
+        output array, shape: (n_point, n_out)
+        or 
+        np.array([[None]]) if no MPI, , shape: (1, 1)
     """
     assert os.name == 'posix', os.name
     assert f is not None
@@ -228,7 +232,9 @@ def predict_scatter(f: Callable, x: np.ndarray, *args: float, **kwargs: Any) \
 #    return y
 
 
-def split(x2d: np.ndarray, n_proc: int) -> np.ndarray:
+def split(x2d: Optional[Union[Array[float, ..., ...], Array[float, ...]]], 
+          n_proc: int) -> Union[Array[float, ..., ..., ...], 
+                                Array[float, 1, 1, 1]]:
     """
     - Fills up given 2D array with 'np.inf' to a size of multiple of 'nProc'
     - Splits the 2D array into an 3D array
@@ -241,10 +247,9 @@ def split(x2d: np.ndarray, n_proc: int) -> np.ndarray:
             number of x-segments to be sent to multiple processes
 
     Returns:
-        (3D array of float):
-            array of 2D arrays, shape: (n_proc, n_point_per_proc, n_inp)
+        array of 2D arrays, shape: (n_proc, n_point_per_proc, n_inp)
         or 
-            np.atleast_3d(np.inf) if x2d is None
+        np.array([[[np.inf]]]]) if x2d is None, shape: (1, 1, 1)
     """
     if x2d is None:
         return np.atleast_3d(np.inf)
@@ -257,20 +262,21 @@ def split(x2d: np.ndarray, n_proc: int) -> np.ndarray:
     return np.array(np.split(x2d, n_proc))
 
 
-def merge(y3d: np.ndarray) -> np.ndarray:
+def merge(y3d: Optional[Array[float, ..., ..., ...]]) \
+        -> Union[Array[float, ..., ...], Array[float, 1, 1]]:
     """
     - Merges output from predictions of all processes to single 2D output array
     - Excludes output points with first element equaling np.inf
 
     Args:
-        y3d (3D array of float):
-            output array, shape: (n_proc, n_point_per_proc, n_out)
+        y3d:
+            Sequence of 2D output arrays, 
+            shape: (n_proc, n_point_per_proc, n_out)
 
     Returns:
-        (2D array of float):
-            array of output, shape: (n_point, n_out)
+        merged output, shape: (n_point, n_out)
         or
-            np.atleast_2d(np.inf) if y3D is None
+        np.aray([[np.inf]]) if y3D is None, shape: (1, 1)
     """
     if y3d is None:
         return np.atleast_2d(np.inf)
@@ -287,12 +293,13 @@ def merge(y3d: np.ndarray) -> np.ndarray:
     return np.array(y2d)
 
 
-def x3d_to_str(data: np.ndarray, indent: Union[str, int]='    ') -> str:
+def x3d_to_str(data: Array[float, ..., ..., ...], 
+               indent: Union[str, int] = '    ') -> str:
     """
     Creates string matrix with of MPI input or output
 
     Args:
-        data (3D array of float):
+        data
             input or output array, shape: (n_proc, n_point_per_proc, n_inp)
 
         indent:
@@ -319,7 +326,7 @@ def x3d_to_str(data: np.ndarray, indent: Union[str, int]='    ') -> str:
     return s
 
 
-def x_demo(n_point: int=24, n_inp: int=2) -> np.ndarray:
+def x_demo(n_point: int = 24, n_inp: int = 2) -> Array[float, ..., ...]:
     """
     Args:
         n_point:
@@ -329,7 +336,6 @@ def x_demo(n_point: int=24, n_inp: int=2) -> np.ndarray:
             number of input
 
     Returns:
-        (2D array of float):
-            demo input array, shape: (n_point, n_inp)
+        demo input array, shape: (n_point, n_inp)
     """
     return np.array([[i + j for j in range(n_inp)] for i in range(n_point)])

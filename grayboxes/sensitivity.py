@@ -17,13 +17,14 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-03-20 DWW
+      2019-11-21 DWW
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 
+from grayboxes.base import Float1D
 from grayboxes.boxmodel import BoxModel
 from grayboxes.forward import Forward
 from grayboxes.plot import plot_bar_arrays
@@ -60,8 +61,7 @@ class Sensitivity(Forward):
         self.dy_dx = None
         self.indices_with_equal_Xj = None
 
-    def task(self, **kwargs: Any) \
-            -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    def task(self, **kwargs: Any) -> Tuple[Float1D, Float1D]:
         """
         Analyzes sensitivity
 
@@ -80,9 +80,9 @@ class Sensitivity(Forward):
 
         Returns:
             2-tuple:
-                x (1D array of float):
+                x:
                     reference point in the center of the cross
-                dy/dx (1D array of float):
+                dy/dx:
                     gradient of y with respect to x in reference point
         """
         # trains (if X and Y not None) and predicts self.y = f(self.x)

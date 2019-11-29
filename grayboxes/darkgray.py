@@ -17,12 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-05-02 DWW
+      2019-11-21 DWW
 """
 
 import numpy as np
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Sequence
 
+from grayboxes.base import Float1D, Float2D, Function
 from grayboxes.black import Black
 from grayboxes.boxmodel import BoxModel
 
@@ -52,7 +53,7 @@ class DarkGray(BoxModel):
             y = DarkGray(f)(X=X, Y=Y, neurons=[5], x=x)
     """
 
-    def __init__(self, f: Callable, identifier: str='DarkGray') -> None:
+    def __init__(self, f: Function, identifier: str = 'DarkGray') -> None:
         """
         Args:
             f:
@@ -73,14 +74,13 @@ class DarkGray(BoxModel):
         self._silent = value
         self._black._silent = value
 
-    def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) \
-            -> Optional[Dict[str, Any]]:
+    def train(self, X: Float2D, Y: Float2D, **kwargs: Any) -> Dict[str, Any]:
         """
         Args:
-            X (2D array of float):
+            X:
                 training input, shape: (n_point, n_inp)
 
-            Y (2D array of float):
+            Y:
                 training target, shape: (n_point, n_out)
 
         Kwargs:
@@ -93,7 +93,7 @@ class DarkGray(BoxModel):
             None if X and Y are None
         """
         if X is None or Y is None:
-            return None
+            return self.init_metrics()
 
         self.set_XY(X, Y)
 
@@ -102,21 +102,26 @@ class DarkGray(BoxModel):
 
         return self.metrics
 
-    def predict(self, x: np.ndarray, **kwargs: Any) -> Optional[np.ndarray]:
+    def predict(self, x: Float2D, *args: float, **kwargs: Any) -> Float2D:
+
         """
         Executes box model, stores input x as self.x and output as self.y
 
         Args:
-            x (2D or 1D array of float):
-                prediction input, shape: (n_point, n_inp) or (n_inp,)
+            x:
+                prediction input, shape: (n_point, n_inp)
+                shape: (n_inp,) is tolerated
+
+            args:
+                positional arguments to be passed to theoretical
+                submodel f()
 
         Kwargs:
             Keyword arguments to be passed to predict() of this object
             and of black box model
 
         Returns:
-            (2D array of float):
-                prediction output, shape: (n_point, n_out)
+            prediction output, shape: (n_point, n_out)
             or
             None if x is None
         """

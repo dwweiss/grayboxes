@@ -17,12 +17,14 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-05-02 DWW
+      2019-11-21 DWW
 """
 
 import numpy as np
-from typing import Any, Callable, Dict, List
+from nptyping import Array
+from typing import Any, Callable, Dict, List, Sequence, Union
 
+from grayboxes.base import Float1D, Float2D, Function
 from grayboxes.boxmodel import BoxModel
 from grayboxes.lightgray import LightGray
 from grayboxes.black import Black
@@ -38,7 +40,7 @@ class MediumGray(BoxModel):
         X = X_com + X_unq
     """
 
-    def __init__(self, f: Callable, identifier: str='MediumGray') -> None:
+    def __init__(self, f: Function, identifier: str = 'MediumGray') -> None:
         """
         Args:
             f:
@@ -70,17 +72,16 @@ class MediumGray(BoxModel):
         if self._black is not None:
             self._black._silent = value
 
-    def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) \
-            -> Dict[str, Any]:
+    def train(self, X: Float2D, Y: Float2D, **kwargs: Any) -> Dict[str, Any]:
         """
         Trains model, stores X and X as self.X and self.Y, and stores 
         result of best training trial as self.metrics
 
         Args:
-            X (2D array of float):
+            X:
                 training input X_prc, shape: (n_point, n_inp)
 
-            Y (2D array of float):
+            Y:
                 training target Y_com, shape: (n_point, n_out)
 
         Kwargs:
@@ -204,21 +205,25 @@ class MediumGray(BoxModel):
         self.metrics = self.evaluate(self.X, self.Y, **opt)
         return self.metrics
 
-    def predict(self, x: np.ndarray, **kwargs: Any) -> np.ndarray:
+    def predict(self, x: Float2D, *args, **kwargs: Any) -> Float2D:
         """
         Executes box model, stores input x as self.x and output as self.y
 
         Args:
-            x (2D or 1D array of float):
-                prediction input, shape: (n_point, n_inp) or (n_inp,)
+            x:
+                prediction input, shape: (n_point, n_inp) 
+                shape: (n_inp,) is tolerated
+
+            args:
+                positional arguments to be passed to theoretical
+                submodel f()
 
         Kwargs:
             Keyword arguments to be passed to BoxModel.predict() and to
             self._black.predict()
 
         Returns:
-            (2D array of float):
-                prediction output, shape: (n_point, n_out)
+            prediction output, shape: (n_point, n_out)
         """
         assert self._black is not None and self._black.ready
         opt = self.kwargs_del(kwargs, 'x')

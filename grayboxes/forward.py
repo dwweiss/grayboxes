@@ -17,13 +17,14 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-05-02 DWW
+      2019-11-21 DWW
 """
 
 import numpy as np
 from typing import Any, Optional, Tuple
 
 from grayboxes.base import Base
+from grayboxes.base import Float2D
 from grayboxes.boxmodel import BoxModel
 from grayboxes.white import White
 
@@ -64,7 +65,7 @@ class Forward(Base):
 
     """
 
-    def __init__(self, model: BoxModel, identifier: str='Forward') -> None:
+    def __init__(self, model: BoxModel, identifier: str = 'Forward') -> None:
         """
         Args:
             model:
@@ -77,7 +78,7 @@ class Forward(Base):
         self._model: BoxModel = model
 
     @property
-    def model(self) -> BoxModel:
+    def model(self) -> Optional[BoxModel]:
         """
         Returns:
             Box type model
@@ -98,7 +99,7 @@ class Forward(Base):
             assert issubclass(type(value), BoxModel), \
                 'invalid model type: ' + str(type(value))
 
-    def pre(self, **kwargs: Any) -> None:
+    def pre(self, **kwargs: Any) -> bool:
         """
         - Assigns box type model
         - Assigns training input and target (X, Y)
@@ -123,7 +124,7 @@ class Forward(Base):
                 shape: (n_point, n_inp) or (n_inp,)
                 default: self._x
         """
-        super().pre(**kwargs)
+        ok = super().pre(**kwargs)
 
         # trains model
         XY = kwargs.get('XY', None)
@@ -141,8 +142,10 @@ class Forward(Base):
             self.x = np.atleast_2d(x) if x is not None else None
         else:
             self.model.x = np.atleast_2d(x) if x is not None else None
+            
+        return ok
 
-    def task(self, **kwargs: Any) -> Tuple[np.ndarray, np.ndarray]:
+    def task(self, **kwargs: Any) -> Tuple[Float2D, Float2D]:
         """
         This task() method is only for Forward and Sensitivity. Minimum,
         Maximum and Inverse have different implementations of task()
@@ -165,16 +168,20 @@ class Forward(Base):
                                        **self.kwargs_del(kwargs, 'x')))
         if self.model.x is not None:
             return self.model.x, self.model.y
+        else:
+            return None, None
 
-    def post(self, **kwargs: Any) -> None:
+    def post(self, **kwargs: Any) -> bool:
         """
         Kwargs:
             Keyword arguments passed to super.post()
         """
-        super().post(**kwargs)
+        ok = super().post(**kwargs)
 
         if not self.silent:
             self.plot()
+            
+        return ok
 
     def plot(self) -> None:
         pass

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-05-01 DWW
+      2019-11-21 DWW
 
   Acknowledgements:
       Neurolab is a contribution by E. Zuev (pypi.python.org/pypi/neurolab)
@@ -33,16 +33,24 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 # from numpy.linalg import pinv
-from typing import Any, Callable, Dict, List, Optional, Sequence, Union
+from nptyping import Array
+from typing import (Any, Callable, Dict, Iterable, List, Optional, Sequence, 
+                    Union)
 try:
     import neurolab as nl
     _has_neurolab = True
 except ImportError:
     print('??? Package neurolab not imported')
     _has_neurolab = False
+        
+Float1D  = Optional[Array[float, ...]]
+Float2D  = Optional[Array[float, ..., ...]]
+Float3D  = Optional[Array[float, ..., ..., ...]]
+Str1D    = Optional[Iterable[str]]
+Function = Optional[Callable[..., List[float]]]
 
 
-def propose_hidden_neurons(X: np.ndarray, Y: np.ndarray, alpha: float=2.,
+def propose_hidden_neurons(X: Float2D, Y: Float2D, alpha: float=2.,
                            silent: bool=False) -> List[int]:
     """
     Proposes optimal number of hidden neurons for given training data set
@@ -82,9 +90,8 @@ def propose_hidden_neurons(X: np.ndarray, Y: np.ndarray, alpha: float=2.,
         n_hidden = max(n_inp, n_out) + 2
     if not silent:
         print("+++ auto definition of 'n_hidden': " + str(n_hidden))
-    n_hidden = [n_hidden]
 
-    return n_hidden
+    return [n_hidden]
 
 
 class NeuralBase(object):
@@ -96,7 +103,7 @@ class NeuralBase(object):
         box type models derived vom class BoxModel.
     """
 
-    def __init__(self, f: Optional[Callable]=None) -> None:
+    def __init__(self, f: Function=None) -> None:
         """
         Args:
             f:
@@ -108,31 +115,30 @@ class NeuralBase(object):
         self.f = f                 # theor. submodel, single data point
 
         self._model = None         # model
-        self._X = None             # input of training
-        self._Y = None             # target
-        self._x = None             # input of prediction
-        self._y = None             # prediction y = model(x)
+        self._X: Float2D = None    # input of training
+        self._Y: Float2D = None    # target
+        self._x: Float2D = None    # input of prediction
+        self._y: Float2D = None    # prediction y = model(x)
         self._norm_y = None        # data from normalization of target
-        self._x_keys = None        # x-keys for import from data frame
-        self._y_keys = None        # y-keys for import from data frame
+        self._x_keys: Str1D = None # x-keys for import from data frame
+        self._y_keys: Str1D = None # y-keys for import from data frame
         self._trainers = ''        # list of trainers
-        self._final_errors = []    # error (SSE, MSE) of best trial of 
+        self._final_errors = []    
+                                   # error (SSE, MSE) of best trial of 
                                    # each training method
         self._final_L2_norms = []  # L2-norm of best trial of each train
         self._best_epochs = []     # epochs of best trial of each method
-        self._ready = False        # flag indicating successful training
+        self._ready: bool = False  # flag indicating successful training
 
-        self._silent = False
+        self._silent: bool = False
         plt.rcParams.update({'font.size': 14})
         plt.rcParams['legend.fontsize'] = 14            # fonts in plots
 
-        self._metrics = {'trainer': None, 'L2': np.inf, 'abs': np.inf,
-                         'iAbs': -1, 'epochs': -1}  # result, best trial
+        self._metrics: Dict[str, Any] = {'trainer': None, 'L2': np.inf, 
+            'abs': np.inf, 'iAbs': -1, 'epochs': -1} # result,best trial
 
-    def __call__(self, X: Optional[np.ndarray]=None, 
-                 Y: Optional[np.ndarray]=None,
-                 x: Optional[np.ndarray]=None, 
-                 **kwargs: Any) -> Union[np.ndarray, Dict[str, Any], None]:
+    def __call__(self, X: Float2D = None, Y: Float2D = None, x: Float2D = None, 
+                 **kwargs: Any) -> Union[Float2D, Dict[str, Any]]:
         """
         - Trains neural network if X is not None and Y is not None
         - Sets self.ready to True if training is successful
@@ -140,31 +146,31 @@ class NeuralBase(object):
 
         Args:
             X (2D or 1D array_like of float, optional, default: self.X):
-                training input, shape: (n_point, n_inp) or (n_point,)
+                training input, shape: (n_point, n_inp) 
+                shape: (n_point,) is tolerated
                 
             Y (2D or 1D array_like of float, optional, default: self.Y):
-                training target, shape: (n_point, n_out) or (n_point,)
+                training target, shape: (n_point, n_out)
+                shape: (n_point,) is tolerated
 
             x (2D or 1D array_like of float, optional, default: self.x):
                 prediction input, shape: (n_point, n_inp) or (n_inp,)
+                shape: (n_inp,) is tolerated
 
         Kwargs:
             keyword arguments, see: train() and predict()
 
         Returns:
-            (2D array of float):
-                prediction of net(x) if x is not None and self.ready
+            prediction of net(x) if x is not None and self.ready
             or
-            (dictionary):
-                metrics of best training trial if X and Y are not None
-                    'trainer' (str): best training method
-                    'L2'    (float): sqrt{mean{(net(x)-Y)^2}} best train
-                    'abs'   (float): max{|net(x) - Y|} of best training
-                    'iAbs'    (int): index of Y where abs. error is max.
-                    'epochs'  (int): number of epochs of best training
+            metrics of best training trial if X and Y are not None
+                'trainer' (str): best training method
+                'L2'    (float): sqrt{mean{(net(x)-Y)^2}} best train
+                'abs'   (float): max{|net(x) - Y|} of best training
+                'iAbs'    (int): index of Y where abs. error is max.
+                'epochs'  (int): number of epochs of best training
             or
-            (None):
-                if (X, Y and x are None) or not self.ready
+            None if (X, Y and x are None) or not self.ready
 
         Note:
             - Shape of X, Y and x is corrected to (n_point, n_inp/n_out)
@@ -180,11 +186,11 @@ class NeuralBase(object):
         return metrics
 
     @property
-    def f(self) -> Callable:
+    def f(self) -> Function:
         return self._f
 
     @f.setter
-    def f(self, value: Callable) -> None:
+    def f(self, value: Function) -> None:
         if value is not None:
             first_arg = list(inspect.signature(value).parameters.keys())[0]
             if first_arg == 'self':
@@ -200,19 +206,19 @@ class NeuralBase(object):
         self._silent = value
 
     @property
-    def X(self) -> np.ndarray:
+    def X(self) -> Float2D:
         return self._X
 
     @property
-    def Y(self) -> np.ndarray:
+    def Y(self) -> Float2D:
         return self._Y
 
     @property
-    def x(self) -> np.ndarray:
+    def x(self) -> Float2D:
         return self._x
 
     @property
-    def y(self) -> np.ndarray:
+    def y(self) -> Float2D:
         return self._y
 
     @property
@@ -256,9 +262,8 @@ class NeuralBase(object):
         self._norm_y = nl.tool.Norm(self._Y)
         self._Y = self._norm_y(self._Y)
 
-    def set_arrays(self, X: np.ndarray, Y: np.ndarray,
-                   x_keys: Optional[Sequence[str]]=None,
-                   y_keys: Optional[Sequence[str]]=None) -> None:
+    def set_arrays(self, X: Float2D, Y: Float2D,
+                   x_keys: Str1D = None, y_keys: Str1D = None) -> None:
         """
         - Imports training input X and training target Y
         - converts X and Y to 2D arrays
@@ -267,10 +272,12 @@ class NeuralBase(object):
 
         Args:
             X (2D or 1D array_like of float):
-                training input, shape: (n_point, n_inp) or (n_point,)
+                training input, shape: (n_point, n_inp)
+                shape: (n_point,) is tolerated
 
             Y (2D or 1D array_like of float):
-                training target, shape: (n_point, n_out) or (n_point,)
+                training target, shape: (n_point, n_out)
+                shape: (n_point,) is tolerated
 
             x_keys:
                 list of column keys for data selection
@@ -403,7 +410,7 @@ class Neural(NeuralBase):
         - http://neupy.com/docs/tutorials.html#tutorials
     """
 
-    def __init__(self, f: Optional[Callable]=None) -> None:
+    def __init__(self, f: Function = None) -> None:
         """
         Args:
             f:
@@ -414,19 +421,21 @@ class Neural(NeuralBase):
         """
         super().__init__(f)
 
-    def train(self, X: Optional[np.ndarray]=None, Y: Optional[np.ndarray]=None,
+    def train(self, X: Float2D = None, Y: Float2D = None, 
               **kwargs: Any) -> Dict[str, Any]:
         """
         Trains model, stores X and Y as self.X and self.Y, and stores 
         result of best training trial as self.metrics
 
         Args:
-            X (2D or 1D array of float):
-                training input, shape: (n_point, n_inp) or (n_point,)
+            X:
+                training input, shape: (n_point, n_inp)
+                shape: (n_point,) is tolerated
                 default: self.X
 
-            Y (2D or 1D array of float):
-                training target, shape: (n_point, n_out) or (n_point,)
+            Y:
+                training target, shape: (n_point, n_out)
+                shape: (n_point,) is tolerated
                 default: self.Y
 
         Kwargs:
@@ -502,13 +511,12 @@ class Neural(NeuralBase):
                 default: 3
 
         Returns:
-            (dictionary)
-                metrics of best training trial:
-                'trainer' (str): best training method
-                'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
-                'abs'   (float): max{|net(x) - Y|} of best training
-                'iAbs'    (int): index of Y where abs. error is maximum
-                'epochs'  (int): number of epochs of best training
+            metrics of best training trial:
+            'trainer' (str): best training method
+            'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
+            'abs'   (float): max{|net(x) - Y|} of best training
+            'iAbs'    (int): index of Y where abs. error is maximum
+            'epochs'  (int): number of epochs of best training
 
         Note:
             - If training fails, then self.metrics['trainer']=None
@@ -737,13 +745,14 @@ class Neural(NeuralBase):
                 
         return self.metrics
 
-    def predict(self, x: np.ndarray, **kwargs: Any) -> Optional[np.ndarray]:
+    def predict(self, x: Float2D, **kwargs: Any) -> Float2D:
         """
         Executes network, stores x as self.x
 
         Args:
-            x (2D or 1D array_like of float):
-                prediction input, shape: (n_point, n_inp) or (n_inp,)
+            x:
+                prediction input, shape: (n_point, n_inp)
+                shape: (n_inp,) is tolerated
 
         Kwargs:
             silent (bool):
@@ -751,11 +760,9 @@ class Neural(NeuralBase):
                 default: self.silent
 
         Returns:
-            (2D array of float):
-                prediction y = net(x) if x is not None
+            prediction y = net(x)
             or
-            (None):
-                if x is None
+            None if argument x is None
 
         Note:
             - Shape of x is corrected to: (n_point, n_inp)

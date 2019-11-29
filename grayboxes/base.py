@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-08-30 DWW
+      2019-11-29 DWW
 
   Note on program arguments:
     - no arguments          : program starts in default mode
@@ -33,17 +33,23 @@
 
 """
 
+__all__ = ['Base', 'Float1D', 'Float2D', 'Float3D', 'Str1D', 'Function']
+
+import os
 from datetime import datetime
 from getpass import getpass
 from hashlib import sha224
+import collections
+from matplotlib.figure import Figure
 import numpy as np
-import os
-from pathlib import Path
+from path import Path
 from re import sub
 import sys
 from time import time
 from tempfile import gettempdir
-from typing import Any, Dict, Sequence, List, Optional, Union
+from nptyping import Array
+from typing import (Any, Callable, Dict, Iterable, Sequence, List, Optional, 
+                    Union)
 try:
     from tkinter import Button
     from tkinter import Entry
@@ -64,6 +70,12 @@ except ImportError:
         import parallel as parallel
     except ImportError:
         print('!!! Module parallel not imported')
+
+Float1D  = Optional[Array[float, ...]]
+Float2D  = Optional[Array[float, ..., ...]]
+Float3D  = Optional[Array[float, ..., ..., ...]]
+Str1D    = Optional[Iterable[str]]
+Function = Optional[Callable[..., List[float]]]
 
 
 class Base(object):
@@ -137,12 +149,12 @@ class Base(object):
       | follower()|                                 | follower()|
        --|--------                                   --|----------
          |                                             |
-         +----------------------+---------------+      |
+         +----------------------+---------------       |
          |                      |               |      |
        --|--------            --|--------       |    --|--------
       | leader()  |          | leader()  |      |   | leader()  |
       |-----------|          |-----------|      |   |-----------|
-      |           |          |           |      +-->|           |
+      |           |          |           |       -->|           |
       |object (11)|          |object (12)|          |object (21)|
       |   Base -----> pre()  |   Base -----> pre()  |   Base ----> pre()
       |           |          |           |          |           |
@@ -150,7 +162,7 @@ class Base(object):
       | follower()|          |no follower|          | follower()|
        --|--------            -----------            --|--------
          |                                             |
-         +----------------------+                      |
+         +----------------------                       |
          |                      |                      |
        --|--------            --|--------            --|--------
       | leader()  |          | leader()  |          | leader()  |
@@ -164,8 +176,8 @@ class Base(object):
        -----------            -----------           ------------
     """
 
-    def __init__(self, identifier: str='Base',
-                 argv: Optional[List[str]]=None) -> None:
+    def __init__(self, identifier: str = 'Base',
+                 argv: Optional[List[str]] = None) -> None:
         """
         Initializes object
 
@@ -183,12 +195,13 @@ class Base(object):
         if argv is None:
             self.argv = sys.argv
         self.program: str = self.__class__.__name__
-        self.version: str = '18.09'
+        self.version: str = '19.11'
+
+        self.path: Optional[Path] = None       # path to file,see setter
+        self.extension: str = '.data'          # file ext., see setter
 
         self._exe_time_start: float = 0.0      # start measure exec.time
         self._min_exe_time_shown: float = 1.0  # times < limit not shown
-        self.path: Optional[str] = None        # path to file,see setter
-        self.extension: Optional[str] = None   # file ext., see setter
 
         self._gui: bool = False                # graph.interface if True
         self._batch: bool = False              # user interact. if False
@@ -200,12 +213,17 @@ class Base(object):
         self._task_done: bool = False          # True if task() done
         self._post_done: bool = False          # True if post() done
 
-        self._leader: 'Base' = None            # leader object
-        self._followers: List[Optional['Base']] = []  # follower list
+        self._leader: Optional['Base'] = None  # leader object
+        self._followers: List[Optional['Base']] = []     
+                                               # follower list
 
-        self._data: Any = None                 # data sets etc
+        self._data: Optional[Any] = None       # data sets
         self._csv_separator: str = ','         # separator in csv-files
 
+        # figure requires subplots, eg axes = self.figure.suplots(2)
+        #                              axes[0].plot([1.,2.], [4.5, 9.1])
+        self._figure: Optional[Figure] = Figure()
+        
     def __call__(self, **kwargs: Any) -> float:
         """
         Executes object
@@ -224,12 +242,23 @@ class Base(object):
 
         self.silent = kwargs.get('silent', self.silent)
 
-        self.prolog()
-        self.pre(**kwargs)
+        ok = self.prolog()
+        if not ok:
+            self.write('??? Base.prolog() returned with False\n')
+       
+        ok = self.pre(**kwargs)
+        if not ok:
+            self.write('??? Base.pre() returned with False\n')
 
         res: float = self.control(**kwargs)
-        self.post(**kwargs)
-        self.epilog()
+
+        ok = self.post(**kwargs)
+        if not ok:
+            self.write('??? Base.post() returned with False\n')
+            
+        ok = self.epilog()
+        if not ok:
+            self.write('??? Base.epilog() returned with False\n')
 
         return res
 
@@ -357,7 +386,7 @@ class Base(object):
         return self._identifier
 
     @identifier.setter
-    def identifier(self, value: str):
+    def identifier(self, value: str) -> None:
         if value:
             self._identifier = str(value)
         else:
@@ -368,7 +397,7 @@ class Base(object):
         return self._argv
 
     @argv.setter
-    def argv(self, value: Optional[Sequence[str]]):
+    def argv(self, value: Optional[Sequence[str]]) -> None:
         if value is None:
             self._argv = sys.argv
         else:
@@ -379,30 +408,44 @@ class Base(object):
         return self._gui
 
     @gui.setter
-    def gui(self, value: bool):
+    def gui(self, value: bool) -> None:
         if 'tkinter' not in sys.modules:
             value = False
-            self.warn("!!! 'gui' is not set: no module 'tkinter'")
+            self.warn("!!! 'gui' is not set: module 'tkinter' not imported")
         self._gui = value
-        for x in self._followers:
-            x._gui = value
+        for node in self._followers:
+            if node:
+                node._gui = value
+
+    @property
+    def figure(self) -> Optional[Figure]:
+        return self._figure
+
+    @figure.setter
+    def figure(self, value: Optional[Figure]) -> None:
+        self._figure = value
+        for node in self._followers:
+            if node:
+                node._figure = value
 
     @property
     def batch(self) -> bool:
         return self._batch
 
     @batch.setter
-    def batch(self, value: bool):
+    def batch(self, value: bool) -> None:
         self._batch = value
-        for x in self._followers:
-            x._batch = value
+        for node in self._followers:
+            if node:
+                node._batch = value
 
     @property
     def silent(self) -> bool:
-        return self._silent or ('parallel' in sys.modules and parallel.rank())
+        return self._silent or \
+            bool('parallel' in sys.modules and parallel.rank())
 
     @silent.setter
-    def silent(self, value: bool):
+    def silent(self, value: bool) -> None:
         self._silent = value
 
     @property
@@ -410,26 +453,27 @@ class Base(object):
         return self._ready
 
     @ready.setter
-    def ready(self, value: bool):
+    def ready(self, value: bool) -> None:
         self._ready = value
 
     @property
-    def path(self) -> str:
+    def path(self) -> Path:
         return self._path
 
     @path.setter
-    def path(self, value: Optional[Union[str, Path]]):
+    def path(self, value: Optional[Union[str, Path]]) -> None:
         if not value:
-            self._path = gettempdir()
+            p = gettempdir()
         else:
-            self._path = Path(str(value))
+            p = Path(str(value))
+        self._path = p 
 
     @property
     def extension(self) -> str:
         return str(self._extension)
 
     @extension.setter
-    def extension(self, value: Optional[str]):
+    def extension(self, value: Optional[str]) -> None:
         if not value:
             self._extension = ''
         else:
@@ -443,28 +487,28 @@ class Base(object):
         return str(self._csv_separator)
 
     @csv_separator.setter
-    def csv_separator(self, value: Optional[str]):
+    def csv_separator(self, value: Optional[str]) -> None:
         if value is None:
             self._csv_separator = ' '
         else:
             self._csv_separator = value
 
     @property
-    def leader(self) -> 'Base':
+    def leader(self) -> Optional['Base']:
         return self._leader
 
     @leader.setter
-    def leader(self, other: Optional['Base']):
+    def leader(self, other: Optional['Base']) -> None:
         if other:
             other.set_follower(self)
 
     @property
-    def followers(self) -> List['Base']:
+    def followers(self) -> List[Optional['Base']]:
         return self._followers
 
     @followers.setter
-    def followers(self, other: Optional[Union['Base', Sequence['Base']]]) \
-            -> None:
+    def followers(self, other: Union[Optional['Base'], 
+                                     Sequence[Optional['Base']]]) -> None:
         self.set_follower(other)
 
     @property
@@ -472,7 +516,7 @@ class Base(object):
         return self._data
 
     @data.setter
-    def data(self, other: Optional[Any]):
+    def data(self, other: Optional[Any]) -> None:
         if self._data is not None:
             if not self.silent:
                 print("+++ data.setter: delete 'data'")
@@ -481,16 +525,18 @@ class Base(object):
 
     def __getitem__(self, identifier: str) -> Optional['Base']:
         """
-        Indexing, eg b = Base(); b.setFollower(['f1','f2']); f = b['f1']
+        Indexing, eg b = Base(); b.set_follower(['f1','f2']); f = b['f1']
 
-        Searches for node with 'identifier'. Starts downwards from root.
+        Searches for node with 'identifier'. Starts downwards from root
 
         Args:
             identifier:
                 Identifier of searched node
 
         Returns:
-            Node with given identifier or None if node not found
+            Node with given identifier 
+            or 
+            None if node not found
         """
         return self.get_follower(identifier)
 
@@ -503,12 +549,14 @@ class Base(object):
                 Identifier of searched node
 
         Returns:
-            Node with given identifier or None if node not found
+            Node with given identifier 
+            or 
+            None if node not found
         """
         return self.get_follower_downwards(identifier)
 
     def get_follower_downwards(self, identifier: str, from_node:
-                               Optional['Base']=None) -> Optional['Base']:
+                               Optional['Base'] = None) -> Optional['Base']:
         """
         Search for node with given 'identifier', start search downwards
         from 'from_node'
@@ -522,7 +570,9 @@ class Base(object):
                 search starts from root
 
         Returns:
-            Node with given identifier or None if node not found
+            Node with given identifier 
+            or 
+            None if node not found
         """
         if self.identifier == identifier:
             return self
@@ -543,44 +593,50 @@ class Base(object):
                     return node
         return None
 
-    def set_follower(self, other: Optional[Union['Base', Sequence['Base']]]) \
-            -> Union['Base', Sequence['Base']]:
+    def set_follower(self, other: Union[Optional['Base'], \
+                                        Sequence[Optional['Base']]])\
+                               -> Union[Optional['Base'], 
+                                        Sequence[Optional['Base']]]:
         """
         Adds other node(s)
 
         Args:
             other:
-                Other node or list of other nodes
+                Other node or sequence of other nodes
 
         Returns:
             Reference to 'other'
         """
         if other:
-            if not isinstance(other, (list, tuple)):
+            if not isinstance(other, collections.Sequence):
                 other._leader = self
                 if other not in self._followers:
                     self._followers.append(other)
-
             else:
-                for obj in other:
-                    obj._leader = self
-                    if obj not in self._followers:
-                        self._followers.append(obj)
+                for node in other:
+                    if node:
+                        node._leader = self
+                        if node not in self._followers:
+                            self._followers.append(node)
         return other
 
-    def is_follower(self, other: 'Base') -> bool:
+    def is_follower(self, other: Optional['Base']) -> bool:
         """
         Args:
             other:
                 Other node
 
         Returns:
-                True if 'other' is a follower of this node
+            True if 'other' is follower and has 'self' as leader
         """
+        if other is None:
+            return False
         return other._leader == self and other in self._followers
 
-    def set_cooperator(self, other: Optional[Union['Base', Sequence['Base']]])\
-            -> 'Base':
+    def set_cooperator(self, other: Union[Optional['Base'], \
+                                          Sequence[Optional['Base']]])\
+                                 -> Union[Optional['Base'], 
+                                          Sequence[Optional['Base']]]:
         """
         Adds other node as cooperator.
         'other' keep(s) its/their original leader(s)
@@ -590,40 +646,51 @@ class Base(object):
                 Other node or list of other nodes
 
         Returns:
-            Reference to 'other'
+            'other'
         """
         if other:
-            if not isinstance(other, (list, tuple)):
+            if not isinstance(other, collections.Sequence):
                 if other not in self._followers:
                     self._followers.append(other)
             else:
-                for obj in other:
-                    if obj not in self._followers:
-                        self._followers.append(obj)
+                for node in other:
+                    if node:
+                        if node not in self._followers:
+                            self._followers.append(node)
         return other
 
-    def is_cooperator(self, other: 'Base') -> bool:
+    def is_cooperator(self, other: Optional['Base']) -> bool:
         """
+        Args:
+            other:
+                Other node
+        
         Returns:
-            True if 'other' is a cooperator of this node
+            True if 'other' is follower and has another leader 
+            than 'self'
         """
+        if not other:
+            return False
         return other._leader != self and other in self._followers
 
     def clean_string(self, s: str) -> str:
+        """
+        Args:
+            s:
+                string containing control characters
+        
+        Returns:
+            copy of string 's' without control characters
+        """
         return sub('[ \t\n\v\f\r]', '', s)
 
-    def reverse_string(self, s: str) -> str:
-        rs = list(s)
-        rs.reverse()
-        return ''.join(rs)
-
-    def kwargs_del(self, _kwargs: Dict[str, Any],
+    def kwargs_del(self, kwargs_: Dict[str, Any],
                    remove: Union[str, Sequence[str]]) -> Dict[str, Any]:
         """
         Makes copy of keyword dictionary and removes given key(s)
 
         Args:
-            _kwargs:
+            kwargs_:
                 Dictionary with keywords
 
             remove:
@@ -632,20 +699,21 @@ class Base(object):
         Returns:
             Copy of dictionary exclusive removed items
         """
-        dic = _kwargs.copy()
+        dic = kwargs_.copy()
         for key in np.atleast_1d(remove):
             if key in dic:
                 del dic[key]
         return dic
 
-    def kwargs_get(self, _kwargs: Any,
-                   keys: Union[str, Sequence[str]], default: Any=None) -> Any:
+    def kwargs_get(self, kwargs_: Any,
+                   keys: Union[str, Sequence[str]], 
+                   default: Any = None) -> Any:
         """
         Returns value of _kwargs for first matching key or 'default' if
         all keys are invalid
 
         Args:
-            _kwargs:
+            kwargs_:
                 Dictionay with keyword arguments
 
             keys:
@@ -658,11 +726,11 @@ class Base(object):
             Value of first matching key or 'default'
         """
         for key in np.atleast_1d(keys):
-            if key in _kwargs:
-                return _kwargs[key]
+            if key in kwargs_:
+                return kwargs_[key]
         return default
 
-    def terminate(self, message: str='') -> None:
+    def terminate(self, message: str = '') -> None:
         if not message:
             message = 'Fatal error'
 
@@ -677,7 +745,7 @@ class Base(object):
 
         sys.exit()
 
-    def warn(self, message: str='', wait: bool=False) -> None:
+    def warn(self, message: str = '', wait: bool = False) -> None:
         """
         - Message to logger
         - Message to TKinter widget if self.gui, otherwise to console
@@ -742,9 +810,9 @@ class Base(object):
         if sha224(pw.encode('UTF-8')).hexdigest() != s:
             self.terminate('wrong password')
 
-    def prolog(self, purpose: str='Processing data',
-               usage: str='[ path sourceFile [ -s -g ] ]',
-               example: str='-g -s /tmp test.xml') -> None:
+    def prolog(self, purpose: str = 'Processing data',
+               usage: str = '[ path sourceFile [ --silent --gui ] | --help ]',
+               example: str = '-g -s /tmp test.xml') -> bool:
         if '-h' in self.argv or '--help' in self.argv:
             print("This is: '" + self.program + "', version " + self.version)
             print('\nPurpose: ' + purpose)
@@ -752,6 +820,7 @@ class Base(object):
             print('Example: ' + self.program + ' ' + example)
             exit()
 
+        ok = True
         authenticate = False
         if len(self.argv) > 1+0:
             self.gui = '-g' in self.argv or '--gui' in self.argv
@@ -760,13 +829,13 @@ class Base(object):
                 authenticate = False
         else:
             if not self.gui:
-                # self.silent = False
+                # TODO self.silent = False
                 pass
 
         global logger
         if not logger.handlers:
             logger.setLevel(logging.INFO)
-            f = os.path.join(os.path.join(self.path, self.identifier + '.log'))
+            f = os.path.join(self.path, self.identifier + '.log')
             handler = logging.FileHandler(f, mode='w')
             handler.setLevel(logging.DEBUG)
             logger.addHandler(handler)
@@ -785,10 +854,15 @@ class Base(object):
             self.write('    Path: ' + "'" + str(self.path) + "'")
             self.write('=== Pre-processing')
             self._exe_time_start = time()
+            
+        return ok
 
-    def epilog(self) -> None:
-        for x in self.followers:
-            x.epilog()
+    def epilog(self) -> bool:
+        ok = True
+        for node in self.followers:
+            if node:
+                if not node.epilog():
+                    ok = False
 
         if self.is_root():
             message = "'" + self.program + "' is successfully completed\n"
@@ -797,31 +871,41 @@ class Base(object):
                 self.write('    Execution time: ' + format(round(exe_time, 2)))
             self.write('*** ' + message)
 
-#            if self.gui:
-#                messagebox.showinfo(self.program, message)
-
         if logger.handlers:
             logger.info('')
             logger.handlers = []
         sys.stdout.flush()
+    
+        return ok
 
     def load(self) -> bool:
-        return True
+        ok = True
+        # import json
+        # f = os.path.join((self.path,'data.json')
+        # json.load(self.data, open(f, 'r'))
+        return ok
 
     def save(self) -> bool:
-        return True
+        ok = True
+        # import json
+        # f = os.path.join(self.path, self.identifier + '.data.json')
+        # json.dump(self.data, open(f, 'w'))
+        return ok
 
     def initial_condition(self) -> bool:
+        ok = True
         # super().initial_condition()        # use it in derived classes
-        pass
+        return ok
 
     def update_nonlinear(self) -> bool:
+        ok = True
         # super().update_nonlinear()         # use it in derived classes
-        pass
+        return ok
 
     def update_transient(self) -> bool:
-        # super().update_transient()         # use it in derived classes
-        pass
+        ok = True
+        # ok = super().update_transient()    # use it in derived classes
+        return ok
 
     def pre(self, **kwargs: Any) -> bool:
         """
@@ -832,11 +916,12 @@ class Base(object):
             False if data loading failed
         """
         ok = True
-        for x in self.followers:
-            x.pre(**kwargs)
-            if self.is_cooperator(x):
-                self.write(self.indent() + "    ['" + x.identifier +
-                           "' is cooperator]")
+        for node in self.followers:
+            if node:
+                node.pre(**kwargs)
+                if self.is_cooperator(node):
+                    self.write(self.indent() + "    ['" + node.identifier +
+                               "' is cooperator]")
         if self.root().followers:
             self.write('--- Pre (' + self.identifier + ')')
 
@@ -844,6 +929,7 @@ class Base(object):
             ok = self.load()
         self._pre_done = True
         sys.stdout.flush()
+        
         return ok
 
     def task(self, **kwargs: Any) -> float:
@@ -854,15 +940,17 @@ class Base(object):
         Returns:
             Residuum from range [0., 1.], indicating error of task
         """
-        for x in self.followers:
-            x.task(**kwargs)
-            if self.is_cooperator(x):
-                self.write(self.indent() + "    ['" + x.identifier +
-                           "' is cooperator]")
+        for node in self.followers:
+            if node:
+                node.task(**kwargs)
+                if self.is_cooperator(node):
+                    self.write(self.indent() + "    ['" + node.identifier +
+                               "' is cooperator]")
         if self.root().followers:
             self.write('--- Task (' + self.identifier + ')')
         self._task_done = True
         sys.stdout.flush()
+        
         return 0.0
 
     def post(self, **kwargs: Any) -> bool:
@@ -874,17 +962,19 @@ class Base(object):
             False if data saving failed
         """
         ok = True
-        for x in self.followers:
-            x.post(**kwargs)
-            if self.is_cooperator(x):
-                self.write(self.indent() + "    ['" + x.identifier +
-                           "' is cooperator]")
+        for node in self.followers:
+            if node:
+                node.post(**kwargs)
+                if self.is_cooperator(node):
+                    self.write(self.indent() + "    ['" + node.identifier +
+                               "' is cooperator]")
         if self.root().followers:
             self.write('--- Post (' + self.identifier + ')')
         if self.data is None:
             ok = self.save()
         self._post_done = True
         sys.stdout.flush()
+        
         return ok
 
     def control(self, **kwargs: Any) -> float:
@@ -913,4 +1003,5 @@ class Base(object):
                                                                       2)))
             self._exe_time_start = time()
         self.write('=== Post-processing')
+        
         return res

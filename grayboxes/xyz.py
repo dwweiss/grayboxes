@@ -17,20 +17,22 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-10 DWW
+      2019-11-20 DWW
 """
 
 __all__ = ['xyz', 'xyzt']
 
 import numpy as np
+from nptyping import Array
 from typing import Optional, Sequence, Tuple, Union
 
 
-def _rotate2d(phi_rad: Union[float, Sequence[float]],
-              xx: Union[float, Sequence[float], np.ndarray],
-              yy: Union[float, Sequence[float], np.ndarray],
+def _rotate2d(phi_rad: Union[float, Array[float]],
+              xx: Union[float, Array[float]],
+              yy: Union[float, Array[float]],
               xx0: float = 0., yy0: float = 0.) \
-        -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
+        -> Union[Tuple[float, float], 
+                 Tuple[Array[float], Array[float]]]:
     """
     Helper method for rotation of (XX,YY) point in 2D plane
 
@@ -63,8 +65,9 @@ class xyz(object):
     Point in 3D space (x, y, z)
     """
 
-    def __init__(self, x: float=0., y: float=0., z: float=0.,
-                 point: Optional['xyz']=None) -> None:
+    def __init__(self, 
+                 x: float = 0., y: float = 0., z: float = 0.,
+                 point: Optional['xyz'] = None) -> None:
         """
         Args:
             x:
@@ -108,6 +111,8 @@ class xyz(object):
                        self.z * multiplier)
 
     def __eq__(self, other: 'xyz') -> bool:
+        if not isinstance(other, xyz): 
+            return NotImplemented
         return np.allclose([self.x, self.y, self.z],
                            [other.x, other.y, other.z])
 
@@ -160,7 +165,8 @@ class xyz(object):
             self.y += offset[1]
             self.z += offset[2]
 
-    def rotate(self, phi_rad: Sequence[float],
+    def rotate(self, 
+               phi_rad: Sequence[float],
                rot_axis: Sequence[float]) -> None:
         """
         Coordinate transformation: rotate this point in Cartesian system
@@ -188,7 +194,8 @@ class xyz(object):
             print('??? invalid definition of rotation axis', rot_axis)
             assert 0
 
-    def rotate_deg(self, phi_deg: Sequence[float],
+    def rotate_deg(self, 
+                   phi_deg: Sequence[float],
                    rot_axis: Sequence[float]) -> None:
         """
         Coordinate transformation: rotate this point in Cartesian system
@@ -200,13 +207,13 @@ class xyz(object):
             rot_axis:
                 Coordinate(s) of rotation axis, one and only one component
                 is None; this component indicates the rotation axis.
-                e.g. 'rotAxis.y is None' forces rotation around y-axis,
+                e.g. 'rot_axis.y is None' forces rotation around y-axis,
                 rotation center is (P0.x, P0.z)
         """
         self.rotate(np.asfarray(phi_deg) / 180. * np.pi, rot_axis)
 
-    def scale(self, scaling_factor:
-              Union[int, float, Sequence[float], 'xyz']) -> None:
+    def scale(self, scaling_factor: Union[int, float, 
+                                          Sequence[float], 'xyz']) -> None:
         if isinstance(scaling_factor, (int, float)):
             if self.x is not None:
                 self.x *= float(scaling_factor)
@@ -251,8 +258,10 @@ class xyzt(xyz):
     Point in 3D space with time: (x, y, z, t)
     """
 
-    def __init__(self, x: float=0., y: float=0., z: float=0., t: float=0.,
-                 point: Optional[Union[xyz, 'xyzt']]=None) -> None:
+    def __init__(self,
+                 x: float = 0., y: float = 0., z: float = 0., 
+                 t: float = 0., 
+                 point: Optional[Union[xyz, 'xyzt']] = None) -> None:
         """
         Args:
             x:
@@ -282,8 +291,8 @@ class xyzt(xyz):
             self.z = z if z is not None else 0.
             self.t = t if t is not None else 0.
         else:
-            print("??? xyzt: point is not of type 'xyz' or 'xyzt', type=",
-                  type(point))
+            print("??? xyzt(): point is not of type 'xyz' or 'xyzt', ",
+                  'type(point):', type(point))
             self.x, self.y, self.z, self.t = None, None, None, None
 
     def at(self, i: int) -> float:
@@ -292,7 +301,7 @@ class xyzt(xyz):
 
         Args:
             i:
-                Index of component (0:x, 1:y, 2:z, 3:t)
+                Index of component (0: x, 1: y, 2: z, 3: t)
 
         Returns:
             Value of component

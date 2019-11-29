@@ -17,12 +17,12 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-11-21 DWW
 """
 
-from typing import Any, Callable
-import numpy as np
+from typing import Any, Dict
 
+from grayboxes.base import Float2D, Function
 from grayboxes.boxmodel import BoxModel
 
 
@@ -31,7 +31,7 @@ class White(BoxModel):
     White box model y=f(x)
     """
 
-    def __init__(self, f: Callable, identifier: str='White') -> None:
+    def __init__(self, f: Function, identifier: str = 'White') -> None:
         """
         Args:
             f:
@@ -42,7 +42,7 @@ class White(BoxModel):
         """
         super().__init__(f=f, identifier=identifier)
 
-    def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) -> None:
+    def train(self, X: Float2D, Y: Float2D, **kwargs: Any) -> Dict[str, Any]:
         """
         Sets self.ready to True, no further actions
 
@@ -57,4 +57,4 @@ class White(BoxModel):
             Keyword arguments, not used
         """
         self.ready = True
-        return None
+        return self.init_metrics()

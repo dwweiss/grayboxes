@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-10-02 DWW
+      2019-11-29 DWW
 """
 
 from time import time
@@ -34,22 +34,22 @@ class Loop(Base):
     objects
     """
 
-    def __init__(self, identifier: str='Loop') -> None:
+    def __init__(self, identifier: str = 'Loop') -> None:
         super().__init__(identifier)
 
-        # iteration settings are only relevant if nItMax > 0
-        self.it = 0                     # actual number of iterations
-        self.n_it_min = 0               # minimum number of iterations
-        self.n_it_max = 0               # maximum number of iterations
-        self.epsilon = 0.               # maximum residuum tolerated
-        self.omega = 1.                 # relaxation factor
+        # iteration settings are only relevant if n_it_max > 0
+        self.it: int = 0                # actual number of iterations
+        self.n_it_min: int = 0          # minimum number of iterations
+        self.n_it_max: int = 0          # maximum number of iterations
+        self.epsilon: float = 0.        # maximum residuum tolerated
+        self.omega: float = 1.          # relaxation factor
 
         # transient settings are only relevant if t_end > 0
-        self.t = 0.                     # actual time
-        self.t_begin = 0.               # start time
-        self.t_end = 0.                 # final time
-        self.dt = 1e-2                  # time step size
-        self.theta = 0.5                # time discretization scheme
+        self.t: float = 0.              # actual time
+        self.t_begin: float = 0.        # start time
+        self.t_end: float = 0.          # final time
+        self.dt: float = 1e-2           # time step size
+        self.theta: float = 0.5         # time discretization scheme
 
     def __str__(self) -> str:
         s = super().__str__()
@@ -77,8 +77,8 @@ class Loop(Base):
     def is_transient(self) -> bool:
         return self.t_end > 0.0
 
-    def set_nonlinear(self, n_it_min: int=0, n_it_max: int=0,
-                      epsilon: float=0., omega: float=1.) -> None:
+    def set_nonlinear(self, n_it_min: int = 0, n_it_max: int = 0,
+                      epsilon: float = 0., omega: float = 1.) -> None:
         self.n_it_max = n_it_max if n_it_max is not None else 0
         self.n_it_max = np.clip(self.n_it_max, 0, int(1e6))
 
@@ -91,8 +91,8 @@ class Loop(Base):
             self.epsilon = epsilon
             self.omega = omega
 
-    def set_transient(self, t_begin: float=0., t_end: float=0., dt: float=0.,
-                      theta: float=0.5, n: int=100) -> None:
+    def set_transient(self, t_begin: float = 0., t_end: float = 0., 
+                      dt: float = 0., theta: float = .5, n: int = 100) -> None:
         """
         transient loops can be set with two parameter combinations:
             1. dt and n
@@ -121,20 +121,32 @@ class Loop(Base):
             self.theta = theta
                 
             
-    def initial_condition(self) -> None:
-        for x in self.followers:
-            x.initial_condition()
+    def initial_condition(self) -> bool:
+        ok = True
+        for node in self.followers:
+            if node:
+                if not node.initial_condition():
+                    ok = False
+        return ok
 
-    def update_nonlinear(self) -> None:
-        for x in self.followers:
-            x.update_nonlinear()
+    def update_nonlinear(self) -> bool:
+        ok = True
+        for node in self.followers:
+            if node:
+                if not node.update_nonlinear():
+                    ok = False
+        return ok
 
-    def update_transient(self) -> None:
-        for x in self.followers:
-            x.update_transient()
+    def update_transient(self) -> bool:
+        ok = True
+        for node in self.followers:
+            if node:
+                if not node.update_transient():
+                    ok = False
         self.t = self.root().t
         self.dt = self.root().dt
         self.theta = self.root().theta
+        return ok
 
     def control(self, **kwargs: Any) -> float:
         """
@@ -144,7 +156,7 @@ class Loop(Base):
         Returns:
             Residuum from range 0.0..1.0 indicating error of task
         """
-        # steady and linear: call control() of base class
+        # steady and linear: call control() of class Base
         if not self.is_transient() and not self.is_nonlinear():
             return super().control(**kwargs)
 

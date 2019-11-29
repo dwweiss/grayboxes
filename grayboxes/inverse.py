@@ -17,12 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-04-30 DWW
+      2019-11-21 DWW
 """
 
 import numpy as np
-from typing import Any
+from typing import Any, Union
 
+from grayboxes.base import Float1D, Float2D
 from grayboxes.minimum import Minimum
 
 
@@ -51,12 +52,12 @@ class Inverse(Minimum):
         x, y = Inverse(LightGray(f))(XY=(X, Y), c0=1, x=x_ini, y=y_inv)
     """
 
-    def objective(self, x: np.ndarray, **kwargs: Any) -> float:
+    def objective(self, x: Union[Float1D, Float2D], **kwargs: Any) -> float:
         """
         Defines objective function for inverse problem
 
         Args:
-            x (2D or 1D array of float):
+            x:
                 input of multiple or single data points,
                 shape: (1, n_inp) or (n_inp,)
 
@@ -68,15 +69,20 @@ class Inverse(Minimum):
 
         Returns:
             L2-norm as measure of difference between prediction & target
+            or
+            np.inf if self.model.prediction() returns None
         """
         # x is prediction input, x.shape:(n_inp,), y_opt.shape:(1, n_out)
         y_opt = self.model.predict(np.asfarray(x),
                                    **self.kwargs_del(kwargs, 'x'))
+        
+        if y_opt is None:
+            return np.inf
 
         # y is target, self.y.shape: (n_out,), y_opt[0].shape: (n_out,)
         # Note: This L2-norm is only computed for a single data point 
         L2_norm = np.sqrt(np.mean((y_opt[0] - self.y)**2))
 
-        self._trial_history.append([x, y_opt[0], L2_norm])
+        self._single_hist.append((x, y_opt[0], L2_norm))
 
         return L2_norm

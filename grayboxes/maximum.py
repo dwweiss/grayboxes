@@ -17,12 +17,12 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-03-27 DWW
+      2019-11-21 DWW
 """
 
-import numpy as np
-from typing import Any
+from typing import Any, Union
 
+from grayboxes.base import Float2D, Float1D
 from grayboxes.minimum import Minimum
 
 
@@ -31,12 +31,12 @@ class Maximum(Minimum):
     Maximizes objective function
     """
 
-    def objective(self, x: np.ndarray, **kwargs: Any) -> float:
+    def objective(self, x: Union[Float1D, Float2D], **kwargs: Any) -> float:
         """
         Objective function for maximization
 
         Args:
-            x (2D or 1D array of float):
+            x:
                 input of multiple or single data points,
                 shape: (n_point, n_inp) or (n_inp, )
 

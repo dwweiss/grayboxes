@@ -17,12 +17,12 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-12-17 DWW
+      2019-11-22 DWW
 """
 
 from math import isclose
 import numpy as np
-from typing import Optional, Sequence, Union
+from typing import List, Optional, Sequence, Union
 import matplotlib.pyplot as plt
 
 from grayboxes.loop import Loop
@@ -49,28 +49,29 @@ class Move(Loop):
     position but different times should be defined.
     """
 
-    def __init__(self, identifier: str='Move') -> None:
+    def __init__(self, identifier: str = 'Move') -> None:
         super().__init__(identifier=identifier)
 
-        self._waypoints: Optional[Union[list[xyz], list[xyzt]]] = None                     # array of wayPoints [m,m,m,s]
-        self._orientations: Optional[Union[xyz, list[xyz]]] = None     
+        self._waypoints: Optional[Union[List[xyz], List[xyzt]]] = None                     
+                                            # array of wayPoints [m,m,m,s]
+        self._orientations: Optional[Union[xyz, List[xyz]]] = None     
                                           # orientations in 3D space [rad]
         self._actual_position: xyz = xyz()     # actual position in 3D [m]
         self._velocity: xyz = xyz()           # velocity in 3D space [m/s]
         self._actual_orientation: xyz = xyz()   # actual orientation [rad]
         self._i_last_waypoint: int = 0    # index of last passed way point
-        self._trajectory_history: Optional[list[xyz]] = None   # plot data
+        self._trajectory_history: Optional[List[List[float]]] = None
 
-    def set_trajectory(self, way: Sequence[Union[xyz, xyzt]],
-                       orientations: Optional[Sequence[xyz]]=None,
-                       speed: Optional[float]=None,
-                       t_begin: float=0.,
-                       t_end: Optional[float]=None) -> None:
+    def set_trajectory(self, waypoints: Sequence[Union[xyz, xyzt]],
+                       orientations: Optional[Sequence[xyz]] = None,
+                       speed: Optional[float] = None,
+                       t_begin: float = 0.,
+                       t_end: Optional[float] = None) -> None:
         """
         Defines list of way points
 
         Args:
-            way:
+            waypoints:
                 way points in 3D space [m, m, m] or [m, m, m, s]
 
             rot:
@@ -86,12 +87,12 @@ class Move(Loop):
             t_end:
                 end time [s]
         """
-        self._waypoints = list(way)
+        self._waypoints = list(waypoints)
         if len(self._waypoints) <= 1:
             return
         self._waypoints = [xyzt(point=P) for P in self._waypoints]
 
-        way = [0.]
+        way: List[float] = [0.]
         for i in range(1, len(self._waypoints)):
             Delta_l = (self._waypoints[i] - self._waypoints[i - 1]).magnitude()
             way.append(way[i-1] + Delta_l)
@@ -103,7 +104,7 @@ class Move(Loop):
         if len(orientations) == 1:
             self._orientations = orientations * len(self._waypoints)
         else:
-            self._orientations = [xyz(point=r) for r in orientations]
+            self._orientations = [xyz(point=p) for p in orientations]
 
         if speed is None:
             if t_end is None or isclose(t_end, 0.):
@@ -123,7 +124,8 @@ class Move(Loop):
 
         del way
 
-    def i_waypoint_ahead(self, t: Optional[float]=None, i_start: int=0) -> int:
+    def i_waypoint_ahead(self, t: Optional[float] = None, 
+                               i_start: int = 0) -> int:
         """
         Finds index of way-point AHEAD of current object position
 
@@ -138,6 +140,8 @@ class Move(Loop):
             Waypoint index ahead of current object position.
             Index is greater 0
         """
+        assert self._waypoints and isinstance(self._waypoints[0], xyzt)
+        
         if t is None:
             t = self.t
         if t <= 0.:
@@ -166,11 +170,11 @@ class Move(Loop):
                 break
         return i_next
 
-    def initial_condition(self) -> None:
+    def initial_condition(self) -> bool:
         """
         Initializes object positionm velocity and rotation
         """
-        super().initial_condition()
+        ok = super().initial_condition()
 
         if self._waypoints is not None:
             self._actual_position = self._waypoints[0]
@@ -184,21 +188,31 @@ class Move(Loop):
         if self.silent:
             self._trajectory_history = None
         else:
-            self._trajectory_history = \
-                [[self._actual_position.x], [self._actual_position.y], 
-                                            [self._actual_position.z],
-                 [self._velocity.x], [self._velocity.y], [self._velocity.z],
-                 [self._actual_orientation.x], [self._actual_orientation.y], 
-                                               [self._actual_orientation.z]]
+            # First row (at t=0) of trajectory history  
+            self._trajectory_history = [
+                [self._actual_position.x], 
+                [self._actual_position.y], 
+                [self._actual_position.z],
+                 
+                [self._velocity.x], 
+                [self._velocity.y], 
+                [self._velocity.z],
+                 
+                [self._actual_orientation.x], 
+                [self._actual_orientation.y], 
+                [self._actual_orientation.z]
+            ]
+                
+        return ok
 
-    def update_transient(self) -> None:
+    def update_transient(self) -> bool:
         """
         Updates object position, velocity and rotation
 
         Note:
             Actual time is available as self.t
         """
-        super().update_transient()
+        ok = super().update_transient()
 
         self._actual_position = self.position(self.t)
         self._velocity = self.velocity(self.t)
@@ -216,8 +230,10 @@ class Move(Loop):
             self._trajectory_history[6].append(self._actual_orientation.x)
             self._trajectory_history[7].append(self._actual_orientation.y)
             self._trajectory_history[8].append(self._actual_orientation.z)
+            
+        return ok
 
-    def position(self, t: Optional[float]=None) -> xyz:
+    def position(self, t: Optional[float] = None) -> xyz:
         """
         Args:
             t:
@@ -250,7 +266,7 @@ class Move(Loop):
         P = self._waypoints[i_ahead - 1] + Delta_P * (delta_t / Delta_t)
         return xyz(P.x, P.y, P.z)
 
-    def orientation(self, t: Optional[float]=None) -> xyz:
+    def orientation(self, t: Optional[float] = None) -> xyz:
         """
         Args:
             t:
@@ -282,7 +298,7 @@ class Move(Loop):
         Dt = self._waypoints[i_ahead].t - self._waypoints[i_ahead - 1].t
         return self._orientations[i_ahead-1] + DR * (dt / Dt)
 
-    def way(self, t: Optional[float]=None) -> float:
+    def way(self, t: Optional[float] = None) -> float:
         """
         Args:
             t:
@@ -318,7 +334,7 @@ class Move(Loop):
         # way from start position to current position
         return w
 
-    def velocity(self, t: Optional[float]=None) -> xyz:
+    def velocity(self, t: Optional[float] = None) -> xyz:
         """
         Args:
             t:
