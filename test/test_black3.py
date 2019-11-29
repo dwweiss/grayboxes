@@ -17,14 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-08-29 DWW
+      2019-11-22 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -35,11 +34,11 @@ from grayboxes.plot import plot_isomap
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
         self.saveFigures = True
 
     def tearDown(self):
         pass
+
 
     def test4(self):
         # 2D problem: three 1D user-defined functions f(x) are fitted,

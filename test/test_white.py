@@ -17,15 +17,15 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2019-11-22 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
+from typing import Any, List, Optional, Sequence
 
 from grayboxes.white import White
 from grayboxes.plot import plot_isomap
@@ -33,7 +33,8 @@ from grayboxes.array import grid, cross
 from grayboxes.forward import Forward
 
 
-def fUser(self, x, *args):
+def f_user(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+        -> List[float]:
     c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
     x0, x1 = x[0], x[1]
     y0 = c0 + c1 * np.sin(c2 * x0) + c3 * (x1 - 1.5)**2
@@ -48,7 +49,7 @@ class TestUM(unittest.TestCase):
     Test of white box model class
     """
     def setUp(self):
-        print('///', os.path.basename(__file__))
+        pass
 
     def tearDown(self):
         pass
@@ -57,7 +58,7 @@ class TestUM(unittest.TestCase):
         s = 'White box (expanded)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        model = White(fUser, 'test1')
+        model = White(f_user, 'test1')
         y = model(x=x)
 
         plot_isomap(x[:, 0], x[:, 1], y[:, 0])
@@ -68,7 +69,7 @@ class TestUM(unittest.TestCase):
         s = 'White box (compact)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        y = White(fUser, 'test2')(x=x)
+        y = White(f_user, 'test2')(x=x)
 
         plot_isomap(x[:, 0], x[:, 1], y[:, 0])
 
@@ -78,7 +79,7 @@ class TestUM(unittest.TestCase):
         s = 'Forward operator on White box model'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        model = White(fUser, 'test3')
+        model = White(f_user, 'test3')
         x, y = Forward(model)(x=grid(8, [-1, 8], [0, 3]))
 
         plot_isomap(x[:, 0], x[:, 1], y[:, 0])

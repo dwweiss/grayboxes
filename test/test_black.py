@@ -17,16 +17,16 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-05-02 DWW
+      2019-11-29 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import Any, Dict, Sequence, Union
 
 from grayboxes.array import grid, noise
 from grayboxes.black import Black
@@ -35,11 +35,12 @@ from grayboxes.white import White
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
         self.saveFigures = True
+
 
     def tearDown(self):
         pass
+
 
     def test1(self):
         noise_abs = 0.1
@@ -53,19 +54,20 @@ class TestUM(unittest.TestCase):
 
         self.assertTrue(True)
 
+
     def test2(self):
         # neural network, 1D problem sin(x) with noise
-        def f(x, *args):
-            a, b = args if len(args) > 0 else 1, 1
+        def f(x: np.ndarray, *args: float) -> np.ndarray:
+            a, b = args if len(args) > 0 else 1., 1.
             return np.sin(x) + a * x + b
 
         # training data
         n_point_trn = 20
         noise = 0.01
         X = np.linspace(-1 * np.pi, +1 * np.pi, n_point_trn)
-        Y = f(X)
+        Y: np.ndarray = f(X)
         X, Y = np.atleast_2d(X).T, np.atleast_2d(Y).T
-        Y_nse = Y.copy()
+        Y_nse: np.ndarray = Y.copy()
         if noise > 0.0:
             Y_nse += np.random.normal(-noise, +noise, Y_nse.shape)
 
@@ -78,9 +80,9 @@ class TestUM(unittest.TestCase):
         opt = {'neurons': [10, 10], 'trials': 5, 'goal': 1e-6,
                'epochs': 500, 'trainers': 'bfgs rprop'}
 
-        metrics_trn = blk(X=X, Y=Y, **opt)
-        y = blk(x=x)
-        metrics_tst = blk.evaluate(x, White(f)(x=x))
+        metrics_trn: Dict[str, Any] = blk(X=X, Y=Y, **opt)
+        y: np.ndarray = blk(x=x)
+        metrics_tst: Dict[str, Any] = blk.evaluate(x, White(f)(x=x))
 
         plt.title('$neurons:' + str(opt['neurons']) +
                   ', L_2^{trn}:' + str(round(metrics_trn['L2'], 4)) +

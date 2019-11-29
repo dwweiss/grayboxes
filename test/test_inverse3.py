@@ -17,18 +17,18 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-07-17 DWW
+      2019-11-29 DWW
 """
 
 import __init__
 __init__.init_path()
 
-import unittest
-import os
 from collections import OrderedDict
-from typing import Any, Dict, Optional, Union
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import os
+from typing import Any, Dict, Optional, Sequence, Union
+import unittest
 
 from grayboxes.array import noise, rand, xy_rand_split
 from grayboxes.base import Base
@@ -40,7 +40,7 @@ from grayboxes.inverse import Inverse
 from grayboxes.white import White
 
 
-def f(x):
+def f(x: Union[float, Sequence[float]]) -> float:
     x = np.atleast_1d(x)
     y = (1 - np.cos(x * np.pi)) / 2
 #    if x[0] < 0.:
@@ -50,7 +50,7 @@ def f(x):
     return y
 
 
-def plot_f():
+def plot_f() -> None:
     x = np.linspace(-1, 2, 100)
     plt. plot(x, f(x), label='f(x)')
     plt.legend()
@@ -63,7 +63,7 @@ class Foo(Base):
         1. inverse model: x=phi^-1(y)
         2. minimization: x = arg min ||phi(x) - Y)||_2
     """
-    def __init__(self, identifier='foo'):
+    def __init__(self, identifier:str ='foo')-> None:
         super().__init__(identifier=identifier)
 
         self.operation: Optional[Union[Forward, Inverse]] = None
@@ -82,7 +82,7 @@ class Foo(Base):
         
         self.data: Dict[str, Any] = OrderedDict()
 
-    def generate_artificial_data(self, **kwargs):
+    def generate_artificial_data(self, **kwargs: Any) -> bool:
         
         # gets parameter from key word arguments
         n_point = kwargs.get('n_point', 50)
@@ -129,8 +129,9 @@ class Foo(Base):
 #        assert self.X_trn.max() > self.X_tst.max()
 #        assert self.Y_trn.min() < self.Y_tst.min()
 #        assert self.Y_trn.max() > self.Y_tst.max()
+        return True
 
-    def forward_operator(self, inverse_model, **kwargs):
+    def forward_operator(self, inverse_model: BoxModel, **kwargs: Any)-> None:
 
         # trains inverse model x=phi^{-1}(y)
         self.metrics_trn = inverse_model.train(self.Y_trn, self.X_trn,**kwargs)
@@ -148,7 +149,7 @@ class Foo(Base):
         # forward simulation for all Y_tst (lower case 'x' -> execution)
         self.y_tst, self.x_tst = self.operation(x=self.Y_tst)
 
-    def inverse_operator(self, forward_model, **kwargs):        
+    def inverse_operator(self, forward_model: BoxModel, **kwargs: Any) -> None:        
         if not isinstance(forward_model, White):
             
             # trains forward model y=phi(x)
@@ -176,7 +177,7 @@ class Foo(Base):
             y_tst.append(y_opt)
         self.x_tst, self.y_tst = np.asfarray(x_tst), np.asfarray(y_tst)
                 
-    def pre(self, **kwargs):
+    def pre(self, **kwargs: Any)-> bool:
         """
         The pre-process provides training data (X_trn, Y_trn),
         test data (X_tst, Y_tst) and exact solution (X_exa, Y_exa)
@@ -187,11 +188,11 @@ class Foo(Base):
         # train/test data for all trials 
         if all([x is not None for x in [self.X_trn, self.Y_trn, 
                                         self.X_tst, self.Y_tst]]):
-            return 
+            return False
         
-        self.generate_artificial_data(**kwargs)
+        return self.generate_artificial_data(**kwargs)
 
-    def task(self, **kwargs):
+    def task(self, **kwargs: Any) -> float:
         super().task(**kwargs)
 
         variant = kwargs.get('variant', 1)
@@ -205,7 +206,9 @@ class Foo(Base):
         else:
             assert 0
 
-    def post(self, **kwargs):
+        return 0.
+
+    def post(self, **kwargs: Any) -> bool:
         super().post(**kwargs)
 
         variant = kwargs.get('variant', 1)
@@ -279,7 +282,7 @@ class Foo(Base):
             nrn.replace('[', '').replace(']', '').replace(', ', '.')
         f += '_xmax' + str(x_max) 
         f += '_nse' + str(nse_abs) + '_' + str(nse_rel)
-        plt.savefig(os.path.join(self.path, f + '.png'))
+        plt.savefig(str(os.path.join(self.path, f + '.png')))
         plt.show()
 
         # X over Y diagram
@@ -296,12 +299,12 @@ class Foo(Base):
         plt.plot([self.Y_tst.min(), self.Y_tst.max()], [0, 0])
         plt.legend(bbox_to_anchor=(1.1, 0), loc='lower left')
         plt.show()
+        
+        return True
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
-
         plot_f()
         
         # settings of data generation and training
@@ -324,6 +327,7 @@ class TestUM(unittest.TestCase):
 
     def tearDown(self):
         pass
+
 
     def test1(self):
         foo = Foo()

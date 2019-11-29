@@ -27,6 +27,7 @@ import unittest
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import Any, List, Optional, Sequence
 
 from grayboxes.mediumgray import MediumGray
 from grayboxes.array import grid, noise, rand
@@ -37,23 +38,24 @@ from grayboxes.plot import plot_x_y_y_ref
 
 n_tun = 3
 
-
-def f(self, x, *args, **kwargs):
+def f(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+        -> List[float]:
     """
     Theoretical submodel for single data point
 
     Aargs:
-        x (1D array_like of float):
+        x:
             common input
 
-        args (float, optional):
+        args:
             tuning parameters as positional arguments
 
-        kwargs (Any, optional):
+        kwargs:
             keyword arguments {str: float/int/str}
     """
     if x is None:
         return np.ones(n_tun)
+    
     tun = args if len(args) >= n_tun else np.ones(n_tun)
 
     y0 = tun[0] + tun[1] * np.sin(tun[2] * x[0]) + tun[1] * (x[1] - 1.5)**2

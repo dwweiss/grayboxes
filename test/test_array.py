@@ -17,14 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-10-11 DWW
+      2019-11-22 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -35,10 +34,11 @@ import grayboxes.array as arr
 class TestUM(unittest.TestCase):
 
     def setUp(self):
-        print('///', os.path.basename(__file__))
+        pass
 
     def tearDown(self):
         pass
+
 
     def test1(self):
         x = arr.grid((3, 4), [0., 1.], [2., 3.])
@@ -52,6 +52,7 @@ class TestUM(unittest.TestCase):
 
         self.assertTrue(True)
 
+
     def test2(self):
         x = arr.rand(3, [0., 1.], [2., 4.])
         print('x:', x)
@@ -60,6 +61,7 @@ class TestUM(unittest.TestCase):
         plt.show()
         
         self.assertTrue(True)
+
 
     def test3(self):
         x = arr.cross((3, 4), [0., 1.], [2., 3.])
@@ -72,6 +74,7 @@ class TestUM(unittest.TestCase):
         plt.show()
 
         self.assertTrue(True)
+
 
     def test4(self):
         x = arr.rand(100, [0., 1.], [2., 4.])
@@ -93,6 +96,7 @@ class TestUM(unittest.TestCase):
         plt.show()
  
         self.assertTrue(True)
+
 
     def test5(self):
         x = np.linspace(0., 1., 100)
@@ -116,6 +120,7 @@ class TestUM(unittest.TestCase):
         plt.show()        
  
         self.assertTrue(True)
+
 
     def test6(self):
         print(arr.ensure2D(np.array([5])))
@@ -417,6 +422,7 @@ class TestUM(unittest.TestCase):
         plt.show()
         
         self.assertTrue(True)
+
 
     def test8(self):
         """

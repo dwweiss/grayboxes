@@ -17,14 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-12-17 DWW
+      2019-11-22 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -32,27 +31,26 @@ from grayboxes.move import Move
 from grayboxes.xyz import xyz
 
 
-way = [xyz(.0,  .0, .0),     #   ^
-       xyz(.1,  .1, .0),     # +1|      /\
-       xyz(.2,  .2, .0),     #   |    /    \
-       xyz(.3,  .1, .0),     #   |  /        \             0.8
-       xyz(.4,  .0, .0),     # 0 |/----0.2-----\----0.6-----/-->
-       xyz(.5, -.1, .0),     #   |            0.4\        /    x
-       xyz(.6, -.2, .0),     #   |                 \    /
-       xyz(.7, -.1, .0),     # -1|                   \/
-       xyz(.8,  .0, .0)]     #   | trajectory W=W(t)
+wayp = [xyz(.0,  .0, .0),     #   ^
+        xyz(.1,  .1, .0),     # +1|      /\
+        xyz(.2,  .2, .0),     #   |    /    \
+        xyz(.3,  .1, .0),     #   |  /        \             0.8
+        xyz(.4,  .0, .0),     # 0 |/----0.2-----\----0.6-----/-->
+        xyz(.5, -.1, .0),     #   |            0.4\        /    x
+        xyz(.6, -.2, .0),     #   |                 \    /
+        xyz(.7, -.1, .0),     # -1|                   \/
+        xyz(.8,  .0, .0)]     #   | trajectory W=W(t)
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
-        
-        self.orien = [xyz(20 * np.sin(i*3), 4*i-20, i*i-30) for i in range(len(way))]
+        self.orien = [xyz(20 * np.sin(i*3), 4*i-20, i*i-30) 
+                      for i in range(len(wayp))]
         print(len(self.orien), [str(self.orien[i]) for i in range(9)])
         
         self.foo = Move('move')
         self.speed = 0.8
-        self.foo.set_trajectory(way=way, orientations=self.orien, 
+        self.foo.set_trajectory(waypoints=wayp, orientations=self.orien, 
                                 speed=self.speed)
         
         print('-' * 40)
@@ -63,7 +61,7 @@ class TestUM(unittest.TestCase):
         pass
 
     def test1(self):
-        self.foo.set_trajectory(way, orientations=self.orien, speed=self.speed)
+        self.foo.set_trajectory(wayp, orientations=self.orien, speed=self.speed)
 
         print('-' * 40)
         print('test:', self.foo)

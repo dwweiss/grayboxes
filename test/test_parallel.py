@@ -17,22 +17,23 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2018-11-22 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
 import psutil
+from typing import Any, List, Optional, Sequence
 
 from grayboxes.parallel import mpi, communicator, predict_scatter, split, \
                                merge, x_demo, x3d_to_str
 
 
-def f(x, *args, **kwargs):
+def f(x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+        -> List[float]:
     for i in range(10*1000):
         _sum = 0
         for j in range(1000):
@@ -42,7 +43,7 @@ def f(x, *args, **kwargs):
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
+        pass
 
         comm = communicator()
         if comm is None:

@@ -24,7 +24,6 @@ import __init__
 __init__.init_path()
 
 import unittest
-import os
 from io import StringIO
 import numpy as np
 import pandas as pd
@@ -82,7 +81,7 @@ raw = StringIO("""mDot,p,E,A,mDotInd
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
+        pass
 
     def tearDown(self):
         pass
@@ -101,6 +100,7 @@ class TestUM(unittest.TestCase):
         print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
 
         self.assertTrue(True)
+
 
     def test2(self):
         s = 'Dark gray box model 2'
@@ -124,6 +124,7 @@ class TestUM(unittest.TestCase):
         print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
 
         self.assertTrue(True)
+
 
     def test3(self):
         s = 'Black box model, measured Y(X) = E(mDot, p)'

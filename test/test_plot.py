@@ -17,14 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-09-11 DWW
+      2019-11-22 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
 
 from grayboxes.plot import (plot_curves, plot_surface, plot_wireframe, \
@@ -34,7 +33,7 @@ from grayboxes.plot import (plot_curves, plot_surface, plot_wireframe, \
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
+        pass
 
     def tearDown(self):
         pass

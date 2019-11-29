@@ -17,15 +17,15 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-04-01 DWW
+      2019-11-22 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
+from typing import Any, List, Optional, Sequence
 
 from grayboxes.lightgray import LightGray
 from grayboxes.plot import plot_x_y_y_ref
@@ -33,7 +33,8 @@ from grayboxes.array import grid, noise, rand
 from grayboxes.white import White
 
 
-def f(self, x, *args, **kwargs):
+def f(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+        -> List[float]:
     """
     Theoretical submodel for single data point
 
@@ -41,13 +42,13 @@ def f(self, x, *args, **kwargs):
         self (reference):
             reference to instance object
 
-        x (1D array_like of float):
+        x:
             common input
 
-        args (float, optional):
+        args:
             tuning parameters
 
-        kwargs (Union[float, int, str], optional):
+        kwargs:
             keyword arguments
     """
     if x is None:
@@ -58,7 +59,8 @@ def f(self, x, *args, **kwargs):
     return [y0]
 
 
-def f2(self, x, *args, **kwargs):
+def f2(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+        -> List[float]:
     if x is None:
         return np.ones(4)
     tun = args if len(args) > 0 else np.ones(4)
@@ -83,8 +85,6 @@ trainer = [
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
-
         noise_abs = 0.25
         noise_rel = 10e-2
         self.X = grid(8, (-1, 8), (0, 3))
@@ -95,6 +95,7 @@ class TestUM(unittest.TestCase):
 
     def tearDown(self):
         pass
+
 
     def test1(self):
         s = 'Creates exact output y_exa(X), add noise, target is Y(X)'
@@ -124,6 +125,7 @@ class TestUM(unittest.TestCase):
                 print('=== df:\n', df)
 
         self.assertTrue(True)
+
 
     def test2(self):
         # train with single ini tun parameter set, n_tun from f2(None)

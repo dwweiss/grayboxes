@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-04-30 DWW
+      2019-11-22 DWW
 """
 
 import __init__
@@ -30,18 +30,17 @@ import matplotlib.pyplot as plt
 from grayboxes.black import Black
 
 
-def L2(y, Y):
+def L2(y: np.ndarray, Y: np.ndarray) -> float:
     return np.sqrt(np.mean(np.square(y - Y)))
 
 
-def str_L2(y, Y):
+def str_L2(y: np.ndarray, Y: np.ndarray) -> str:
     return str(np.round(L2(y, Y), 4))
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
-
+        pass
 
     def tearDown(self):
         pass

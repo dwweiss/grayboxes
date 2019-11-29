@@ -17,14 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-10-04 DWW
+      2019-11-22 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import sys
 from typing import Any, List, Optional
 
@@ -63,10 +62,11 @@ class Foo(Base):
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
+        pass
 
     def tearDown(self):
         pass
+
 
     def test1(self):
         # creates instance
@@ -114,12 +114,14 @@ class TestUM(unittest.TestCase):
 
         self.assertTrue(True)
 
+
     def test2(self):
         foo = Foo('root2')
         foo()
         foo.write(str('my write id:' + foo.identifier))
         
         self.assertTrue(True)
+
 
     def test3(self):
         # searches for specific follower in tree
@@ -134,6 +136,7 @@ class TestUM(unittest.TestCase):
         
         self.assertTrue(True)
 
+
     def test4(self):
         # destructs tree
         foo = Foo('root4')
@@ -143,6 +146,7 @@ class TestUM(unittest.TestCase):
         foo.destruct()
         
         self.assertTrue(True)
+
 
     def test5(self):
         # sends warning and termination of program
@@ -154,6 +158,7 @@ class TestUM(unittest.TestCase):
             foo.terminate('warning to GUI')
 
         self.assertEqual(cm.exception.code, None)        
+
 
     def test6(self):
         # sends warning

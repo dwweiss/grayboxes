@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-10-10 DWW
+      2019-11-22 DWW
 """
 
 
@@ -25,7 +25,6 @@ import __init__
 __init__.init_path()
 
 import unittest
-import os
 
 # import numpy as np
 # import sys
@@ -35,7 +34,7 @@ from grayboxes.___ import ___
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print("/// file:'" + os.path.basename(__file__) + "'")
+        pass
 
     def tearDown(self):
         pass

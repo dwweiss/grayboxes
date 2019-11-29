@@ -17,15 +17,15 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-05-08 DWW
+      2019-11-22 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
+from typing import Any, List, Optional, Sequence
 
 from grayboxes.array import grid, noise
 from grayboxes.white import White
@@ -44,7 +44,8 @@ from grayboxes.inverse import Inverse
 """
 
 
-def f(self, x, *args, **kwargs):
+def f(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+        -> List[float]:
     """
     Theoretical submodel for single data point, x = (x_0, x_1), y = (y_0)
     
@@ -76,62 +77,61 @@ def f(self, x, *args, **kwargs):
     return [y0]
 
 
-X = grid(5, (0., 1.), (0., 1.),)
-Y = np.asfarray([f('dummy', x) for x in X])
-Y = noise(Y, relative=5e-2)
-n_inp = X.shape[1]
-x_ini = np.ones(n_inp)
-bounds = [(-10, 10)] * n_inp
-y_inv = [2]
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
+        self.X = grid(5, (0., 1.), (0., 1.),)
+        Y = np.asfarray([f('dummy', x) for x in self.X])
+        self.Y = noise(Y, relative=5e-2)
+        n_inp = self.X.shape[1]
+        self.x_ini = np.ones(n_inp)
+        self.bounds = [(-10, 10)] * n_inp
+        self.y_inv = [2]
 
 
     def tearDown(self):
         pass
 
-#    def test1(self):
-#        X_1d = np.atleast_2d(np.linspace(0, 1, 5)).T
-#        Y_1d = np.sin(X_1d)
-#        phi = RadialBasis()
-#        phi.train(X_1d, Y_1d, centers=8, rate=0.5)
-#        y = phi.predict(X_1d)
-#        print('X y', X_1d, y)
-#
-#        self.assertTrue(True)
 
+    def test1(self):
+        pass
+        
+    
     def test2(self):
         operation = Inverse(White(f))         
-        x, y = operation(x=x_ini, y=y_inv, optimizer='ga', bounds=[(-1, 3)]*2)
-        print('x y y_inv', x, y, y_inv)
+        x, y = operation(x=self.x_ini, y=self.y_inv, optimizer='ga', 
+                         bounds=[(-1, 3)]*2)
+        print('x y y_inv', x, y, self.y_inv)
 
         self.assertTrue(True)
+
 
     def test3(self):
         operation = Inverse(LightGray(f))
-        x, y = operation(X=X, Y=Y, neurons=[4], x=x_ini, y=y_inv, 
-                         optimizer='cg')
-        print('x y y_inv', x, y, y_inv)
+        x, y = operation(X=self.X, Y=self.Y, neurons=[4], x=self.x_ini, 
+                         y=self.y_inv, optimizer='cg')
+        print('x y y_inv', x, y, self.y_inv)
 
         self.assertTrue(True)
+
 
     def test4(self):
         operation = Inverse(DarkGray(f))
-        x, y = operation(X=X, Y=Y, neurons=[8], x=x_ini, y=y_inv)
-        print('x y y_inv', x, y, y_inv)
+        x, y = operation(X=self.X, Y=self.Y, neurons=[8], x=self.x_ini, 
+                         y=self.y_inv)
+        print('x y y_inv', x, y, self.y_inv)
 
         self.assertTrue(True)
+
 
     def test5(self):
         # Example 5 (expanded form)
         model = Black()
-        metrics = model.train(X, Y, neurons=[8] )
+        metrics = model.train(self.X, self.Y, neurons=[8] )
         operation = Inverse(model)
-        x, y = operation(x=x_ini, y=y_inv)
-        print('x y y_inv metrics', x, y, y_inv, metrics)
+        x, y = operation(x=self.x_ini, y=self.y_inv)
+        print('x y y_inv metrics', x, y, self.y_inv, metrics)
 
         self.assertTrue(True)
 

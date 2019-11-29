@@ -17,36 +17,35 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2019-11-22 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
+from typing import Any, List, Optional, Sequence
 
 from grayboxes.sensitivity import Sensitivity
 from grayboxes.array import cross
 from grayboxes.white import White
 
 
-def f(self, x, *args, **kwargs):
+def f(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+        -> List[float]:
     return np.sin(x[0]) + (x[1] - 1)**2
 
 
 class TestUM(unittest.TestCase):
     """
-        
+    Test sensitivity matrix calculation
     """
     def setUp(self):
-        print('///', os.path.basename(__file__))
+        pass
 
     def tearDown(self):
         pass
-
-        self.assertTrue(True)
 
     def test1(self):
         s = 'Sensitivity with method f(self, x)'

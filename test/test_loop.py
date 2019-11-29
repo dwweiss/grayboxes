@@ -17,14 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-10-02 DWW
+      2019-11-29 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -33,8 +32,9 @@ from grayboxes.loop import Loop
 
 
 class HeatConduction(Loop):
-    def __init__(self, identifier='test'):
+    def __init__(self, identifier: str = 'test') -> None:
         super().__init__(identifier)
+        
         self.x = None
         self.u = None
         self.u_prev = None
@@ -42,25 +42,47 @@ class HeatConduction(Loop):
         self.source = 0.0
         plt.clf()
 
-    def initial_condition(self):
-        super().initial_condition()
+    def initial_condition(self) -> bool:
+        ok = super().initial_condition()
+        
         self.x = np.linspace(0., 1., num=20)
         self.u = np.sin(self.x * np.pi * 2)
-        self.u[0], self.u[-1] = (0., 0.)
+        self.u[0], self.u[-1] = 0., 0.
         self.u_prev = np.copy(self.u)
         self.a = np.linspace(1, 1, num=len(self.x))
         plt.plot(self.x, self.u, linestyle='--', label='initial')
+        
+        return ok
 
-    def update_transient(self):
-        super().update_transient()
+    def update_transient(self) -> bool:
+        ok = super().update_transient()
+        
         self.u_prev, self.u = self.u, self.u_prev
+        
+        return ok
 
-    def update_nonlinear(self):
-        super().update_nonlinear()
+    def update_nonlinear(self) -> bool:
+        ok = super().update_nonlinear()
+        
         self.a = 1 + 0 * self.u
+        
+        return ok
+
+    def pre(self) -> bool:
+        ok = super().pre()
+
+        if not self.is_transient() and not self.is_nonlinear():
+            ok = False
+            self.write('??? pre(): steady + linear: skips initial_condition()')
+            
+        return ok
 
     def task(self):
         super().task()
+
+        if self.x is None:
+            self.write('??? self.x is None --> skips task()')
+            return -1.
 
         n = self.x.size - 1
         for i in range(1, n):
@@ -70,34 +92,46 @@ class HeatConduction(Loop):
             self.u[i] = self.u_prev[i] + self.dt * rhs
 
         plt.plot(self.x, self.u, label=str(round(self.t, 4)))
+        
         return 0.0
 
-    def post(self):
-        super().post()
+    def post(self) -> bool:
+        ok = super().post()
+
+        if self.x is None:
+            self.write('??? self.x is None --> skips post()')
+            return False
 
         plt.legend(bbox_to_anchor=(1.1, 1.02), loc='upper left')
         plt.grid()
         plt.show()
+        
+        return ok
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
-
         self.foo = HeatConduction('conduction')
         self.foo.set_follower([Base('follower 1'), Base('follower 2')])
         self.foo.silent = False
 
+
     def tearDown(self):
         pass
 
+
     def test1(self):
+        print('-' * 40)
         print('foo.isTransient:', self.foo.is_transient())
         print('foo.isNonLinear:', self.foo.is_nonlinear())
+        print()
+        self.foo()
 
         self.assertTrue(True)
 
+
     def test2(self):
+        print('-' * 40)
         self.foo.set_transient(t_end=0, n=8)
         self.foo.set_nonlinear(n_it_max=5, n_it_min=3, epsilon=0.0)
 
@@ -107,7 +141,9 @@ class TestUM(unittest.TestCase):
 
         self.assertTrue(True)
 
+
     def test3(self):
+        print('-' * 40)
         self.foo.set_transient(t_end=0.1, n=8)
         self.foo.set_nonlinear(n_it_max=0, n_it_min=0, epsilon=0.0)
 

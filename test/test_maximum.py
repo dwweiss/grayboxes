@@ -17,15 +17,15 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2019-11-22 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
+from typing import Any, List, Optional, Sequence
 
 from grayboxes.array import rand
 from grayboxes.maximum import Maximum
@@ -33,15 +33,15 @@ from grayboxes.white import White
 
 
 # user defined method with theoretical submodel
-def f(self, x, *args):
+def f(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+        -> List[float]:
     c0, c1, c2 = args if len(args) > 0 else 1, 1, 1
     return -(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
-
+        pass
 
     def tearDown(self):
         pass

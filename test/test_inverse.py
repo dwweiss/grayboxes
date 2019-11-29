@@ -17,25 +17,26 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2018-08-17 DWW
+      2019-11-29 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
+from typing import Any, List, Optional, Sequence
 
-from grayboxes.inverse import Inverse
-from grayboxes.plot import plot_x_y_y_ref
 from grayboxes.array import grid, rand, noise
-from grayboxes.white import White
-from grayboxes.lightgray import LightGray
 from grayboxes.black import Black
+from grayboxes.inverse import Inverse
+from grayboxes.lightgray import LightGray
+from grayboxes.plot import plot_x_y_y_ref
+from grayboxes.white import White
 
 
-def f(self, x, *args, **kwargs):
+def f(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+        -> List[float]:
     p0, p1, p2 = args if len(args) > 0 else np.ones(3)
     # print(' x:', x, 'args:', args, 'P:', p0, p1, p2)
     return [np.sin(p0 * x[0]) + p1 * (x[1] - 1.)**2 + p2]
@@ -43,10 +44,12 @@ def f(self, x, *args, **kwargs):
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
+        pass
+
 
     def tearDown(self):
         pass
+
 
     def test1(self):
         s = 'Inverse, ranges+rand replaced method f()'
@@ -57,6 +60,7 @@ class TestUM(unittest.TestCase):
         operation.plot()
 
         self.assertTrue(True)
+
 
     def test2(self):
         s = 'Inverse, replaced model'
@@ -69,6 +73,7 @@ class TestUM(unittest.TestCase):
         operation.plot()
 
         self.assertTrue(True)
+
 
     def test3(self):
         s = 'Inverse operation on light gray box model'
@@ -96,6 +101,7 @@ class TestUM(unittest.TestCase):
 
         self.assertTrue(True)
 
+
     def test4(self):
         s = 'Inverse operation on empirical model'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
@@ -116,6 +122,7 @@ class TestUM(unittest.TestCase):
         operation.plot()
 
         self.assertTrue(True)
+
 
     def test5(self):
         s = 'Inverse operation on empirical model of tuned theoretical model'

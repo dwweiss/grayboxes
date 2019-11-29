@@ -26,6 +26,7 @@ __init__.init_path()
 import unittest
 import os
 import numpy as np
+from typing import Any, List, Optional, Sequence
 
 from grayboxes.forward import Forward
 from grayboxes.plot import plot_isomap
@@ -34,7 +35,8 @@ from grayboxes.white import White
 
 
 # function without access to 'self' attributes
-def func(x, *args):
+def func(x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+        -> List[float]:
     print('0')
     return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
@@ -52,6 +54,7 @@ class TestUM(unittest.TestCase):
     def tearDown(self):
         pass
 
+
     def test1(self):
         s = 'Forward() with demo function build-in into BoxModel'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
@@ -61,6 +64,7 @@ class TestUM(unittest.TestCase):
 
         self.assertTrue(True)
 
+
     def test2(self):
         s = 'Forward() with demo function build-in into BoxModel'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
@@ -68,6 +72,7 @@ class TestUM(unittest.TestCase):
         plot_isomap(x[:, 0], x[:, 1], y[:, 0], scatter=True)
 
         self.assertTrue(True)
+
 
     def test3(self):
         s = "Forward, assign external function (without self-argument) to f"
@@ -78,6 +83,7 @@ class TestUM(unittest.TestCase):
         print('x:', operation.model.x, '\ny1:', operation.model.y)
 
         self.assertTrue(True)
+
 
     def test4(self):
         s = "Forward, assign method (with 'self'-argument) to f"

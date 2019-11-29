@@ -17,14 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-09-13 DWW
+      2019-11-22 DWW
 """
 
 import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
 from pandas import DataFrame
 import matplotlib.pyplot as plt
@@ -35,17 +34,17 @@ from grayboxes.plot import (plot_surface, plot_isolines, plot_isomap, \
                             plot_wireframe)
 
 
-def L2(y, Y):
+def L2(y: np.ndarray, Y: np.ndarray) -> float:
     return np.sqrt(np.mean(np.square(y - Y)))
 
 
-def str_L2(y, Y):
+def str_L2(y: np.ndarray, Y: np.ndarray) -> str:
     return str(np.round(L2(y, Y), 4))
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
+        pass
 
     def tearDown(self):
         pass

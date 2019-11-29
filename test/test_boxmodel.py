@@ -24,9 +24,9 @@ import __init__
 __init__.init_path()
 
 import unittest
-import os
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import Any, List, Optional, Sequence
 
 from grayboxes.boxmodel import BoxModel
 from grayboxes.plot import plot_isomap, plot_surface, plot_isolines
@@ -35,7 +35,8 @@ from grayboxes.white import White
 from grayboxes.lightgray import LightGray
 
 
-def f(self, x, *args, **kwargs):
+def f(x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+        -> List[float]:
     """
     Theoretical submodel y=f(x_com, x_tun) for single data point
     """
@@ -51,10 +52,11 @@ def f(self, x, *args, **kwargs):
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
+        pass
 
     def tearDown(self):
         pass
+
 
     def test1(self):
         x = grid(100, [0.9, 1.1], [0.9, 1.1])
@@ -71,6 +73,7 @@ class TestUM(unittest.TestCase):
                     title='$y_0-y_{exa,0}$')
 
         self.assertTrue(True)
+
 
     def test2(self):
         x = grid(4, [0, 12], [0, 10])
@@ -89,6 +92,7 @@ class TestUM(unittest.TestCase):
                     title='$y_1-y_{exa,1}$')
 
         self.assertTrue(True)
+
 
     def test3(self):
         X = grid(5, [-1, 2], [3, 4])
@@ -110,6 +114,7 @@ class TestUM(unittest.TestCase):
         print('dY:', dY)
 
         self.assertTrue(True)
+
 
     def test4(self):
         model = BoxModel(f, 'test4')
@@ -140,6 +145,7 @@ class TestUM(unittest.TestCase):
         print('9 y12:', y12, 'x0', x0)
 
         self.assertTrue(True)
+
 
     def test5(self):
         model = LightGray(f, 'test5')

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-10-10 DWW
+      2019-11-22 DWW
 """
 
 import __init__
@@ -35,11 +35,11 @@ from grayboxes.neural import Neural
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
         self.save_figures = True
 
     def tearDown(self):
         pass
+
 
     def test3(self):
         """
@@ -51,8 +51,7 @@ class TestUM(unittest.TestCase):
             sin(x) with noise
             
         -
-        """
-        
+        """        
         path = Black().path
 
         print('*' * 30, 'path:', path)
