@@ -28,5 +28,6 @@ def init_path():
     sys.path.append(os.path.abspath('..'))
 
 
-if __file__ == '__main__':
+if __name__ == '__main__':
+    print(';')
     init_path()
