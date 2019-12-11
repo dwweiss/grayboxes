@@ -8,6 +8,7 @@ _grayboxes_ contributes to the creation and evaluation of [white](https://github
 
 - are compatible to all [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model#61-operations) of the _grayboxes_ library:
 
+     - Forward simulation
      - Minimization / maximization     
      - Inverse problem solution
      - Sensitivity analysis 
