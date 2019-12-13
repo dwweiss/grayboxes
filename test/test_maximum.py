@@ -17,15 +17,15 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-22 DWW
+      2019-12-09 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
 import unittest
 import numpy as np
-from typing import Any, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 from grayboxes.array import rand
 from grayboxes.maximum import Maximum
@@ -33,9 +33,8 @@ from grayboxes.white import White
 
 
 # user defined method with theoretical submodel
-def f(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
-        -> List[float]:
-    c0, c1, c2 = args if len(args) > 0 else 1, 1, 1
+def f(self, x: Optional[Sequence[float]], *c: float) -> List[float]:
+    c0, c1, c2 = c if len(c) >= 3 else 1., 1., 1.
     return -(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)
 
 
@@ -52,6 +51,7 @@ class TestUM(unittest.TestCase):
 
         op = Maximum(White(f), 'test1')
         x, y = op(x=rand(10, [-5, 5], [-7, 7]), optimizer='nelder-mead')
+
         op.plot()
         print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)
 

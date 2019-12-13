@@ -17,39 +17,40 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-04-01 DWW
+      2019-12-09 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
 import unittest
-import os
 import numpy as np
 from typing import Any, List, Optional, Sequence
 
-from grayboxes.forward import Forward
-from grayboxes.plot import plot_isomap
 from grayboxes.array import grid, cross, rand
+from grayboxes.forward import Forward
+from grayboxes.lightgray import LightGray
+from grayboxes.plot import plot_isomap
 from grayboxes.white import White
 
 
 # function without access to 'self' attributes
-def func(x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+def func(x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
         -> List[float]:
-    print('0')
+#    print('0')
     return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
 
 # method with access to 'self' attributes
-def method(self, x, *args, **kwargs):
-    print('1')
+def method(self, x, *c, **kwargs):
+#    print('1')
     return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        print('///', os.path.basename(__file__))
+        pass
+    
 
     def tearDown(self):
         pass
@@ -68,7 +69,7 @@ class TestUM(unittest.TestCase):
     def test2(self):
         s = 'Forward() with demo function build-in into BoxModel'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-        x, y = Forward(White('demo'), 'test2')(x=cross(5, [1, 2], [3, 4]))
+        x, y = Forward(White(f='demo'))(x=cross(5, [1, 2], [3, 4]))
         plot_isomap(x[:, 0], x[:, 1], y[:, 0], scatter=True)
 
         self.assertTrue(True)
@@ -92,6 +93,40 @@ class TestUM(unittest.TestCase):
         operation = Forward(White(func), 'test4')
         _, y = operation(x=[[2, 3], [3, 4], [4, 5], [5, 6], [6, 7]])
         print('x:', operation.model.x, '\ny1:', operation.model.y)
+
+        self.assertTrue(True)
+
+
+    def test5(self):
+        s = "Forward, LightGray"
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+
+        X = rand(20, (-1, 1), (-1, 1))
+        Y = [[func(x_)] for x_ in X]
+
+        operation = Forward(LightGray(func), 'test5')
+        result = operation(X=X, Y=Y, c_ini=[1, 1], trainer='least_squares')
+        print('result:', result)
+        print('metrics:', operation.model.metrics)
+        x, y = operation(x=X)
+        print('x:', x, '\n', 'y:', y)
+
+        self.assertTrue(True)
+
+
+    def test6(self):
+        s = "Forward, LightGray 2"
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+
+        X = rand(20, (-1, 1), (-1, 1))
+        Y = [[func(x_)] for x_ in X]
+
+        operation = Forward(LightGray(func), 'test5')
+        metrics = operation(X=X, Y=Y, c_ini=[1, 1], trainer='least_squares')
+        print('metrics:', metrics)
+        print('metrics:', operation.model.metrics)
+        x, y = operation(x=X)
+        print('x:', x, '\n', 'y:', y)
 
         self.assertTrue(True)
 

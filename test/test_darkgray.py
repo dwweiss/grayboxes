@@ -20,8 +20,8 @@
       2019-03-01 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
 import unittest
 from io import StringIO
@@ -90,7 +90,7 @@ class TestUM(unittest.TestCase):
         s = 'Dark gray box model 1'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        model = DarkGray('demo', 'test1')
+        model = DarkGray(f='demo')
         X, Y = frame_to_arrays(df, ['x0', 'x4'], ['y0'])
         y = model(X=X, Y=Y, x=X, silent=True, neurons=[10])
         plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
@@ -112,7 +112,7 @@ class TestUM(unittest.TestCase):
         X = np.asfarray(data_frame.loc[:, ['mDot', 'p']])
         Y = np.asfarray(data_frame.loc[:, ['A']])
 
-        def f(x, *args, **kwargs):
+        def f(x, *c, **kwargs):
             return x[0] + x[1]
 
         y = DarkGray(f, 'test2')(X=X, Y=Y, x=X, silent=True, neurons=[10])

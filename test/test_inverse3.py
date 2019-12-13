@@ -20,8 +20,8 @@
       2019-11-29 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
 from collections import OrderedDict
 import matplotlib.pyplot as plt
@@ -260,12 +260,12 @@ class Foo(Base):
         plt.scatter(self.x_tst, self.y_tst, marker='+', color='r',
                     label=r'$x = \varphi( y_{tst} )$')
         if not isinstance(self.operation.model, White):
-            if 'iAbs' in self.metrics_trn:
-                i_abs_trn = self.metrics_trn['iAbs']
+            if 'i_abs' in self.metrics_trn:
+                i_abs_trn = self.metrics_trn['i_abs']
                 plt.scatter([self.X_trn[i_abs_trn]], [self.Y_trn[i_abs_trn]],
                             marker='o', color='g', s=66, label='max abs train')
-            if 'iAbs' in self.metrics_tst:
-                i_abs_tst = self.metrics_tst['iAbs']
+            if 'i_abs' in self.metrics_tst:
+                i_abs_tst = self.metrics_tst['i_abs']
                 plt.scatter([self.x_tst[i_abs_tst]], [self.y_tst[i_abs_tst]],
                             marker='o', color='b', s=66, label='max abs test')
 

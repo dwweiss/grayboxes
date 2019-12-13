@@ -17,15 +17,15 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-29 DWW
+      2019-12-09 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
 import unittest
 import numpy as np
-from typing import Any, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 from grayboxes.array import grid, rand, noise
 from grayboxes.black import Black
@@ -35,11 +35,10 @@ from grayboxes.plot import plot_x_y_y_ref
 from grayboxes.white import White
 
 
-def f(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
-        -> List[float]:
-    p0, p1, p2 = args if len(args) > 0 else np.ones(3)
-    # print(' x:', x, 'args:', args, 'P:', p0, p1, p2)
-    return [np.sin(p0 * x[0]) + p1 * (x[1] - 1.)**2 + p2]
+def f(self, x: Optional[Sequence[float]], *c: float) -> List[float]:
+    c0, c1, c2 = c if len(c) >= 3 else np.ones(3)
+    
+    return [np.sin(c0 * x[0]) + c1 * (x[1] - 1.)**2 + c2]
 
 
 class TestUM(unittest.TestCase):
@@ -114,11 +113,15 @@ class TestUM(unittest.TestCase):
         Y_noise = noise(Y_exact, absolute=noise_abs)
 
         plot_x_y_y_ref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
+
         model = Black()
         Y_blk = model(X=X, Y=Y_noise, neurons=[8], n=3, epochs=500, x=X)
+
         plot_x_y_y_ref(X, Y_blk, Y_exact, ['X', 'Y_{blk}', 'Y_{exa}'])
+
         operation = Inverse(model, 'test4b')
         x_inv, y_inv = operation(y=[0.5], x=[(-10, 0), (1, 19)])
+
         operation.plot()
 
         self.assertTrue(True)
@@ -137,7 +140,7 @@ class TestUM(unittest.TestCase):
         Y_noise = noise(Y_exact, absolute=noise_abs)
         plot_x_y_y_ref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
 
-        print('*'*30)
+        print('*' * 40)
 
         # trains and executes theoretical model Y_fit=f(X,w)
         Y_fit = LightGray(f, 'test5b')(X=X, Y=Y_noise, c0=[1, 1, 1], x=X)

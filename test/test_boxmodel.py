@@ -17,16 +17,16 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-03-19 DWW
+      2019-12-09 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
 import unittest
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import Any, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 from grayboxes.boxmodel import BoxModel
 from grayboxes.plot import plot_isomap, plot_surface, plot_isolines
@@ -35,19 +35,22 @@ from grayboxes.white import White
 from grayboxes.lightgray import LightGray
 
 
-def f(x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
-        -> List[float]:
+def f(x: Optional[Sequence[float]], *c: float) -> List[float]:
     """
     Theoretical submodel y=f(x_com, x_tun) for single data point
     """
-    n_tun = 3
+    n = 3
     if x is None:
-        return np.ones(n_tun)          # get number of tuning parameters
-    tun = args if len(args) == n_tun else np.ones(n_tun)
+        return np.ones(n)          # get number of tuning parameters
+    c0, c1, c2 = c if len(c) == n else np.ones(n)
 
-    y0 = tun[0] + tun[2] * x[0]**2 + tun[1] * x[1]
-    y1 = tun[0] * x[1]
+    y0 = c0 + c2 * x[0]**2 + c1 * x[1]
+    y1 = c0 * x[1]
     return [y0, y1]
+
+
+def L2_norm(y: Sequence[float], Y: Sequence[float]) -> float:
+    return np.sqrt(np.mean(np.square(np.asfarray(y) - np.asfarray(Y))))
 
 
 class TestUM(unittest.TestCase):
@@ -118,11 +121,11 @@ class TestUM(unittest.TestCase):
 
     def test4(self):
         model = BoxModel(f, 'test4')
-        y = model.f([2, 3], 2, 0, 1)
-        print('y:', y)
+        model.x = [1, 2]
+        model.y = model.f([1,2], 2., 0., 1.)
+        print('y:', model.y)
 
         # sets input
-        model.x = [1, 2]
         print('1: model.x:', model.x, 'model.y:', model.y)
 
         print('test data frame import/export')
@@ -139,7 +142,7 @@ class TestUM(unittest.TestCase):
 
         y0, y1 = frame_to_arrays(df, ['y0'], ['y1'])
         print('7 y0:', y0, 'y1:', y1)
-        y01 = frame_to_arrays(df, ['y0', 'y1'])
+        y01 = frame_to_arrays(df, 'y0', 'y1')
         print('8 y01:', y01)
         y12, x0 = frame_to_arrays(df, ['y0', 'y1'], ['x0'])
         print('9 y12:', y12, 'x0', x0)
@@ -173,6 +176,25 @@ class TestUM(unittest.TestCase):
         plt.legend()
         plt.grid()
         plt.show()
+
+        self.assertTrue(True)
+ 
+    
+    def test6(self):
+        model = LightGray(f, 'test6')
+        n_point = 20
+        X = rand(n_point, [0, 10], [0, 10])
+        Y = noise(White(f)(x=X), absolute=0.1)
+
+        x = rand(n_point, [0, 10], [0, 10])
+        y_exa = White(f)(x=x)
+
+        metrics = model(X=X, Y=Y)
+        print('metrics:', metrics)
+
+        y = model(x=x)
+        print('L2 (prd):', L2_norm(y, Y))
+        print('L2 (exa):', L2_norm(y, Y))
 
         self.assertTrue(True)
 

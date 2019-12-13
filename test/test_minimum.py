@@ -20,8 +20,8 @@
       2018-11-22 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
 import unittest
 import numpy as np
@@ -36,20 +36,20 @@ from grayboxes.white import White
 
 
 # theoretical submodel
-def f(x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+def f(x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
         -> List[float]:
-    c0, c1, c2 = args if len(args) > 0 else (1, 1, 1)
+    c0, c1, c2 = c if len(c) > 2 else (1, 1, 1)
     return [+(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)]
 
 
 # alternative theoretical submodel 
-def f1(x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+def f1(x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
         -> List[float]:
-    c0, c1, c2 = args if len(args) > 0 else (1, 1, 1)
+    c0, c1, c2 = c if len(c) > 2 else (1, 1, 1)
     return [+(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)]
 
 # theoretical submodel without kw-arguments, needed by scipy.optimize.minimum()
-def f_return_float(x: Optional[Sequence[float]], *args:float, **kwargs: Any) \
+def f_return_float(x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
         -> float:
     y = np.sin(x[0]) + (x[1])**2 + 2 
     return y
@@ -59,8 +59,10 @@ class TestUM(unittest.TestCase):
     def setUp(self):
         pass
 
+
     def tearDown(self):
         pass
+
 
     def test1(self):
         s = 'Use scipy.optimize.minimize()'
@@ -70,6 +72,7 @@ class TestUM(unittest.TestCase):
         print('res.x:', res.x)
 
         self.assertTrue(True)
+
 
     def test2(self):
         s = 'Minimum, assigns random series of initial x'
@@ -83,6 +86,7 @@ class TestUM(unittest.TestCase):
 
         self.assertTrue(True)
 
+
     def test3(self):
         s = 'Minimum, assigns random series of initial x'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
@@ -94,6 +98,7 @@ class TestUM(unittest.TestCase):
         print('x:', x, 'y:', y, '\nop.x:', op.x, 'op.y:', op.y)
 
         self.assertTrue(True)
+
 
     def test4(self):
         s = 'Minimum, generates series of initial x on grid'
@@ -110,6 +115,7 @@ class TestUM(unittest.TestCase):
         print('x:', x, 'y:', y)
 
         self.assertTrue(True)
+
 
     def test5(self):
         s = 'Minimum, test all optimizers'

@@ -17,23 +17,22 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-22 DWW
+      2019-12-10 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
 import unittest
 import numpy as np
-from typing import Any, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 from grayboxes.sensitivity import Sensitivity
 from grayboxes.array import cross
 from grayboxes.white import White
 
 
-def f(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
-        -> List[float]:
+def f(self, x: Optional[Sequence[float]], *c: float) -> List[float]:
     return np.sin(x[0]) + (x[1] - 1)**2
 
 
@@ -44,30 +43,34 @@ class TestUM(unittest.TestCase):
     def setUp(self):
         pass
 
+
     def tearDown(self):
         pass
+
 
     def test1(self):
         s = 'Sensitivity with method f(self, x)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        x_ref, dy_dx = Sensitivity(White(f),
-                                   'test1')(x=cross(3, [2, 3], [3, 4]))
+        x_ref, dy_dx = Sensitivity(White(f))(x=cross((3, 3), [2, 3], [3, 4]))
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()
+
         print('dy_dx:', dy_dx)
         print('x_ref:', x_ref)
 
         self.assertTrue(True)
 
+
     def test2(self):
         s = 'Sensitivity with demo function'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        op = Sensitivity(White('demo'), 'test2')
-        x_ref, dy_dx = op(x=cross(3, [2, 3], [3, 4], [4, 5]))
+        operation = Sensitivity(White(f='demo'))
+        x_ref, dy_dx = operation(x=cross((3, 3, 3), [2, 3], [3, 4], [4, 5]))
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()
+            
         print('dy_dx:', dy_dx)
         print('x_ref:', x_ref)
 

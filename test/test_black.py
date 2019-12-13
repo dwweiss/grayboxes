@@ -17,16 +17,16 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-29 DWW
+      2019-12-09 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
 import unittest
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import Any, Dict, Sequence, Union
+from typing import List, Optional, Sequence
 
 from grayboxes.array import grid, noise
 from grayboxes.black import Black
@@ -44,62 +44,74 @@ class TestUM(unittest.TestCase):
 
     def test1(self):
         noise_abs = 0.1
-        X = grid(-20, [0, 1])
-        Y = noise(White(lambda x: [x[0]**2])(x=X), absolute=noise_abs)
+        X = grid((20, 1), [0, 1])
+        Y = noise(White(f=lambda x: [x[0]**2])(x=X), absolute=noise_abs)
 
-        y = Black('black1')(X=X, Y=Y, x=X, neurons=[], silent=True)
+        y = Black('black')(X=X, Y=Y, x=X, neurons=[], silent=True)
 
-        plt.plot(X, Y, '.', X, y, '-')
-        plt.show()
+        plt.plot(X, Y, '.', label='trn')
+        plt.plot(X, y, '.', label='tst')
+        plt.legend(); plt.grid(); plt.show()
 
         self.assertTrue(True)
 
 
     def test2(self):
         # neural network, 1D problem sin(x) with noise
-        def f(x: np.ndarray, *args: float) -> np.ndarray:
-            a, b = args if len(args) > 0 else 1., 1.
-            return np.sin(x) + a * x + b
+        def f(x: Optional[Sequence[float]], *c: float) -> List[float]:
+            c0, c1 = c if len(c) > 0 else 1., 1.
+            return np.sin(x) + c0 * x + c1
 
         # training data
-        n_point_trn = 20
-        noise = 0.01
-        X = np.linspace(-1 * np.pi, +1 * np.pi, n_point_trn)
-        Y: np.ndarray = f(X)
-        X, Y = np.atleast_2d(X).T, np.atleast_2d(Y).T
-        Y_nse: np.ndarray = Y.copy()
-        if noise > 0.0:
-            Y_nse += np.random.normal(-noise, +noise, Y_nse.shape)
+        n_point_trn = 10
+        noise_abs = 0.01
+        X = grid((n_point_trn, 1), [-np.pi, np.pi])
+        Y_exa = f(X)
+        Y_nse = noise(Y_exa, absolute=noise_abs)
+        
+#        print('X:', X)
+#        print('Y_exa:', Y_exa)
+#        print('Y_nse:', Y_nse)
 
         # test data
         dx = 0.5 * np.pi
         n_point_tst = n_point_trn
-        x = np.atleast_2d(np.linspace(X.min()-dx, X.max()+dx, n_point_tst)).T
+        x = grid((n_point_tst, 1), [X.min() - dx, X.max() + dx])
 
-        blk = Black('black2')
-        opt = {'neurons': [10, 10], 'trials': 5, 'goal': 1e-6,
-               'epochs': 500, 'trainers': 'bfgs rprop'}
+        blk = Black('black')
+        kwargs_ = {'neurons': [10, 10], 'trials': 5, 'goal': 1e-6,
+                   'epochs': 500, 'trainers': 'bfgs rprop',
+                   'silent': True,
+                   }
 
-        metrics_trn: Dict[str, Any] = blk(X=X, Y=Y, **opt)
-        y: np.ndarray = blk(x=x)
-        metrics_tst: Dict[str, Any] = blk.evaluate(x, White(f)(x=x))
+        metrics_trn = blk(X=X, Y=Y_nse, **kwargs_)
+        print('tst blk 88 bk.ready', blk.ready) 
+        y = blk(x=x, silent=True)
+        y_exa = White(f)(x=x,silent=True)
+        print('tst blk 91 bk.ready', blk.ready, 'y', y)
+        metrics_tst = blk.evaluate(x, Y_exa)
 
-        plt.title('$neurons:' + str(opt['neurons']) +
+        plt.title('$neurons:' + str(kwargs_['neurons']) +
                   ', L_2^{trn}:' + str(round(metrics_trn['L2'], 4)) +
                   ', L_2^{tst}:' + str(round(metrics_tst['L2'], 4)) + '$')
         plt.cla()
-        plt.ylim(min(-2, Y.min(), y.min()), max(2, Y.max(), Y.max()))
+        plt.ylim(min(-2, Y_nse.min(), y.min()), 
+                 max(2, Y_nse.max(), Y_nse.max()))
         plt.yscale('linear')
         plt.xlim(-0.1 + x.min(), 0.1 + x.max())
-        plt.scatter(X, Y, marker='x', c='r', label='training data')
-        plt.plot(x, y, c='b', label='prediction')
-        plt.plot(x, f(x), linestyle=':', label='analytical')
-        i_abs_trn = metrics_trn['iAbs']
-        plt.scatter([X[i_abs_trn]], [Y[i_abs_trn]], marker='o', color='r',
+        
+        plt.scatter(X, Y_nse, marker='x', c='r', label='trn')
+        plt.plot(x, y, c='b', label='tst')
+        plt.plot(x, f(x), linestyle=':', label='exa')
+
+        i_abs_trn = metrics_trn['i_abs']
+        plt.scatter([X[i_abs_trn]], [Y_nse[i_abs_trn]], marker='o', color='r',
                     s=66, label='max abs train')
-        i_abs_tst = metrics_tst['iAbs']
+
+        i_abs_tst = metrics_tst['i_abs']
         plt.scatter([x[i_abs_tst]], [y[i_abs_tst]], marker='o', color='b',
                     s=66, label='max abs test')
+
         plt.legend(bbox_to_anchor=(1.1, 0), loc='lower left')
         plt.grid()
         plt.show()

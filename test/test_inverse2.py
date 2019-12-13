@@ -20,8 +20,8 @@
       2019-11-22 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
 import unittest
 import numpy as np
@@ -44,7 +44,7 @@ from grayboxes.inverse import Inverse
 """
 
 
-def f(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+def f(self, x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
         -> List[float]:
     """
     Theoretical submodel for single data point, x = (x_0, x_1), y = (y_0)
@@ -55,25 +55,24 @@ def f(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
         self (reference):
             reference to instance object
 
-        x (1D array_like of float):
+        x:
             common input with x.shape: (n_inp,)
-
-        args (float, optional):
+.
+        c:
             tuning parameters
 
-        kwargs (Dict[str, Union[float, int, str]], optional):
-            keyword arguments
+    Kwargs:
+        keyword arguments
             
     Returns:
-        (1D array of float):
-            result of function
+        result of function
         
     """
     if x is None:
         return np.ones(4)
-    tun = args if len(args) == 1 else np.ones(4)
+    c0, c1, c2, c3 = c if len(c) == 1 else np.ones(4)
 
-    y0 = tun[0] + tun[1] * np.sin(tun[2] * x[0]) + tun[3] * (x[1] - 1.5)**2
+    y0 = c0 + c1 * np.sin(c2 * x[0]) + c3 * (x[1] - 1.5)**2
     return [y0]
 
 
@@ -81,12 +80,11 @@ def f(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        self.X = grid(5, (0., 1.), (0., 1.),)
-        Y = np.asfarray([f('dummy', x) for x in self.X])
-        self.Y = noise(Y, relative=5e-2)
+        self.X = grid(5, (0., 1.), (0., 1.))
+        self.Y = noise(White(f)(x=self.X), relative=5e-2)
         n_inp = self.X.shape[1]
         self.x_ini = np.ones(n_inp)
-        self.bounds = [(-10, 10)] * n_inp
+        self.bounds = [(-10., 10.)] * n_inp
         self.y_inv = [2]
 
 

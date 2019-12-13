@@ -20,8 +20,8 @@
       2019-11-22 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
 import unittest
 import numpy as np
@@ -68,7 +68,7 @@ class TestUM(unittest.TestCase):
                        f2]
 
         # neural network options
-        opt = {'trainers': 'bfgs rprop', 'neurons': []}
+        kwargs_ = {'trainers': 'bfgs rprop', 'neurons': []}
 
         Y = np.array(df.loc[:, ['u']])            # extracts an 2D array
         for f in definitions:
@@ -84,7 +84,7 @@ class TestUM(unittest.TestCase):
             else:
                 X = np.array(df.loc[:, ['x', 'y']])
 
-            blk.train(X, Y, **opt)
+            blk.train(X, Y, **kwargs_)
             y = blk.predict(X)
             dy = y - Y
 

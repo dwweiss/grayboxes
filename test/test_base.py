@@ -17,15 +17,17 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-22 DWW
+      2019-12-10 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
-import unittest
+import numpy as np
 import sys
+from time import time
 from typing import Any, List, Optional
+import unittest
 
 from grayboxes.base import Base
 
@@ -63,6 +65,7 @@ class Foo(Base):
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
+
 
     def tearDown(self):
         pass
@@ -112,6 +115,7 @@ class TestUM(unittest.TestCase):
         print('\nPrint(foo): ' + str(foo))
         del foo
 
+        print('-' * 40)
         self.assertTrue(True)
 
 
@@ -120,10 +124,63 @@ class TestUM(unittest.TestCase):
         foo()
         foo.write(str('my write id:' + foo.identifier))
         
+        print('-' * 40)
         self.assertTrue(True)
 
 
     def test3(self):
+        """
+        Compares access time to node via get_follower (or []) and get_link
+        
+        Result on Intel i7-8850H @2.60GHz:
+
+            time (get_follower): total: 4131489.992 per access: 413.148 [us]
+            time (get_link):     total:    3994.226 per access:   0.399 [us]
+            
+        Note:
+            Tree is populated 16 followers having 16 sub-followers each
+            Access time for last tree node is less than a half millisecond
+        """
+        n_a, n_b = 16, 16  # ==> total of 1 + 16 * 16 = 257 nodes
+        n_test_loop = 10*1000
+        
+        b = Base('root')
+        for i in range(n_a):
+            a_key = 'a' + str(i)
+            b_key = 'b' + str(i)
+            b.set_follower([Base(a_key), Base(b_key)])
+            
+            for j in range(n_b):
+                aa_key = a_key + '_' + str(j)
+                bb_key = b_key + '_' + str(j)
+                b[a_key].set_follower(Base(aa_key))
+                b[b_key].set_follower(Base(bb_key))
+                
+        b2 = Base('root2')
+        test_key = 'a' + str(n_a - 1) + '_' + str(n_b - 1)
+        b2.set_link(b[test_key])
+        
+        start = time()
+        for i in range(n_test_loop):
+            node = b[test_key]
+        dt = np.round((time() - start) * 1e6, 3)
+        print('time (get_follower), total: ', dt, 
+              'per access:', dt / n_test_loop, '[us]')
+
+        start = time()
+        for i in range(n_test_loop):
+            node2 = b2.get_link(test_key)
+        dt = np.round((time() - start) * 1e6, 3)
+        print('time (get_link), total: ', dt, 
+              'per access:', dt / n_test_loop, '[us]')
+        
+        assert node == node2
+        
+        print('-' * 40)
+        self.assertTrue(True)
+
+
+    def test4(self):
         # searches for specific follower in tree
         foo = Foo('root3')
         identifier = 'follower 11'
@@ -134,10 +191,11 @@ class TestUM(unittest.TestCase):
             print('identifier found:', p.identifier == identifier)
             print('downward search, p.identifier:', p.identifier)
         
+        print('-' * 40)
         self.assertTrue(True)
 
 
-    def test4(self):
+    def test5(self):
         # destructs tree
         foo = Foo('root4')
         foo()
@@ -145,10 +203,11 @@ class TestUM(unittest.TestCase):
         print('foo 4:', foo)
         foo.destruct()
         
+        print('-' * 40)
         self.assertTrue(True)
 
 
-    def test5(self):
+    def test6(self):
         # sends warning and termination of program
         foo = Foo('root5')
         print('foo 5:', foo)
@@ -157,17 +216,20 @@ class TestUM(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             foo.terminate('warning to GUI')
 
+        print('-' * 40)
         self.assertEqual(cm.exception.code, None)        
 
 
-    def test6(self):
+    def test7(self):
         # sends warning
         foo = Foo('root6')
+
         foo.gui = False
         foo()
         print('foo 6:', foo)
         foo.warn('my warning1')
         
+        print('-' * 40)
         self.assertTrue(True)
 
 

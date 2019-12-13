@@ -20,8 +20,8 @@
       2019-11-22 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
 import unittest
 import numpy as np
@@ -57,8 +57,10 @@ class TestUM(unittest.TestCase):
         print('test:', self.foo)
         print('-' * 40)
 
+
     def tearDown(self):
         pass
+
 
     def test1(self):
         self.foo.set_trajectory(wayp, orientations=self.orien, speed=self.speed)
@@ -68,6 +70,7 @@ class TestUM(unittest.TestCase):
         print('-' * 40)
 
         self.assertTrue(True)
+
 
     def test2(self):
         i_way = self.foo.i_waypoint_ahead(t=0.3)
@@ -92,6 +95,7 @@ class TestUM(unittest.TestCase):
         print('-' * 40)
 
         self.assertTrue(True)
+
 
     def test3(self):
         print('foo._waypoints[-1].t:', self.foo._waypoints[-1].t)

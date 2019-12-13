@@ -20,18 +20,17 @@
       2019-11-22 DWW
 """
 
-import __init__
-__init__.init_path()
+import initialize
+initialize.set_path()
 
 import unittest
 import numpy as np
 from typing import Any, List, Optional, Sequence
 
-from grayboxes.white import White
 from grayboxes.plot import plot_isomap
 from grayboxes.array import grid, cross
 from grayboxes.forward import Forward
-
+from grayboxes.white import White
 
 def f_user(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
         -> List[float]:
@@ -51,8 +50,10 @@ class TestUM(unittest.TestCase):
     def setUp(self):
         pass
 
+
     def tearDown(self):
         pass
+
 
     def test1(self):
         s = 'White box (expanded)'
@@ -65,6 +66,7 @@ class TestUM(unittest.TestCase):
 
         self.assertTrue(True)
 
+
     def test2(self):
         s = 'White box (compact)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
@@ -74,6 +76,7 @@ class TestUM(unittest.TestCase):
         plot_isomap(x[:, 0], x[:, 1], y[:, 0])
 
         self.assertTrue(True)
+
 
     def test3(self):
         s = 'Forward operator on White box model'
@@ -85,6 +88,7 @@ class TestUM(unittest.TestCase):
         plot_isomap(x[:, 0], x[:, 1], y[:, 0])
 
         self.assertTrue(True)
+
 
     def test4(self):
         s = 'Forward operator on demo White box'
