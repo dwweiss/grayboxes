@@ -59,7 +59,7 @@ class Minimum(Forward):
         x, y = op(X=X, Y=Y, x=x_ini)  # train lightgray box and optimize
         x, y = op(x=x_ini, bounds=bounds)                     # optimize
         x, y = op(x=rand(9, [0, 1], [1, 2]))     # random x and optimize
-        norm = op(XY=(X, Y, x_keys, y_keys))                # train only
+        metrics = op(XY=(X, Y, x_keys, y_keys))             # train only
 
     Notes:
         - Limited to single target (Inverse: norm(y - Y), 
@@ -96,7 +96,7 @@ class Minimum(Forward):
         self._single_hist: List[SINGLE_EVALUATION] = []
                             # _trialHistory[jEvaluation]=(x,y,objective)
         self._multiple_hist: List[List[SINGLE_EVALUATION]] = []
-                       # _multiple_hist[iTrial][jEvaluation] = (x,y,objective)
+                # _multiple_hist[i_trial][jEvaluation] = (x,y,objective)
 
         # three leading chars are significant, case-insensitive
         self._valid_optimizers = ['Nelder-Mead',
@@ -137,9 +137,9 @@ class Minimum(Forward):
 
         Args:
             value:
-                initial input (1D or 2D) or input at optimum (1D),
+                initial input (1D or 2D)
                 
-                index is parameter index
+                if len(x.shape) == 0, second index is parameter index
         Note:
             Minimum.x is different from Base.x
         """
@@ -229,8 +229,8 @@ class Minimum(Forward):
         Returns:
             model input at optimum shape: (n_inp,) and corresponding 
                 model output: shape: (n_out,)
-            or 
-            0.0 if this instance is an instance of Inverse
+            OR
+            0.0 if 'self' is instance of Inverse
                 
         Note:
             - requires initial point(s) self.x for getting number of 
@@ -242,16 +242,18 @@ class Minimum(Forward):
 
         bounds = kwargs.get('bounds', None)
 
-        # sets initial values or returns 0.0 (if x is None,model train only)
+        # sets initial values or returns 0.0 (if x is None, model train only)
         self.x = kwargs.get('x', None)
         if self.x is None:
-            return 0.
+#           TODO return 0.
+            return None, None
 
         # sets target for Inverse (if y is None, model training only)
         if type(self).__name__ in ('Inverse'):
             self.y = kwargs.get('y', None)
             if self.y is None:
-                return 0.
+#               TODO return 0.
+                return None, None
 
         optimizer = self.kwargs_get(kwargs, 'optimizer', None)
         if optimizer not in self._valid_optimizers:
@@ -338,8 +340,12 @@ class Minimum(Forward):
         # y: self._multiple_hist[i_best_trial][iLastEvaluation=-1][jY=1]
         history_best = self._multiple_hist[i_best_trial]
         final_best = history_best[-1]
-        self.x, self.y = final_best[0], final_best[1]
+        
+        self.x = final_best[0]
+        self.y = final_best[1]
+        
         objective_best = final_best[2]
+        
         self.write('+++ Best trial:')
         s = ' ' if i_best_trial < 10 else ''
         self.write('    [' + s + str(i_best_trial) + '] x: ' + str(self.x))

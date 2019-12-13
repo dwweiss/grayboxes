@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-21 DWW
+      2019-12-09 DWW
 """
 
 from typing import Any, Union
@@ -31,14 +31,16 @@ class Maximum(Minimum):
     Maximizes objective function
     """
 
-    def objective(self, x: Union[Float1D, Float2D], **kwargs: Any) -> float:
+    def objective(self, x: Union[Float2D, Float1D], **kwargs: Any) -> float:
         """
         Objective function for maximization
 
         Args:
             x:
-                input of multiple or single data points,
-                shape: (n_point, n_inp) or (n_inp, )
+                input of multiple or single data points, 
+                shape: (n_point, n_inp)
+                
+                Note: shape (n_inp, ) is tolerated
 
         Kwargs:
             Keyword arguments to be passed to objective() of parent

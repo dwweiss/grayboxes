@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-20 DWW
+      2019-12-03 DWW
 """
 
 __all__ = ['xyz', 'xyzt']
@@ -125,7 +125,7 @@ class xyz(object):
                 Index of component (0: x, 1: y, 2: z)
 
         Returns:
-            Value of component [m]
+            Value of component with index 'i'
         """
         if i == 0:
             return self.x
@@ -176,8 +176,8 @@ class xyz(object):
                 Angle(s) of counter-clockwise rotation [rad]
 
             rot_axis:
-                Coordinate(s) of rotation axis, one and only one component
-                is None; this component indicates the rotation axis.
+                Coordinate(s) of rotation axis. One and only one component
+                is None. That component indicates the rotation axis.
                 e.g. 'rot_axis.y is None' forces rotation around y-axis,
                 rotation center is (P0.x, P0.z) [m]
         """
@@ -205,8 +205,8 @@ class xyz(object):
                 Angle(s) of counter-clockwise rotation [degrees]
 
             rot_axis:
-                Coordinate(s) of rotation axis, one and only one component
-                is None; this component indicates the rotation axis.
+                Coordinate(s) of rotation axis. One and only one component
+                is None. That component indicates the rotation axis.
                 e.g. 'rot_axis.y is None' forces rotation around y-axis,
                 rotation center is (P0.x, P0.z)
         """
@@ -304,7 +304,7 @@ class xyzt(xyz):
                 Index of component (0: x, 1: y, 2: z, 3: t)
 
         Returns:
-            Value of component
+            Value of component with index 'i'
         """
         if i == 0:
             return self.x

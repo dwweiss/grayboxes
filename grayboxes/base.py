@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-29 DWW
+      2019-12-06 DWW
 
   Note on program arguments:
     - no arguments          : program starts in default mode
@@ -41,15 +41,15 @@ from getpass import getpass
 from hashlib import sha224
 import collections
 from matplotlib.figure import Figure
+#from nptyping.array import Array
 import numpy as np
 from path import Path
 from re import sub
 import sys
 from time import time
 from tempfile import gettempdir
-from nptyping import Array
-from typing import (Any, Callable, Dict, Iterable, Sequence, List, Optional, 
-                    Union)
+from typing import (Any, Callable, Dict, Iterable, Sequence, Tuple, List, 
+                    Optional, Union)
 try:
     from tkinter import Button
     from tkinter import Entry
@@ -71,9 +71,12 @@ except ImportError:
     except ImportError:
         print('!!! Module parallel not imported')
 
-Float1D  = Optional[Array[float, ...]]
-Float2D  = Optional[Array[float, ..., ...]]
-Float3D  = Optional[Array[float, ..., ..., ...]]
+#Float1D  = Optional[Array[float, ...]]
+#Float2D  = Optional[Array[float, ..., ...]]
+#Float3D  = Optional[Array[float, ..., ..., ...]]
+Float1D  = Optional[np.ndarray]
+Float2D  = Optional[np.ndarray]
+Float3D  = Optional[np.ndarray]
 Str1D    = Optional[Iterable[str]]
 Function = Optional[Callable[..., List[float]]]
 
@@ -89,6 +92,7 @@ class Base(object):
     leader-cooperator relationships allows the creation of complex
     object structures which can coexist in space, time or abstract
     contexts.
+
     The implementation supports:
 
     - Distributed development of objects derived from the connecting
@@ -214,8 +218,10 @@ class Base(object):
         self._post_done: bool = False          # True if post() done
 
         self._leader: Optional['Base'] = None  # leader object
-        self._followers: List[Optional['Base']] = []     
+        self._followers: List[Optional['Base']] = []
                                                # follower list
+        self._links: List[Optional['Base']] = []
+                                               # link list 
 
         self._data: Optional[Any] = None       # data sets
         self._csv_separator: str = ','         # separator in csv-files
@@ -224,7 +230,13 @@ class Base(object):
         #                              axes[0].plot([1.,2.], [4.5, 9.1])
         self._figure: Optional[Figure] = Figure()
         
-    def __call__(self, **kwargs: Any) -> float:
+    def __call__(self, **kwargs: Any) \
+            -> Union[float,              
+                     Dict[str, Any],   
+                     Float2D,          
+                     Tuple[Float1D, Float1D], 
+                     Tuple[Float1D, Float2D], 
+                     Tuple[Float2D, Float2D]]: 
         """
         Executes object
 
@@ -232,15 +244,17 @@ class Base(object):
             silent (bool):
                 if True, then suppress printing
 
+            Keyword arguments to be passed to self.control()
+
         Returns:
-            Residuum from range 0.0 .. 1.0 indicating error of task
-            or -1.0 if parallel and rank > 0
+            see self.control()
         """
         # skip model execution if parallelized with MPI and rank > 0
         if 'parallel' in sys.modules and parallel.rank():
             return -1.0
 
-        self.silent = kwargs.get('silent', self.silent)
+        if 'silent' in kwargs:
+            self.silent = kwargs['silent']
 
         ok = self.prolog()
         if not ok:
@@ -250,7 +264,10 @@ class Base(object):
         if not ok:
             self.write('??? Base.pre() returned with False\n')
 
-        res: float = self.control(**kwargs)
+        task_result: Union[float, 
+                           Dict[str, Any],
+                           Float2D,
+                           Tuple[Float2D, Float2D]] = self.control(**kwargs)
 
         ok = self.post(**kwargs)
         if not ok:
@@ -260,7 +277,7 @@ class Base(object):
         if not ok:
             self.write('??? Base.epilog() returned with False\n')
 
-        return res
+        return task_result
 
     def __str__(self) -> str:
         s = ''
@@ -280,6 +297,16 @@ class Base(object):
                 else:
                     s += "'None', "
             if self.followers:
+                s = s[:-2]
+            s += ']'
+        if self.links:
+            s += ", links: ["
+            for x in self.links:
+                if x:
+                    s += "'" + x.identifier + "', "
+                else:
+                    s += "'None', "
+            if self.links:
                 s = s[:-2]
             s += ']'
         s += '}'
@@ -325,6 +352,7 @@ class Base(object):
                     self.destruct_downwards(node)
         if from_node.leader:
             from_node.leader._destruct_follower(from_node)
+            
         return True
 
     def _destruct_follower(self, node: 'Base') -> bool:
@@ -351,6 +379,7 @@ class Base(object):
             return False
         del node._data
         self._followers[i] = None
+        
         return True
 
     def is_root(self) -> bool:
@@ -447,6 +476,9 @@ class Base(object):
     @silent.setter
     def silent(self, value: bool) -> None:
         self._silent = value
+        for node in self.followers:
+            if node:
+                node.silent = value
 
     @property
     def ready(self) -> bool:
@@ -512,6 +544,15 @@ class Base(object):
         self.set_follower(other)
 
     @property
+    def links(self) -> List[Optional['Base']]:
+        return self._links
+
+    @links.setter
+    def links(self, other: Union[Optional['Base'], 
+                                 Sequence[Optional['Base']]]) -> None:
+        self.set_link(other)
+
+    @property
     def data(self) -> Any:
         return self._data
 
@@ -525,9 +566,11 @@ class Base(object):
 
     def __getitem__(self, identifier: str) -> Optional['Base']:
         """
-        Indexing, eg b = Base(); b.set_follower(['f1','f2']); f = b['f1']
+        Indexing, eg b = Base(); b.followers = ('f1', 'f2'); f1 = b['f1']
 
         Searches for node with 'identifier'. Starts downwards from root
+        If node is not in tree of followers, search will be continued in 
+        list of links
 
         Args:
             identifier:
@@ -538,7 +581,11 @@ class Base(object):
             or 
             None if node not found
         """
-        return self.get_follower(identifier)
+        node = self.get_follower(identifier)
+        if node is None:
+            node = self.get_link(identifier)
+        
+        return node
 
     def get_follower(self, identifier: str) -> Optional['Base']:
         """
@@ -606,6 +653,18 @@ class Base(object):
 
         Returns:
             Reference to 'other'
+            
+        Example:
+            b = Base()
+            b.set_follower(Base('follower1'))
+            b.set_follower([Base('follower2'), Base('follower3')])
+            
+            node = b.get_follower('follower2')
+            assert node.identifier == 'follower2'
+            assert node == b['follower2']
+            
+            node2 = b['follower2']
+            assert node == node2
         """
         if other:
             if not isinstance(other, collections.Sequence):
@@ -619,6 +678,60 @@ class Base(object):
                         if node not in self._followers:
                             self._followers.append(node)
         return other
+
+    def set_link(self, other: Union[Optional['Base'], \
+                                    Sequence[Optional['Base']]])\
+                           -> Union[Optional['Base'], 
+                                    Sequence[Optional['Base']]]:
+        """
+        Adds other node(s) to array of links
+
+        Args:
+            other:
+                Other node or sequence of other nodes
+
+        Returns:
+            Reference to 'other'            
+
+        Example:
+            b1 = Base()
+            b1.set_follower([Base('follower11'), Base('follower12')])
+            
+            b2 = Base()
+            b2.set_link(b1['follower12'])
+
+            assert b2.get_link('follower12') == b2['follower12']
+        """
+        if other:
+            if not isinstance(other, collections.Sequence):
+                if other not in self._links:
+                    self._links.append(other)
+            else:
+                for node in other:
+                    if node and node not in self._links:
+                        self._links.append(node)
+        return other
+
+    def get_link(self, identifier: str) -> Optional['Base']:
+        """
+        Search for node with 'identifier' in list of links
+
+        Args:
+            identifier:
+                Identifier of searched node
+
+        Returns:
+            Node with given identifier 
+            or 
+            None if node not found
+        """
+        node = None
+        for node in self.links:
+            if node:
+                if node.identifier == identifier:
+                    return node
+
+        return None
 
     def is_follower(self, other: Optional['Base']) -> bool:
         """
@@ -939,6 +1052,8 @@ class Base(object):
 
         Returns:
             Residuum from range [0., 1.], indicating error of task
+            OR
+            Tuple of x array and y array in classes derived from Base
         """
         for node in self.followers:
             if node:
@@ -977,13 +1092,29 @@ class Base(object):
         
         return ok
 
-    def control(self, **kwargs: Any) -> float:
+    def control(self, **kwargs: Any) \
+            -> Union[float,              # residuum of children of Base or Loop
+                     Dict[str, Any],    # metrics of train of BoxModel children
+                     Float2D,            # y of prediction of BoxModel children
+                     Tuple[Float1D, Float1D], # x_opt+y_opt of Min., Max., Inv. 
+                     Tuple[Float1D, Float2D],     # x_ref, dy/dx of Sensitivity 
+                     Tuple[Float2D, Float2D]]:             # x and y of Forward 
+                                                                      
         """
         Kwargs:
             Keyword arguments to be passed to task() of this object
 
         Returns:
             Residuum from range [0., 1.], indicating error of task
+                Base or Loop and its children
+            OR 
+            metrics of training for all children of BoxModel 
+                exclusive White if x is None,
+                see fifth code line of BoxModel.task()
+            OR 
+            y array of prediction of BoxModel and its children
+            OR            
+            x and y arrays of prediction of Forward and its children
         """
         if self.is_root():
             exe_time = time() - self._exe_time_start
@@ -994,8 +1125,13 @@ class Base(object):
 
         if self.is_root():
             self.write('=== Task-processing')
-        res = self.task(**kwargs)
-
+        task_result: Union[float,                        
+                           Dict[str, Any],         
+                           Float2D,
+                           Tuple[Float1D, Float1D],
+                           Tuple[Float1D, Float2D],
+                           Tuple[Float2D, Float2D]] = self.task(**kwargs)
+                                                              
         if self.is_root():
             exe_time = time() - self._exe_time_start
             if exe_time >= self._min_exe_time_shown:
@@ -1004,4 +1140,4 @@ class Base(object):
             self._exe_time_start = time()
         self.write('=== Post-processing')
         
-        return res
+        return task_result

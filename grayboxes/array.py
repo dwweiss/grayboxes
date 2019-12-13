@@ -17,27 +17,27 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-20 DWW
+      2019-12-09 DWW
 """
 
 __all__ = ['grid', 'cross', 'rand', 'noise', 'xy_rand_split', \
-           'xy_thin_out', 'frame_to_arrays', 'scale', 'smooth', ]
+           'xy_thin_out', 'frame_to_arrays', 'scale', 'smooth', 
+           'convert_to_2d']
 
-import random
+from nptyping import Array
 import numpy as np
 from pandas import DataFrame
-from nptyping import Array
-from typing import Optional, List, Sequence, Tuple, Union
+import random
 from statsmodels.nonparametric.smoothers_lowess import lowess
+from typing import Optional, List, Sequence, Tuple, Union
 
 
-def grid(n: Union[int, Sequence[int]], 
+def grid(size: Union[int, Sequence[int]], 
          *ranges: Union[Tuple[float, float], Sequence[float]]) \
         -> Array[float, ..., ...]:
     """
     Sets initial (uniformly spaced) grid input, for instance for 2 input
-    with 4 nodes per axis: grid(4, [3., 6.], [-7., -5.5])
-
+    with 4 nodes on all axes: grid(n=4, [3., 6.], [-7., -5.5])
 
        -5.5  x-----x-----x-----x
              |     |     |     |
@@ -48,12 +48,30 @@ def grid(n: Union[int, Sequence[int]],
          -7  x-----x-----x-----x
              3     4     5     6
 
+    If the number of nodes is 4 x 3, then grid() is called as:   
+    grid(size=(4, 3), [3., 6.], [-7., -6.])
+    
+         -6  x-----x-----x-----x
+             |     |     |     |
+       -6.5  x-----x-----x-----x
+             |     |     |     |
+         -7  x-----x-----x-----x
+             3     4     5     6
+             
     Args:
-        n:
+        size:
             Number of nodes per axis for which initial values are
-            generated. If n is single and NEGATIVE, the array will be
+            generated. 
+            
+            if size is a tuple, the number of array elements is the 
+            product of the shape dimensions 
+            
+            If size is single and NEGATIVE, the array will be
             transformed to 2D and transposed:
-            grid(-5, [0, 1]) ==> [[0], [.25], [.5], [.75], [1]]
+            grid(size=-5, [0, 1])     ==> [[0], [.25], [.5], [.75], [1]]
+            grid(size=(1, 5), [0, 1]) ==> [[0], [.25], [.5], [.75], [1]]
+            
+            if size is array_like, it defines the number of points per axis 
 
         ranges:
             Variable length argument list of (min, max) pairs
@@ -62,45 +80,55 @@ def grid(n: Union[int, Sequence[int]],
         Grid-like initial values, first index is point index, second
         index is input index
     """
+    N = list(np.atleast_1d(size))
     ranges_ = np.asfarray(list(ranges))
-    N = list(np.atleast_1d(n))
-    n = N + [N[-1]] * (len(ranges_) - len(N))  # fill array up to: len(ranges)
-    assert len(n) == len(ranges_), 'n:' + str(n) + ' ranges_:' + str(ranges_)
+    
+    if ranges_.shape[0] == 1 and len(N) == 2:
+        if N[1] == 1:
+            # grind((N, 1), [rng_min, rng_max]) ==> [[x0], [x1], ... ]
+            size = [-N[0]]
+        if N[0] == 1:
+            # grind((1, N), [rng_min, rng_max]) ==> [x0, x1, ... ]
+            size = [N[1]]
+    else:
+        # fill array up n-array to: len(ranges)
+        size = N + [N[-1]] * (len(ranges_) - len(N))  
+        assert len(size) == len(ranges_), str((size, ranges_))
 
-    xVar: List[Array[float]] = []
-    for rng, _n in zip(ranges_, n):
+    x_var: List[Array[float]] = []
+    for rng, _n in zip(ranges_, size):
         rng_min = min(rng[0], rng[1])
         rng_max = max(rng[0], rng[1])
-        xVar.append(np.linspace(rng_min, rng_max, abs(_n)))
+        x_var.append(np.linspace(rng_min, rng_max, abs(_n)))
 
     if ranges_.shape[0] == 1:
-        x = xVar[0]
+        x = x_var[0]
         # if argument n is a negative int:
-        if n[0] < 0:
+        if size[0] < 0.:
             x = np.atleast_2d(x).T
     elif ranges_.shape[0] == 2:
-        x0, x1 = np.meshgrid(xVar[0], xVar[1])
+        x0, x1 = np.meshgrid(x_var[0], x_var[1])
         x = [(a0, a1) for a0, a1 in zip(x0.ravel(), x1.ravel())]
     elif ranges_.shape[0] == 3:
-        x0, x1, x2 = np.meshgrid(xVar[0], xVar[1], xVar[2])
+        x0, x1, x2 = np.meshgrid(x_var[0], x_var[1], x_var[2])
         x = [(a0, a1, a2) for a0, a1, a2 in
              zip(x0.ravel(), x1.ravel(), x2.ravel())]
     elif ranges_.shape[0] == 4:
         x0, x1, x2, x3 = \
-            np.meshgrid(xVar[0], xVar[1], xVar[2], xVar[3])
+            np.meshgrid(x_var[0], x_var[1], x_var[2], x_var[3])
         x = [(a0, a1, a2, a3) for a0, a1, a2, a3 in
              zip(x0.ravel(), x1.ravel(), x2.ravel(),
                  x3.ravel())]
     elif ranges_.shape[0] == 5:
         x0, x1, x2, x3, x4 = \
-            np.meshgrid(xVar[0], xVar[1], xVar[2], xVar[3], xVar[4])
+            np.meshgrid(x_var[0], x_var[1], x_var[2], x_var[3], x_var[4])
         x = [(a0, a1, a2, a3, a4) for a0, a1, a2, a3, a4 in
              zip(x0.ravel(), x1.ravel(), x2.ravel(),
                  x3.ravel(), x4.ravel())]
     elif ranges_.shape[0] == 6:
         x0, x1, x2, x3, x4, x5 = \
-            np.meshgrid(xVar[0], xVar[1], xVar[2], xVar[3], xVar[4],
-                        xVar[5])
+            np.meshgrid(x_var[0], x_var[1], x_var[2], x_var[3], x_var[4],
+                        x_var[5])
         x = [(a0, a1, a2, a3, a4, a5) for a0, a1, a2, a3, a4, a5 in
              zip(x0.ravel(), x1.ravel(), x2.ravel(),
                  x3.ravel(), x4.ravel(), x5.ravel())]
@@ -129,6 +157,8 @@ def cross(n: Union[int, Sequence[int]],
         n:
             number of nodes per axis for which initial values generated
             n is corrected to the next odd number if n is even
+
+            if n is array_like, it defines the number of points per axis 
 
         ranges:
             Variable length argument list of (min, max) pairs
@@ -273,16 +303,7 @@ def noise(y: Sequence[float],
     return y_
 
 
-def frame_to_arrays(df: DataFrame,
-                    keys0: Union[str, Sequence[str]],
-                    keys1: Union[str, Sequence[str], None] = None,
-                    keys2: Union[str, Sequence[str], None] = None,
-                    keys3: Union[str, Sequence[str], None] = None,
-                    keys4: Union[str, Sequence[str], None] = None,
-                    keys5: Union[str, Sequence[str], None] = None,
-                    keys6: Union[str, Sequence[str], None] = None,
-                    keys7: Union[str, Sequence[str], None] = None) \
-        -> Optional[List[Array[float]]]:
+def frame_to_arrays(df: DataFrame, *keys: str) -> Optional[List[Array[float]]]:
     """
     Extracts 1D arrays of float from columns of a pandas DataFrame
 
@@ -290,65 +311,29 @@ def frame_to_arrays(df: DataFrame,
         df:
             data object
 
-        keys0:
-            key(s) of column 0 for data selection
-
-        keys1:
-            keys(s) of column 1 for data selection
-
-        keys2:
-            keys(s) of column 2 for data selection
-
-        keys3:
-            keys(s) of column 3 for data selection
-
-        keys4:
-            keys(s) of column 4 for data selection
-
-        keys5:
-            keys(s) of column 5 for data selection
-
-        keys6:
-            keys(s) of column 6 for data selection
-
-        keys7:
-            keys(s) of column 7 for data selection
+        keys:
+            key(s) for data selection
 
     Returns:
-        Column arrays of shape: (n_points, len(key?)). Size of tuple 
-        equals number of keys 'keys0, key1,  .., keys7' which are 
-        not None
+        Column arrays of shape: (len(keys), n_point)
         or
-        Nonecif all(keys0..7 not in df)
+        None if len(keys) == 0 or invalid keys
     """
-    keys_list = [keys0, keys1, keys2, keys3, keys4, keys5, keys6, keys7]
-    keys_list = [x for x in keys_list if x is not None]
-    if not keys_list:
+    if len(keys) == 0:
         return None
+    
+    keys_group = list(np.atleast_1d(keys))
+    for keys_ in keys_group:
+        keys_ = list(np.atleast_1d(keys_))
+        for key in keys_:
+            if key not in df:
+                assert str((keys, df.columns))
 
-    assert all(key in df for keys in keys_list for key in keys), \
-        'unknown key in: ' + str(keys_list) + ', valid keys: ' + df.columns
-
-    col: List[np.ndarray] = []
-    for keys in keys_list:
-        col.append(np.asfarray(df.loc[:, keys]))
-    n = len(col)
-    if n == 1:
-        return [col[0]]
-    if n == 2:
-        return [col[0], col[1]]
-    if n == 3:
-        return [col[0], col[1], col[2]]
-    if n == 4:
-        return [col[0], col[1], col[2], col[3]]
-    if n == 5:
-        return [col[0], col[1], col[2], col[3], col[4]]
-    if n == 6:
-        return [col[0], col[1], col[2], col[3], col[4], col[5]]
-    if n == 7:
-        return [col[0], col[1], col[2], col[3], col[4], col[5], col[6]]
-    if n == 8:
-        return [col[0], col[1], col[2], col[3], col[4], col[5], col[6], col[7]]
+    col: List[Array[float]] = []
+    for key in keys:
+        col.append(np.asfarray(df.loc[:, key]))
+        
+    return col
 
 
 def xy_rand_split(x: Array[float, ..., ...],
@@ -486,53 +471,39 @@ def scale(X: Sequence[float],
     Returns:
         normalized array
     """
-    np.asarray(X)
-    _max = np.max(X, axis=axis)
-    delta = _max - np.min(X, axis=axis)
+    X = np.asfarray(X)
+    max_ = np.max(X, axis=axis)
+    delta = max_ - np.min(X, axis=axis)
     assert not np.isclose(delta, 0), str(delta)
 
-    return hi - (((hi - lo) * (_max - X)) / delta)
+    return hi - (((hi - lo) * (max_ - X)) / delta)
 
 
-def ensure2D(x: Sequence[float], 
-             y: Optional[Sequence[float]] = None) \
-        -> Union[Array[float, ..., ...], 
-                 Tuple[Array[float, ..., ...], Array[float, ..., ...]]]:
+def convert_to_2d(value: Optional[Union[float, 
+                                        Sequence[float], 
+                                        Array[float], 
+                                        Array[float, ..., ...]]]) \
+            -> Array[float, ..., ...]: 
     """
-    Ensures that x is valid 2D array
-    if y is not None:
-        Ensures that y is valid 2D array
-        Checks shape compatibility of x to y
-
     Args:
-        x:
-            array
-
-        y:
-            array
-
+        value:
+            Scalar or, 1D or 2D array of float
+            
     Returns:
-        corrected x-array if y is None
-        or
-        corrected x-array and y-array 
+        2D numpy array
+        
+    Example:
+        X = convert_to_2d(2.)              => array([[2.]])
+        X = convert_to_2d([2, 3, 4])       => array([[2], [3], [4]])
+        X = convert_to_2d([[2], [3], [4]]) => array([[2], [3], [4]])
+        X = convert_to_2d([[2, 3], [4, 5]) => array([[2, 3], [3, 4]])
     """
-    x = np.asfarray(x)
-    if x.ndim == 1:
-        x = np.atleast_2d(x).T
-    else:
-        assert x.ndim == 2, 'x.shape: ' + str(x.shape)
-    if y is None:
-        return x
-
-    y = np.asfarray(y)
-    if y.ndim == 1:
-        y = np.atleast_2d(y).T
-    else:
-        assert y.ndim == 2, 'y.shape: ' + str(y.shape)
-    assert x.shape[0] == y.shape[0], \
-        'x.shape: ' + str(x.shape) + ', y.shape: ' + str(y.shape)
-
-    return x, y
+    if value is not None:
+        value = np.atleast_1d(value)
+        if len(value.shape) == 1:              
+            value = np.atleast_2d(value).T
+            
+    return value
 
 
 def smooth(x: Optional[Sequence[float]], 

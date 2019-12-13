@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-21 DWW
+      2019-12-12 DWW
 """
 
 from typing import Any, Dict
@@ -28,7 +28,7 @@ from grayboxes.boxmodel import BoxModel
 
 class White(BoxModel):
     """
-    White box model y=f(x)
+    White box model
     """
 
     def __init__(self, f: Function, identifier: str = 'White') -> None:
@@ -44,7 +44,7 @@ class White(BoxModel):
 
     def train(self, X: Float2D, Y: Float2D, **kwargs: Any) -> Dict[str, Any]:
         """
-        Sets self.ready to True, no further actions
+        Sets self.ready to True and returns an empty training metrics
 
         Args:
             X:
@@ -52,9 +52,13 @@ class White(BoxModel):
 
             Y:
                 2D training target, not used
-
+                
         Kwargs:
             Keyword arguments, not used
+            
+        Returns:
+            Empty training metrics, see BoxModel.init_metrics() 
         """
         self.ready = True
+        
         return self.init_metrics()

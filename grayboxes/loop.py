@@ -118,8 +118,7 @@ class Loop(Base):
 
             self.t_begin = t_begin
             self.dt = dt
-            self.theta = theta
-                
+            self.theta = theta                
             
     def initial_condition(self) -> bool:
         ok = True
@@ -146,6 +145,7 @@ class Loop(Base):
         self.t = self.root().t
         self.dt = self.root().dt
         self.theta = self.root().theta
+
         return ok
 
     def control(self, **kwargs: Any) -> float:
@@ -219,4 +219,5 @@ class Loop(Base):
                            2)))
             self._exe_time_start = time()
         self.write('=== Post-processing')
+
         return res

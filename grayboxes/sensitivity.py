@@ -17,14 +17,14 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-21 DWW
+      2019-12-13 DWW
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Any, Tuple
 
-from grayboxes.base import Float1D
+from grayboxes.base import Float1D, Float2D
 from grayboxes.boxmodel import BoxModel
 from grayboxes.forward import Forward
 from grayboxes.plot import plot_bar_arrays
@@ -32,18 +32,19 @@ from grayboxes.plot import plot_bar_arrays
 
 class Sensitivity(Forward):
     """
-    Sensitivity operation on box type model for a given input range
+    Sensitivity operation on box type model in given input range
 
-    Examples:
+    Example:
+        from grayboxes.array import rand, cross
         op = Sensitivity(LightGray('demo')                         x
-        X = [[... ]]  input of training                            |
-        Y = [[... ]]  target of training                       x--ref--x
         ranges = ([x0min, x0max], [x1min, x1max], ... )            |
-        xCross = cross(3, *ranges)                                 x
+        X = rand(100, *ranges)       # input of training       x--ref--x    
+        Y = f(X)                     # target of training          |
+        x_cross = cross(3, *ranges)  # 3 points per axis           x
 
-        dy_dx = op(X=X, Y=Y, x=xCross)        # training and sensitivity
-        dy_dx = op(x=xCross)        # sensitivity only, x contains cross
-        dy_dx = op(x=cross(5, *ranges)    # gen. x from ranges and cross
+        x, dy_dx = op(X=X, Y=Y, x=x_cross)    # training and sensitivity
+        x, dy_dx = op(x=x_cross)    # sensitivity only, x contains cross
+        x, dy_dx = op(x=cross(5, *ranges) # gen. x from ranges and cross
     """
 
     def __init__(self, model: BoxModel, identifier: str='Sensitivity') -> None:
@@ -53,7 +54,7 @@ class Sensitivity(Forward):
                 Box type model
 
             identifier:
-                unique object identifier
+                Unique object identifier
         """
         super().__init__(model=model, identifier=identifier)
 
@@ -61,7 +62,7 @@ class Sensitivity(Forward):
         self.dy_dx = None
         self.indices_with_equal_Xj = None
 
-    def task(self, **kwargs: Any) -> Tuple[Float1D, Float1D]:
+    def task(self, **kwargs: Any) -> Tuple[Float1D, Float2D]:
         """
         Analyzes sensitivity
 
@@ -84,8 +85,11 @@ class Sensitivity(Forward):
                     reference point in the center of the cross
                 dy/dx:
                     gradient of y with respect to x in reference point
+            OR
+            (None, None) if self.model.x is None
         """
-        # trains (if X and Y not None) and predicts self.y = f(self.x)
+        # training if X and Y are not None, 
+        # and prediction of self.model.y if self.model.x is not None 
         super().task(**self.kwargs_del(kwargs, 'x'))
 
         if self.model.x is None:
@@ -131,6 +135,9 @@ class Sensitivity(Forward):
         if self.silent:
             return
 
+        if self.model.x is None:
+            return 
+        
         n_point, n_inp = self.model.x.shape
         n_out = self.model.y.shape[1]
 

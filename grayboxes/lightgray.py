@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-21 DWW
+      2019-12-12 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -44,30 +44,32 @@ class LightGray(BoxModel):
     tunes theoretical submodel f(x) with set of tuning parameters x_tun
 
     Notes:
-        - tun0 (int, 1D or 2D array_like of float) is principally a 
-          mandatory argument. If tun0 is missing, self.f() can return 
+        - c_ini (int, 1D or 2D array_like of float) is principally a
+          mandatory argument. If c_ini is missing, self.f() can return 
           this value when called as self.f(x=None)
 
         - The number of outputs (y.shape[1]) is limited to 1, see 
           self._n_max_out
 
     Examples:
-        def func(x, *args, **kwargs):
+        def func(x, *c, **kwargs):
+            c0, c1, c2, c3 = 1, 1, 1, 1
             if x is None:
-                return np.ones(4)
-            tun = args if len(args) == 4 else np.ones(4)
-            return [tun[0] + tun[1] * (tun[2] * np.sin(x[0]) +
-                    tun[3] * (x[1] - 1)**2)]
+                return c0, c1, c2, c3
+            if len(c) == 4:
+                c0, c1, c2, c3 = c
+            return [c0 + c1 * (c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)]
 
-        def meth(self, x, *args, **kwargs):
+        def meth(self, x, *c, **kwargs):
+            c0, c1, c2, c3 = 1, 1, 1, 1
             if x is None:
-                return np.ones(4)
-            tun = args if len(args) == 4 else np.ones(4)
-            return [tun[0] + tun[1] * (tun[2] * np.sin(x[0]) +
-                    tun[3] * (x[1] - 1)**2)]
+                return c0, c1, c2, c3
+            if len(c) == 4:
+                c0, c1, c2, c3 = c
+            return [c0 + c1 * (c2 * np.sin(x[0]) + c3 * (x[1] - 1)**2)]
 
         ### compact form:
-        y = LightGray(func)(X=X, Y=Y, x=x, tun0=4, trainer='lm')
+        y = LightGray(func)(X=X, Y=Y, x=x, trainer='lm')
 
         ### expanded form:
         # assign theoretical submodel as function or method
@@ -84,24 +86,24 @@ class LightGray(BoxModel):
         # before training, result of theor. submodel f(x) is returned
         y = model(x=x)                    # predict with white box model
 
-        # train light gray with (X, Y), tun0 has 9 rand init. tun param
-        model(X=X, Y=Y, tun0=rand(9, [[-10, 10]] * 4))           # train
+        # train light gray with (X, Y), c_ini has 9 random init. weigths
+        model(X=X, Y=Y, c_ini=rand(9, [(-10, 10)] * 4))          # train
 
         # after model is trained, it keeps its weights for further pred
-        y = model(x=x)               # predict with light gray box model
+        y = model(x=x)                          # predict with box model
 
-        # alternatively: combined train and prediction, single initial 
-        # tuning parameter set tun0
-        y = model(X=X, Y=Y, tun0=4, x=x)             # train and predict
+        # alternatively: combined train and prediction with single  
+        # initial tuning parameter set c_ini
+        y = model(X=X, Y=Y, c_ini=4, x=x)            # train and predict
     """
 
     def __init__(self, f: Function, identifier: str = 'LightGray') -> None:
         """
         Args:
             f:
-                Theoretical submodel f(self, x, *args, **kwargs) or
-                f(x, *args, **kwargs) for single data point
-                x is common parameter set and args is tuning param. set
+                Theoretical submodel f(self, x, *c, **kwargs) or
+                f(x, *c, **kwargs) for single data point
+                x is common parameter set and c is tuning parameter set
 
             identifier:
                 Unique object identifier
@@ -112,69 +114,77 @@ class LightGray(BoxModel):
 
         # populate list of valid trainers
         self.scipy_minimizers: List[str] = [
-                'BFGS',
-                'L-BFGS-B',      # BFGS with less memory
-                'Nelder-Mead',   # gradient-free simplex
-                'Powell',       # gradient-free shooting
+                'BFGS',                                  # standard BFGS
+                'L-BFGS-B',                      # BFGS with less memory
+                'Nelder-Mead',                   # gradient-free simplex
+                'Powell',                       # gradient-free shooting
                 'CG',
-                # 'Newton-CG',      # requires Jacobian
+                # 'Newton-CG',                       # requires Jacobian
                 'TNC',
-                # 'COBYLA',  # failed in grayBoxes test
+                # 'COBYLA',                   # failed in grayboxes test
                 'SLSQP',
-                # 'dogleg',         # requires Jacobian
-                # 'trust-ncg',      # requires Jacobian
-                'basinhopping',   # global (brute) opt.
-                'differential_evolution',  # global opt
+                # 'dogleg',                          # requires Jacobian
+                # 'trust-ncg',                       # requires Jacobian
+                'basinhopping',            # global (brute) optimization
+                'differential_evolution',          # global optimization
                 ]
         self.scipy_root_finders: List[str] = [
-                'lm',
+                'lm',                              # Levenberg-Marquardt
                 # 'hybr', 'broyden1', 'broyden2',
                 # 'anderson', 'linearmixing',
                 # 'diagbroyden', 'excitingmixing',
                 # 'krylov', 'df-sane'
                 ]
         self.scipy_equ_minimizers: List[str] = [
+                'leastsq',                # good for n_inp == n_out == 1
                 'least_squares',
                 # Levenberg-Marquardt
-                'leastsq',
                 ]
         self.genetic_minimizers: List[str] = \
             ['genetic', 'ga'] if 'modestga' in sys.modules else []
 
+        self.scipy_curve_fitters: List[str] = ['curve_fit']
+
         self.valid_trainers: List[str] = self.scipy_minimizers + \
                                          self.scipy_root_finders + \
                                          self.scipy_equ_minimizers + \
-                                         self.genetic_minimizers
+                                         self.genetic_minimizers + \
+                                         self.scipy_curve_fitters
 
     # function wrapper for scipy minimize
-    def _mean_square_errror(self, weights: Sequence[float], **kwargs: Any) \
-            -> Float2D:
-        y: Float2D = BoxModel.predict(self, self.X, *weights,
+    def _mean_square_errror(self, c: Sequence[float], 
+                            **kwargs: Any) -> Float2D:
+        y: Float2D = BoxModel.predict(self, self.X, *c,
                                       **self.kwargs_del(kwargs, 'x'))
-        return np.mean((y - self.Y)**2)
+        dy = y - self.Y
+        np.clip(dy, None, 1e20)   # max value: 1e308, sqrt(1e308) :1e154
+        
+        return np.mean(dy**2)
 
     # function wrapper for scipy least_square and leastsq
-    def _difference(self, weights: Sequence[float], 
-                    **kwargs: Any) -> Float2D:
-        y = BoxModel.predict(self, self.X, *weights,
-                                 **self.kwargs_del(kwargs, 'x'))
+    def _difference(self, c: Sequence[float], **kwargs: Any) -> Float2D:
+        y = BoxModel.predict(self, self.X, *c, **self.kwargs_del(kwargs, 'x'))
+        
         return (y - self.Y).ravel()
 
-    def _minimize_least_squares(self, trainer: str, tun0: Sequence[float],
+    def _minimize_least_squares(self, trainer: str, c_ini: Sequence[float],
                                 **kwargs: Any) -> Dict[str, Any]:
         """
         Minimizes least squares: sum(self.f(self.X)-self.Y)^2) / X.size
             for a SINGLE initial tuning parameter set
-        Updates self.ready and self.weights according to success of 
-            optimizer
+        Updates self.ready and self.weights if optimizer succedes
 
         Args:
             trainer:
                 optimizing method for minimizing objective function
                 [recommended: 'BFGS' or 'L-BFGS-B' if ill-conditioned.
                  'Nelder-Mead' or 'Powell' if noisy data]
+                
+                if trainer is 'all', all trainers will be tried 
+                if trainer is 'auto', an optimal trainer will be chosen
+                    base on heuristics
 
-            tun0:
+            c_ini:
                 initial guess of tuning parameter set
 
         Kwargs:
@@ -185,18 +195,19 @@ class LightGray(BoxModel):
 
         Returns:
             results, see BoxModel.train()
-
         """
         results = self.init_metrics('trainer', trainer)
-        self.weights = None             # required by BoxModel.predict()
-        self.ready = True               # required by BoxModel.predict()
+        
+        # self.weights and self.reday are used in BoxModel.predict()
+        self.weights = None
+        self.ready = True
 
         if trainer in self.scipy_minimizers:
             if trainer.startswith('bas'):
                 n_it_max = kwargs.get('n_it_max', 100)
 
                 res = scipy.optimize.basinhopping(
-                    func=self._mean_square_errror, x0=tun0, niter=n_it_max,
+                    func=self._mean_square_errror, x0=c_ini, niter=n_it_max,
                     T=1.0,
                     stepsize=0.5, minimizer_kwargs=None,
                     take_step=None, accept_test=None, callback=None,
@@ -213,7 +224,7 @@ class LightGray(BoxModel):
 
                 res = scipy.optimize.differential_evolution(
                     func=self._mean_square_errror, 
-                    bounds=[[-10, 10]] * tun0.size,
+                    bounds=[(-10, 10)] * c_ini.size,
                     strategy='best1bin', maxiter=n_it_max, popsize=15,
                     tol=0.01, mutation=(0.5, 1), recombination=0.7,
                     seed=None, disp=False, polish=True,
@@ -237,7 +248,7 @@ class LightGray(BoxModel):
                         kw['options']['xatol'] = kwargs.get('goal', 1e-4)
                 try:
                     res = scipy.optimize.minimize(fun=self._mean_square_errror,
-                                                  x0=tun0, method=trainer, 
+                                                  x0=c_ini, method=trainer, 
                                                   **kw)
                     if res.success:
                         results['weights'] = np.atleast_1d(res.x)
@@ -255,14 +266,15 @@ class LightGray(BoxModel):
 
             if trainer.startswith('lm'):
                 res = scipy.optimize.root(
-                    fun=self._difference, x0=tun0, args=(), method='lm',
+                    fun=self._difference, x0=c_ini, args=(), method='lm',
                     jac=None, tol=None, callback=None,
-                    options={  # 'func': None,mesg:_root_leastsq() got 
-                             #           multiple values for argument 'func'
+                    options={# 'func': None, mesg:_root_leastsq() got 
+                             #       multiple values for argument 'func'
                              'col_deriv': 0, 'xtol': 1.49012e-08,
                              'ftol': 1.49012e-8, 'gtol': 0., 
                              'maxiter': n_it_max, 'eps': 0.0, 'factor': 100, 
                              'diag': None})
+    
                 if res.success:
                     results['weights'] = np.atleast_1d(res.x)
                     results['iterations'] = -1
@@ -275,7 +287,7 @@ class LightGray(BoxModel):
         elif trainer in self.scipy_equ_minimizers:
             if trainer.startswith('leastsq'):
                 x, cov_x, infodict, mesg, ier = scipy.optimize.leastsq(
-                    self._difference, tun0, full_output=True)
+                    self._difference, c_ini, full_output=True)
                 if ier in [1, 2, 3, 4]:
                     results['weights'] = np.atleast_1d(x)
                     results['iterations'] = -1
@@ -284,7 +296,7 @@ class LightGray(BoxModel):
                     self.write(4 * ' ' + '!!! ' + mesg)
 
             elif trainer == 'least_squares':
-                res = scipy.optimize.least_squares(self._difference, tun0)
+                res = scipy.optimize.least_squares(self._difference, c_ini)
                 if res.success:
                     results['weights'] = np.atleast_1d(res.x)
                     results['iterations'] = -1
@@ -298,10 +310,10 @@ class LightGray(BoxModel):
                 # see scipy's minimize
                 kw = {k: kwargs[k] for k in valid_keys if k in kwargs}
                 if 'bounds' not in kw:
-                    kw['bounds'] = [[0, 2]]*np.atleast_2d(tun0).shape[1]
+                    kw['bounds'] = [[0, 2]]*np.atleast_2d(c_ini).shape[1]
                     self.write(4 * ' ' + '!!! bounds is missing ==> ' + 
                                str(kw['bounds']))
-                res = modestga.minimize(fun=self._mean_square_errror, x0=tun0,
+                res = modestga.minimize(fun=self._mean_square_errror, x0=c_ini,
                                         # TODO method=trainer,
                                         **kw)
                 if True:  # TODO replace 'if True' with 'if res.success'
@@ -310,19 +322,31 @@ class LightGray(BoxModel):
                     results['evaluations'] = -1          # TODO res.nfev
                 else:
                     self.write(4 * ' ' + '!!! ' + res.message)
+
+        elif trainer in self.scipy_curve_fitters:
+            if trainer == 'curve_fit':
+                param, param_cov = scipy.optimize.curve_fit(self.f, 
+                    self.X.ravel(), self.Y.ravel(), 
+                    p0=c_ini)
+                results['weights'] = param
         else:
             assert 0, '??? LightGray, invalid trainer: ' + str(trainer)
 
-        self.weights = results['weights']
-        self.ready = self.weights is not None
-
+        if 'weights' in results:
+            self.weights = results['weights']
+            self.ready = self.weights is not None
+        else:
+            results['weights'] = None
+            self.weights = None
+            self.ready = False
+        
         return results
 
     def train(self, X: Float2D, Y: Float2D, **kwargs: Any) -> Dict[str, Any]:
         """
         Trains model, stores X and Y as self.X and self.Y, and stores 
         result of best training trial as self.metrics
-        The tuning parameter set is stored as self._weights
+        The optimal tuning parameter set is stored as self.weights
 
         Args:
             X:
@@ -332,88 +356,112 @@ class LightGray(BoxModel):
                 training target, shape: (n_point, n_out)
 
         Kwargs:
-            tun0 (2D or 1D array of float):
-                sequence of initial guess of the tuning parameter sets,
-                If missing, then initial values will be all 1
-                tun0.shape[1] is the number of tuning parameters
-                [IS PASSED IN KWARGS to be compatible to parallel.py]
+            bounds (2-tuple of float or 2-tuple of iterable of float):
+                list of pairs (x_min, x_max) limiting x
 
-            trainer (Union[str, Sequence[str]]):
+            correct_xy_shape (bool):
+                if False, shape of X and Y arrays will not be corrected
+                if an error is assumed 
+            
+            trainer (str or sequence of str):
                 optimizer method of
                 - scipy.optimizer.minimize or
                 - genetic algorithm
                 see: self.valid_trainers
                 default: 'BFGS'
 
-            bounds (2-tuple of float or 2-tuple of iterable of float):
-                list of pairs (x_min, x_max) limiting x
+            c_ini (2D or 1D array of float):
+                sequence of initial guess of tuning parameter set 
+                per trial 
+                If c_ini is None, the initialvalues are returned from
+                f(x=None)
+
+                c_ini.shape: (number of trials,number of tuning params)
+                [IS PASSED IN KWARGS to be compatible to parallel.py]
 
         Returns:
-            results, see BoxModel.train()
+            metrics of training, see BoxModel.train()
 
         Note:
-            If argument 'tun0' is not given, self.f(None) must return an
+            If argument 'c_ini' is not given, self.f(None) must return an
             iterable of float providing the initial tuning parameter set
         """
-        
         correct_xy_shape = kwargs.get('correct_xy_shape', True)
+        correct_xy_shape = False
         self.set_XY(X=X, Y=Y, correct_xy_shape=correct_xy_shape)
 
-        # get series of initial tun par sets from 'tun0' or self.f(None)
-        tun0seq = self.kwargs_get(kwargs, ('tun0', 'c0', 'C0'), None)
-        if tun0seq is None:
-            tun0seq = self.f(None)
-            print(4 * ' ' + '!!! tun0 is None, from f(x=None) ==> tun0:', 
-                  tun0seq)
-        assert not isinstance(tun0seq, int), str(tun0seq)
-        tun0seq = np.atleast_2d(tun0seq)         # shape: (nTrial, nTun)
+        # get series of initial tun par sets from 'c_ini' or self.f(None)
+        c_ini_trials = self.kwargs_get(kwargs, ('c_ini', 'tun0', 'c0'), None)
+        if c_ini_trials is None:
+            c_ini_trials = self.f(None)
+            print(4 * ' ' + '!!! c_ini is None ==> from f(x=None):', 
+                  c_ini_trials)
+        assert not isinstance(c_ini_trials, int), '??? invalid c_ini ' + \
+            str(c_ini_trials)
+        c_ini_trials = np.atleast_2d(c_ini_trials)     # shape: (n_trial, n_tun)
 
+        # replace 'all' and 'auto' in trainer, checksvalidity of trainer 
         trainer = self.kwargs_get(kwargs, 'trainer')
-        if trainer is None:
-            trainer = self.valid_trainers[0]
         trainer = np.atleast_1d(trainer)
+        if trainer[0] is None:
+            trainer = ['auto']
         if trainer[0].lower() == 'all':
             trainer = self.valid_trainers
-        if any([tr not in self.valid_trainers for tr in trainer]):
-            trainer = self.valid_trainers[0]
-            self.write("!!! correct trainer: '" + trainer + "' ==> " + trainer)
-        trainer = np.atleast_1d(trainer)
-
-        # set detailed print (only if not silent)
-        self.silent = kwargs.get('silent', self.silent)
+        if any([trn not in self.valid_trainers + ['auto'] for trn in trainer]):
+            self.write("    !!! trainer: '" + str(trainer) + "' ==> 'auto'")
+            trainer = ['auto']
+        if trainer[0].lower() == 'auto':
+            if self.X.shape[1] == 1 and self.Y.shape[1] == 1:
+                # consider 'lm' or 'curve_fit' if n_inp == n_out == 1
+                trainer = ['leastsq']
+            else:
+                trainer = ['BFGS']
+            self.write("    !!! trainer: 'auto' ==> '" + trainer[0] + "'")
+            
+        assert all([trn in self.valid_trainers for trn in trainer]), \
+            str(trainer)
+            
+        # sets detailed print (only if not silent)
+        if 'silent' in kwargs:
+            self.silent = kwargs.get('silent', False)
         print_details = kwargs.get('detailed', False) and not self.silent
 
-        # loop over all trainer
+        # loop over all trainers
         self.metrics = self.init_metrics()
+        self.metrics['trainer'] = trainer[0]
+        self.metrics['weights'] = None
         message = ''
-        for _trainer in trainer:
-            self.write(4 * ' ' + _trainer)
+        self.write('+++ Loop over trainers')
+                
+        for trainer_ in trainer:
+            self.write(4 * ' ' + trainer_)
 
             # tries all initial tuning par sets if not global method
-            if _trainer in ('basinhopping', 'differential_evolution', 
+            if trainer_ in ('basinhopping', 'differential_evolution', 
                             'genetic'):
-                tun0seq = [tun0seq[0]]
+                c_ini_trials = [c_ini_trials[0]]
 
-            for iTrial, tun0 in enumerate(tun0seq):
+            for i_trial, c_ini in enumerate(c_ini_trials):
                 if print_details:
-                    message = (4+4) * ' ' + 'tun0: ' + str(np.round(tun0, 2))
+                    message = (4+0) * ' ' + 'c_ini: ' + str(np.round(c_ini, 2))
 
-                results = self._minimize_least_squares(_trainer, tun0, \
-                    **self.kwargs_del(kwargs, ('trainer', 'tun0')))
+                results = self._minimize_least_squares(trainer_, c_ini, \
+                    **self.kwargs_del(kwargs, ('trainer', 'c_ini', 'tun0')))
 
                 if results['weights'] is not None:
-                    self.weights = results['weights']  
+                    self.weights = results['weights']
                                                 # for BoxModel.predict()
-                    err = self.evaluate(X=X, Y=Y, silent=True)
+                    metrics = self.evaluate(X=X, Y=Y, silent=True)
                     self.weights = None         # back to None for train
-                    if self.metrics['L2'] > err['L2']:
+                    if self.metrics['L2'] > metrics['L2']:
+                        self.metrics['trainer'] = trainer_
                         self.metrics.update(results)
-                        self.metrics.update(err)
-                        self.metrics['iTrial'] = iTrial
+                        self.metrics.update(metrics)
+                        self.metrics['i_trial'] = i_trial
                         if print_details:
                             message += ' +++'
                     if print_details:
-                        message += ' L2: ' + str(round(err['L2'], 6))
+                        message += ' L2: ' + str(round(metrics['L2'], 6))
                 else:
                     if print_details:
                         message += ' ---'
@@ -424,37 +472,42 @@ class LightGray(BoxModel):
         self.ready = self.weights is not None
 
         self.write('+++ ' + "Best trainer: '" + self.metrics['trainer'] + "'")
-        message = (4+4) * ' ' 
+        message = (4+0) * ' ' 
         for key in ['L2', 'abs']:
             if key in self.metrics:
                 message += key + ': ' + str(float(str(round(self.metrics[key], 
                                                             4)))) + ', '
         self.write(message)
-        message = (4+4) * ' ' + 'w: '
+        message = (4+0) * ' ' + 'w: '
         if self.weights is not None:
             message += str(np.round(self.weights, 4))
         else:
-            message = str(None)
+            message += str(None)
             self.write(message)
-        message = (4+4) * ' '
-        for key in ['iTrial', 'iterations', 'evaluations']:
+        message = (4) * ' '
+        for key in ['i_trial', 'iterations', 'evaluations']:
             if key in self.metrics:
                 message += key + ': ' + str(self.metrics[key]) + ', '
         self.write(message)
 
+        # the 'weights' keys is only locally used in self.train()
+        del self.metrics['weights']
+
         return self.metrics
 
-    def predict(self, x: Union[Float1D, Float2D], *args: float, **kwargs) \
-            -> Float2D:
+    def predict(self, x: Union[Float1D, Float2D], *c: float,
+                **kwargs) -> Float2D:
         """
         Executes box model,stores input x as self.x and output as self.y
 
         Args:
             x (2D or 1D array of float):
-                prediction input, shape: (n_point, n_inp) or (n_inp,)
+                prediction input, shape: (n_point, n_inp)
+                shape (n_inp,) is tolerated
 
-        Args:
-            Tuning parameter set if self._weights is None
+            c:
+                tuning parameters as positional arguments if 
+                self.weights is None
 
         Kwargs:
             Keyword arguments
@@ -462,5 +515,6 @@ class LightGray(BoxModel):
         Returns:
             prediction output, shape: (n_point, n_out)
         """
-        args = self.weights if self.weights is not None else args
-        return BoxModel.predict(self, x, *args, **self.kwargs_del(kwargs, 'x'))
+        c = self.weights if self.weights is not None else c
+        return BoxModel.predict(self, x, *c, 
+                                **self.kwargs_del(kwargs, ('x', 'c')))

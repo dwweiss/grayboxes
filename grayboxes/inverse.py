@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-21 DWW
+      2019-12-09 DWW
 """
 
 import numpy as np
@@ -39,9 +39,9 @@ class Inverse(Minimum):
         bounds = [(x0min, x0max), (x1min, x1max), ... ]
         y_inv = (y0, y1, ... )
 
-        def f(self, x):
-            c0 = args if len(args) > 0 else 1
-            return [c0 * x[0]]
+        def f(self, x: Sequence[float], *c: float) -> List[float]:
+            c = args if len(weights) > 0 else np.ones(1)
+            return [c[0] * x[0]]
         op = Inverse(DarkGray(f=f))
 
         x, y = op(XY=(X, Y, x_keys, y_keys))             # only training
@@ -52,7 +52,7 @@ class Inverse(Minimum):
         x, y = Inverse(LightGray(f))(XY=(X, Y), c0=1, x=x_ini, y=y_inv)
     """
 
-    def objective(self, x: Union[Float1D, Float2D], **kwargs: Any) -> float:
+    def objective(self, x: Union[Float2D, Float1D], **kwargs: Any) -> float:
         """
         Defines objective function for inverse problem
 

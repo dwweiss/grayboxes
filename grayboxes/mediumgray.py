@@ -17,14 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-21 DWW
+      2019-12-03 DWW
 """
 
 import numpy as np
-from nptyping import Array
-from typing import Any, Callable, Dict, List, Sequence, Union
+from typing import Any, Dict, List
 
-from grayboxes.base import Float1D, Float2D, Function
+from grayboxes.base import Float2D, Function
 from grayboxes.boxmodel import BoxModel
 from grayboxes.lightgray import LightGray
 from grayboxes.black import Black
@@ -102,25 +101,25 @@ class MediumGray(BoxModel):
                 default: 'BFGS'
 
             shuffle (bool):
-                if 'local' is geater 1 and 'shuffled' is True, then
+                if 'local' is geater 1 and 'shuffle' is True, then
                 x- and y-datasets are shuffled before split to local
                 datasets
                 default: True
 
-            tun0 (2D or 1D array of float):
+            c_ini (2D or 1D array of float):
                 sequence of initial guess of tuning parameter set.
                 If missing, then initial values will be all 1.0
-                tun0.shape[1] is the number of tuning parameters
-                    if tun0 is an 2D array
+                c_ini.shape[1] is the number of tuning parameters
+                    if c_ini is an 2D array
                 see LightGray.train()
 
             ... network options, see class Neural
 
         Returns:
-            best result, see BoxModel.train()
+            metrics of best training, see definition in BoxModel.train()
 
         Example:
-            Method f(self, x) or function f(x) is assigned to self.f, example:
+            Method f(self, x) or function f(x) is assigned to self.f:
 
                 def f(self, x, *args, **kwargs):
                     tun = args if len(args) >= 3 else np.ones(3)
@@ -145,9 +144,10 @@ class MediumGray(BoxModel):
                 y = MediumGray(f)(X=X, Y=Y, x=x, trainer='ga', neurons=[])
         """
         self.set_XY(X, Y)
+        print('mdm 150 X Y', self.X.shape, self.Y.shape)
 
-        opt = self.kwargs_del(kwargs, ['X', 'Y', 'local'])
-        opt['correct_xy_shape'] = False
+        kwargs_ = self.kwargs_del(kwargs, ['X', 'Y', 'local'])
+        kwargs_['correct_xy_shape'] = False
         self.silent = kwargs.get('silent', self.silent)
         self._local_size = kwargs.get('local', None)
         neurons = kwargs.get('neurons', [])
@@ -172,8 +172,15 @@ class MediumGray(BoxModel):
                 XY = np.hsplit(xy, [n_inp])
                 X, Y = XY[0], XY[1]
                 self._light_gray.Y = None
-                res = self._light_gray.train(X=X, Y=Y, **opt)
-                x_tun1d = res['weights']
+                
+                print('mgr176 X Y', X.shape, Y.shape)
+                
+                res = self._light_gray.train(X=X, Y=Y, **kwargs_)
+                
+                print('mgr179 X Y', self._light_gray.X.shape, 
+                      self._light_gray.Y.shape)
+                
+                x_tun1d = self._light_gray.weights
                 if x_tun1d is not None:
                     for i in range(xy.shape[0]):
                         x_tun_all2d.append(x_tun1d)
@@ -202,7 +209,8 @@ class MediumGray(BoxModel):
                               trainer=trainer)
 
         self.ready = True
-        self.metrics = self.evaluate(self.X, self.Y, **opt)
+        self.metrics = self.evaluate(self.X, self.Y, **kwargs_)
+        
         return self.metrics
 
     def predict(self, x: Float2D, *args, **kwargs: Any) -> Float2D:
@@ -226,9 +234,15 @@ class MediumGray(BoxModel):
             prediction output, shape: (n_point, n_out)
         """
         assert self._black is not None and self._black.ready
-        opt = self.kwargs_del(kwargs, 'x')
         
-        self.x = x                # self.x is a setter ensuring 2D array
+        kwargs_ = self.kwargs_del(kwargs, 'x')
+        
+        self.x = x                            # setter ensuring 2D array
+        
+        if not self.ready or self._n_inp == -1:
+            self._y = None
+            return self.y
+        
         assert self._n_inp == self.x.shape[1], \
             str((self._n_inp, self.x.shape))
 
@@ -237,14 +251,15 @@ class MediumGray(BoxModel):
                 y_all = []
                 for x_prc in self.x:
                     if x_prc[0] is not None:
-                        x_tun = self._black.predict(x=x_prc, **opt)[0]
+                        x_tun = self._black.predict(x=x_prc, **kwargs_)[0]
                         y_all.append(BoxModel.predict(self, x_prc, *x_tun,
-                                                      **opt)[0])
+                                                      **kwargs_)[0])
                 self.y = y_all
             else:
                 # local==X.shape[0]: const w
-                self.y = BoxModel.predict(self, self.x, *self.weights, **opt)
+                self.y = BoxModel.predict(self, self.x, *self.weights, 
+                                          **kwargs_)
         else:
-            self.y = self._black.predict(x=x, **opt)
+            self.y = self._black.predict(x=x, **kwargs_)
 
         return self.y

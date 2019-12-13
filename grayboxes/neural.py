@@ -17,22 +17,19 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-21 DWW
+      2019-12-12 DWW
 
   Acknowledgements:
       Neurolab is a contribution by E. Zuev (pypi.python.org/pypi/neurolab)
 """
 
-__all__ = ['NeuralBase', 'Neural', 'propose_hidden_neurons',
-#            'RadialBasis', 
-            ]
+__all__ = ['NeuralBase', 'Neural', 'propose_hidden_neurons']
 
 from collections import OrderedDict
 import inspect
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-# from numpy.linalg import pinv
 from nptyping import Array
 from typing import (Any, Callable, Dict, Iterable, List, Optional, Sequence, 
                     Union)
@@ -50,8 +47,8 @@ Str1D    = Optional[Iterable[str]]
 Function = Optional[Callable[..., List[float]]]
 
 
-def propose_hidden_neurons(X: Float2D, Y: Float2D, alpha: float=2.,
-                           silent: bool=False) -> List[int]:
+def propose_hidden_neurons(X: Float2D, Y: Float2D, alpha: float = 2.,
+                           silent: bool = False) -> List[int]:
     """
     Proposes optimal number of hidden neurons for given training data set
 
@@ -96,14 +93,10 @@ def propose_hidden_neurons(X: Float2D, Y: Float2D, alpha: float=2.,
 
 class NeuralBase(object):
     """
-    Multilayer perceptron 
-
-    Note:
-        This class has not the connectivity functionality of the 
-        box type models derived vom class BoxModel.
+    Multi-layer perceptron 
     """
 
-    def __init__(self, f: Function=None) -> None:
+    def __init__(self, f: Function = None) -> None:
         """
         Args:
             f:
@@ -135,42 +128,45 @@ class NeuralBase(object):
         plt.rcParams['legend.fontsize'] = 14            # fonts in plots
 
         self._metrics: Dict[str, Any] = {'trainer': None, 'L2': np.inf, 
-            'abs': np.inf, 'iAbs': -1, 'epochs': -1} # result,best trial
+            'abs': np.inf, 'i_abs': -1, 'epochs': -1}       # best trial
 
     def __call__(self, X: Float2D = None, Y: Float2D = None, x: Float2D = None, 
-                 **kwargs: Any) -> Union[Float2D, Dict[str, Any]]:
+                 **kwargs: Any) -> Union[Dict[str, Any], Float2D]:
         """
         - Trains neural network if X is not None and Y is not None
         - Sets self.ready to True if training is successful
         - Predicts y for input x if x is not None and self.ready is True
 
         Args:
-            X (2D or 1D array_like of float, optional, default: self.X):
+            X (2D array_like of float, optional, default: self.X):
                 training input, shape: (n_point, n_inp) 
                 shape: (n_point,) is tolerated
                 
-            Y (2D or 1D array_like of float, optional, default: self.Y):
+            Y (2D array_like of float, optional, default: self.Y):
                 training target, shape: (n_point, n_out)
                 shape: (n_point,) is tolerated
 
-            x (2D or 1D array_like of float, optional, default: self.x):
-                prediction input, shape: (n_point, n_inp) or (n_inp,)
+            x (2D array_like of float, optional, default: self.x):
+                prediction input, shape: (n_point, n_inp)
                 shape: (n_inp,) is tolerated
 
         Kwargs:
             keyword arguments, see: train() and predict()
 
         Returns:
-            prediction of net(x) if x is not None and self.ready
+            prediction of net(x) if x is not None and self.ready,
+                shape: (n_point, n_out)
             or
             metrics of best training trial if X and Y are not None
                 'trainer' (str): best training method
                 'L2'    (float): sqrt{mean{(net(x)-Y)^2}} best train
                 'abs'   (float): max{|net(x) - Y|} of best training
-                'iAbs'    (int): index of Y where abs. error is max.
+                'i_abs'   (int): index of Y where abs. error is max.
                 'epochs'  (int): number of epochs of best training
             or
-            None if (X, Y and x are None) or not self.ready
+            empty metrix 
+                if X, Y and x are None 
+                if x is not None and not self.ready
 
         Note:
             - Shape of X, Y and x is corrected to (n_point, n_inp/n_out)
@@ -178,12 +174,12 @@ class NeuralBase(object):
               self.x, self.y, see self.train() and self.predict()
         """
         if X is not None and Y is not None:
-            metrics = self.train(X=X, Y=Y, **kwargs)
-        else:
-            metrics = None
-        if x is not None:
+            self.metrics = self.train(X=X, Y=Y, **kwargs)
+            
+        if x is not None and self.ready:
             return self.predict(x=x, **kwargs)
-        return metrics
+
+        return self.metrics
 
     @property
     def f(self) -> Function:
@@ -271,11 +267,11 @@ class NeuralBase(object):
           but argument 'Y' stays unchanged)
 
         Args:
-            X (2D or 1D array_like of float):
+            X (2D array_like of float):
                 training input, shape: (n_point, n_inp)
                 shape: (n_point,) is tolerated
 
-            Y (2D or 1D array_like of float):
+            Y (2D array_like of float):
                 training target, shape: (n_point, n_out)
                 shape: (n_point,) is tolerated
 
@@ -300,7 +296,10 @@ class NeuralBase(object):
             'input arrays incompatible [' + str(self._X.shape[0]) + \
             ']  vs. [' + str(self._Y.shape[0]) + ']\n' + \
             'self._X: ' + str(self._X) + '\nself._Y: ' + str(self._Y)
-        assert not np.isclose(self._Y.max(), self._Y.min()), str(self._Y)
+            
+#        print('neu297', self._X, self._Y,self._Y.min(), self._Y.max())
+# TODO .            
+#        assert not np.isclose(self._Y.max(), self._Y).min(), str(self._Y)
 
         if x_keys is None:
             self._x_keys = ['x' + str(i) for i in range(self._X.shape[1])]
@@ -460,7 +459,7 @@ class Neural(NeuralBase):
             trainer (str or list of str):
                 if string, then space sep. string is converted to list
                 if 'all' or None, then all training methods are assigned
-                default: 'bfgs'
+                default: 'auto' ==> ['rprop', 'bfgs']
 
             neurons (int or array_like of int):
                 array of number of neurons in hidden layers
@@ -515,17 +514,18 @@ class Neural(NeuralBase):
             'trainer' (str): best training method
             'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
             'abs'   (float): max{|net(x) - Y|} of best training
-            'iAbs'    (int): index of Y where abs. error is maximum
+            'i_abs'   (int): index of Y where abs. error is maximum
             'epochs'  (int): number of epochs of best training
 
         Note:
-            - If training fails, then self.metrics['trainer']=None
+            - If training fails, then self.metrics['trainer'] is None
             - Reference to optional theor. submodel is stored as self.f
             - Reference to training data is stored as self.X and self.Y
             - The best network is assigned to 'self._model'
         """
         if X is not None and Y is not None:
             self.set_arrays(X, Y)
+            
         assert self._X is not None and self._Y is not None, \
             str(self.X) + ' ' + str(self.Y)
 
@@ -570,22 +570,6 @@ class Neural(NeuralBase):
             show = 0
             plot = 0
 
-        self._ready = False
-
-        # alternative training if theoretical submodel 'f' is provided
-        if self.f is not None:
-            trainer = [x for x in trainer if x in ('genetic', 'derivative')]
-            if not trainer:
-                trainer = 'genetic'
-        else:
-            if not trainer:
-                trainer = 'all'
-            if isinstance(trainer, str):
-                if trainer == 'all':
-                    trainer = 'cg gd gdx gdm gda rprop bfgs genetic'
-                trainer = trainer.split()
-            trainer = list(OrderedDict.fromkeys(trainer))   # redundancy
-        self._trainers = [x.lower() for x in trainer]
 
         if errorf is None:
             errorf = nl.error.MSE()
@@ -620,10 +604,32 @@ class Neural(NeuralBase):
                        'rprop':      nl.train.train_rprop
                        }
 
-        assert all([x in trainf_dict for x in self._trainers]), \
-            'unknown trainers, ' + str(self._trainers)
+        default_trainers = ['rprop', 'bfgs']
+        assert all([trn in trainf_dict for trn in default_trainers])
+
+        if self.f is not None:
+            # alternative training if theoretical submodel 'f'
+            trainer = [x for x in trainer if x in ('genetic', 'derivative')]
+            if not trainer:
+                trainer = 'genetic'
+        else:
+            if not trainer:
+                trainer = 'all'
+            if isinstance(trainer, str):
+                if trainer == 'all':
+                    trainer = ['cg', 'gd', 'gdx', 'gdm', 'gda', 'rprop', 
+                               'bfgs', 'genetic']
+                if trainer == 'auto':
+                    trainer = default_trainers
+            trainer = list(OrderedDict.fromkeys(trainer))   # redundancy
+        trainer = [trn.lower() for trn in trainer if trn in trainf_dict]
+        self._trainers = trainer if trainer else default_trainers 
+        
         if not self.silent:
             print('+++ trainers:', self._trainers)
+
+
+        self._ready = True # predict() returns None if self._ready is False
 
         self._model = None
         sequence_error = np.inf
@@ -668,7 +674,8 @@ class Neural(NeuralBase):
                                                  epochs=epochs,
                                                  show=show, goal=goal, rr=rr)
                         if i_repeat > 0:
-                            print('!!! repeat Neural#577 size:', size)
+                            print('!!! Neural, L697, i_repeat:', i_repeat,
+                                  'trainer:', trainer,'trial:', j_trial)
                         if len(trial_errors) >= 1:
                             break
                 if len(trial_errors) < 1:
@@ -713,7 +720,11 @@ class Neural(NeuralBase):
                 print('    ' + trainer + ':' + str(round(trainer_err, 5)) +
                       '[' + str(trainer_epochs) + '], ')
 
-        assert self._model is not None
+        if self._model is None:
+            if not self.silent:
+                print('??? All training trials failed')
+            self._ready = False
+            return self.metrics
 
         if plot:
             self._plot_test_with_train_data()
@@ -727,22 +738,22 @@ class Neural(NeuralBase):
                 if len(self._final_errors) > 1:
                     print("    (trainer:err): [", end='')
                     s = ''
-                    for trainer, e in zip(self._trainers, self._final_errors):
-                        s += trainer + ':' + str(round(e, 5)) + ' '
+                    for trn, err in zip(self._trainers, self._final_errors):
+                        s += trn + ':' + str(round(err, 5)) + ' '
                     print(s[:-2] + ']')
 
-        self._ready = True
-
-        # assign results of best trial to return value
         Y = self._norm_y.renorm(self._Y)
-        dy = self.predict(self._X) - Y
+        y = self.predict(self._X)
+        dy = y - Y
         i_abs_max = np.abs(dy).argmax()
         self._metrics = {'trainer': self._trainers[i_best],
                          'L2': np.sqrt(np.mean(np.square(dy))),
                          'abs': Y.ravel()[i_abs_max],
-                         'iAbs': i_abs_max,
+                         'i_abs': i_abs_max,
                          'epochs': self._best_epochs[i_best]}
-                
+        
+        
+        
         return self.metrics
 
     def predict(self, x: Float2D, **kwargs: Any) -> Float2D:
@@ -756,242 +767,30 @@ class Neural(NeuralBase):
 
         Kwargs:
             silent (bool):
-                if True then no printing
+                if True, then no printing
                 default: self.silent
 
         Returns:
             prediction y = net(x)
             or
-            None if argument x is None
+            None if x is None or not self.ready or not self._model
 
         Note:
             - Shape of x is corrected to: (n_point, n_inp)
             - Input x and output net(x) are stored as self.x and self.y
         """
-        assert self._model, str(self._model)
-        
-        if x is None:
-            return None
-
         self.silent = kwargs.get('silent', self.silent)
 
-        x = np.asfarray(x)
-        if x.ndim == 1:
-            x = x.reshape(x.size, 1)
-        if x.shape[1] != self._model.ci:
-            x = np.transpose(x)
-        self._x = x
-
-        self._y = self._model.sim(x)
-        self._y = self._norm_y.renorm(self._y)
+        if not self._model or x is None or not self.ready:
+            self._y = None
+        else:
+            x = np.asfarray(x)
+            if x.ndim == 1:
+                x = x.reshape(x.size, 1)
+            if x.shape[1] != self._model.ci:
+                x = np.transpose(x)
+            self._x = x    
+            self._y = self._model.sim(x)
+            self._y = self._norm_y.renorm(self._y)
 
         return self._y
-
-
-#class RadialBasis(NeuralBase):
-#    """
-#    Radial basis function neural network
-#    """
-#    def __init__(self) -> None:
-#        super().__init__()
-#
-#        self.basis: Optional[Callable] = None
-#        self.bias: Optional[np.ndarray] = None
-#        self.centers: Optional[np.ndarray] = None
-#        self.silent: bool = False
-#        self.sigma: float = 1.
-#        self.weights: Optional[np.ndarray] = None
-#    
-#    def gaussian_basis(self, x: Union[float, np.ndarray], \
-#            centers: Union[float, np.ndarray], sigma: float=1) \
-#            -> Union[float, np.ndarray]:
-#        return np.exp(-.5 / (sigma**2 * np.square(x - centers)))
-#
-#    def multiquadratic_basis(self, x: Union[float, np.ndarray], \
-#            centers: Union[float, np.ndarray], dummy: float=np.inf) \
-#            -> Union[float, np.ndarray]: 
-#        return np.sqrt(1 + np.square(x - centers))
-#
-#    def train(self, X: np.ndarray, Y: np.ndarray, **kwargs: Any) \
-#        -> Dict[str, Any]:
-#        """
-#        Trains model, stores X and Y as self.X and self.Y, and stores 
-#        result of best training trial as self.metrics
-#
-#        Args:
-#            X (2D or 1D array of float):
-#                training input, shape: (n_point, n_inp) or (n_point,)
-#                default: self.X
-#
-#            Y (2D or 1D array of float):
-#                training target, shape: (n_point, n_out) or (n_point,)
-#                default: self.Y
-#
-#        Kwargs:
-#            basis (str):
-#                type of radial basis function: 
-#                    ('gaussian', 'multiquadric', 'inverse_quadratic', 
-#                    'inverse_multiquadric', 'polyharmonic_spline',
-#                    'bump_function')
-#                default: 'gaussian'
-#                
-#            centers (int or 1D array of float):
-#                number of centers of radial bases
-#                or
-#                array of centers of radial basis functions, requirement 
-#                of: centers.ndim == X.ndim 
-#                default: 10
-#                
-#            epochs (int):
-#                max number of iterations of single trial
-#                default: 500
-#
-#            goal (float):
-#                limit for stop of training (0. < goal < 1.)
-#                default: 1e-5
-#                [note: MSE of 1e-3 corresponds to L2-norm of 1e-6]
-#
-#            plot (int):
-#                controls frequency of plotting progress of training
-#                default: 0 (no plot)
-#
-#            show (int):
-#                control of information about training, if show>0: print
-#                default: epochs // 10
-#                [argument 'show' superseds 'silent' if show > 0]
-#
-#            silent (bool):
-#                if True then no information is sent to console
-#                default: False
-#                [argument 'show' superseds 'silent' if show > 0]
-#
-#        Returns:
-#            (dictionary)
-#                metrics of best training trial:
-#                'trainer' (str): placeholder
-#                'L2'    (float): sqrt{sum{(net(x)-Y)^2}/N} of best train
-#                'abs'   (float): max{|net(x) - Y|} of best training
-#                'iAbs'    (int): index of Y where abs. error is maximum
-#                'epochs'  (int): number of epochs of best training
-#
-#        Note:
-#            - If training fails, then self.metrics['trainer']=None
-#            - Reference to training data is stored as self.X and self.Y
-#        """
-#        if X is None or Y is None:
-#            return None
-#
-#        basis = kwargs.get('basis', 'gaussian').lower()
-#        if basis == 'gaussian':
-#            self.basis = self.gaussian_basis
-#        elif basis == 'multiquadratic':
-#            self.basis = self.multiquadratic_basis
-#        else:
-#            self.basis = self.gaussian_basis
-#        self.centers = kwargs.get('centers', None)
-#        if self.centers is None or isinstance(self.centers, int):
-#            if not isinstance(self.centers, int):
-#                n_center = 100
-#            else:
-#                n_center = self.centers
-#            dx = (X.max() - X.min()) / n_center
-#            self.centers = np.linspace(X.min() + dx/2, X.max() - dx/2, 
-#                                       n_center)
-#        epochs = kwargs.get('epochs', 300)
-#        goal = kwargs.get('goal', 1e-5)
-#        plot = kwargs.get('plot', True)
-#        rate = kwargs.get('rate', 0.8)
-#        
-#        self.silent = kwargs.get('silent', self.silent)
-#        show = kwargs.get('show', epochs // 10)
-#        
-#        self._X = np.atleast_2d(X)
-#        if self.X.shape[0] == 1:
-#            self._X = self.X.T
-#        self._Y = np.atleast_2d(Y)
-#        if self.Y.shape[0] == 1:
-#            self._Y = self.Y.T
-#        assert self.X.shape[0] == self.Y.shape[0], \
-#            str((self.X.shape, self.Y.shape))
-#    
-#        # TODO Increase number of input
-#        assert self.X.shape[1] == 1, \
-#            'X.shape:' + str(self.X.shape) + ' number of inputs limited to 1' 
-#        assert self.Y.shape[1] == 1, \
-#            'Y.shape:' + str(self.Y.shape) + ' number of outputs limited to 1'  
-#        
-#        
-#        n_center = len(self.centers)
-#        self.sigma = 1
-#        self.weights = 1
-#        self.bias = 1
-#        L2_history = []
-#        
-#        for epoch in range(epochs):
-#            for x, y in zip(self.X, self.Y):
-#                a = self.basis(x, self.centers, self.sigma)
-#                a = np.atleast_2d(a)
-#                r = a.dot(self.weights) + self.bias                
-#                pseudo = np.hstack((a, np.ones([1, 1])))
-#                delta = pinv(pseudo) * np.array([r[0] - y])
-#                self.weights -= delta[0:n_center] * rate
-#                self.bias -= delta[n_center] * rate
-#
-#            y = self.predict(self.X)
-#            L2_norm = np.sqrt(np.mean(np.square(y - Y)))
-#            L2_history.append(L2_norm)
-#            if not self.silent:
-#                if show is not None and epoch % show == 0:
-#                    print('+++ epoch: {:3} L2: {}'.format(epoch, L2_norm))
-#            if L2_norm < goal:
-#                break
-#        self._ready = L2_norm < 1.
-#
-#        if not self.silent and plot:
-#            plt.title('Training history, L2:' + str(np.round(L2_norm, 4)) + 
-#                      ', rate: ' + str(rate))
-#            plt.xlabel('epochs')
-#            plt.ylabel('$L_2$-norm')
-#            plt.yscale('log')
-#            plt.grid()
-#            plt.plot(L2_history)
-#            plt.show()
-#
-#        return {'L2': L2_norm, 'epochs': epoch, 
-#                'abs': None, 'iAbs': None, 'trainer': None}
-#            
-#    def predict(self, x, **kwargs):
-#        """
-#        Executes network, stores input as self.x and output as self.y
-#
-#        Args:
-#            x (2D or 1D array_like of float):
-#                prediction input, shape: (n_point, n_inp) or (n_inp,)
-#
-#        Kwargs:
-##            silent (bool):
-##                if True then no printing
-##                default: self.silent
-#
-#        Returns:
-#            (2D array of float):
-#                prediction y = model(x) if x is not None
-#            or
-#            (None):
-#                if x is None
-#
-#        Note:
-#            - Shape of x is corrected to: (n_point, n_inp)
-#            - Input x and output net(x) are stored as self.x and self.y
-#        """
-#        if x is None:
-#            return None
-#
-#        self._x = np.atleast_2d(x)        
-#        y = []
-#        for i, _x in enumerate(self.x):
-#            a_all_centers = self.basis(_x, self.centers, self.sigma)
-#            y.append(a_all_centers.T.dot(self.weights[:, 4]) + self.bias[0])
-#            
-#        self._y = np.atleast_2d(y).T
-#        return self.y

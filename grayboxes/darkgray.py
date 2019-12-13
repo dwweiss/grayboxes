@@ -17,13 +17,13 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-21 DWW
+      2019-12-12 DWW
 """
 
 import numpy as np
-from typing import Any, Callable, Dict, Optional, Sequence
+from typing import Any, Dict
 
-from grayboxes.base import Float1D, Float2D, Function
+from grayboxes.base import Float2D, Function
 from grayboxes.black import Black
 from grayboxes.boxmodel import BoxModel
 
@@ -34,8 +34,8 @@ class DarkGray(BoxModel):
 
     Example:
         External function or method is assigned to self.f():
-            def f(self, x, *args):
-                c0, c1, c3 = args if len(args) > 0 else (1, 1, 1)
+            def f(self, x, *c):
+                c0, c1, c3 = args if len(c) >= 3 else (1., 1., 1.)
                 y0 = c0 * x[0]*x[0] + c1 * x[1]
                 y1 = x[1] * c3
                 return [y0, y1]
@@ -88,21 +88,25 @@ class DarkGray(BoxModel):
             and of black box model
 
         Returns:
-            best result, see BoxModel.train()
-            or
-            None if X and Y are None
+            metrics of training, see BoxModel.train()
         """
-        if X is None or Y is None:
+        if X is None or Y is None or self._black is None:
+            self.ready = False
             return self.init_metrics()
 
         self.set_XY(X, Y)
-
+        
+        self.ready = True  # predict() returns None if self.ready is False
         y = BoxModel.predict(self, self.X, **self.kwargs_del(kwargs, 'x'))
-        self.metrics = self._black.train(np.c_[self.X, y], y-self.Y, **kwargs)
+        
+        X_drk = np.c_[self.X, y]
+        Y_drk = y - self.Y
+        self.metrics = self._black.train(X_drk, Y_drk, **kwargs)
+        self.ready = self._black.ready
 
         return self.metrics
 
-    def predict(self, x: Float2D, *args: float, **kwargs: Any) -> Float2D:
+    def predict(self, x: Float2D, *c: float, **kwargs: Any) -> Float2D:
 
         """
         Executes box model, stores input x as self.x and output as self.y
@@ -112,9 +116,9 @@ class DarkGray(BoxModel):
                 prediction input, shape: (n_point, n_inp)
                 shape: (n_inp,) is tolerated
 
-            args:
-                positional arguments to be passed to theoretical
-                submodel f()
+            c:
+                weigths as positional arguments to be passed to 
+                theoretical submodel f()
 
         Kwargs:
             Keyword arguments to be passed to predict() of this object
@@ -123,14 +127,20 @@ class DarkGray(BoxModel):
         Returns:
             prediction output, shape: (n_point, n_out)
             or
-            None if x is None
+            None if x is None or model is not ready
         """
-        if x is None:
-            return None
-        assert self._black is not None and self._black.ready
+        if x is None or not self.ready:
+            self.y = None
+            return self.y
 
-        self.x = x
-        self._y = BoxModel.predict(self, x, **kwargs)
-        self._y -= self._black.predict(np.c_[self.x, self._y], **kwargs)
-
+        self.x = x                       # setter ensures valid 2D array
+        y = np.asfarray(BoxModel.predict(self, x, **kwargs))
+        
+        if y is not None:
+            y_delta = self._black.predict(np.c_[self.x, self._y], **kwargs)
+            if y_delta is not None:
+                y = np.asfarray(y) - np.asfarray(y_delta)
+        self.y = y
+        
         return self.y
+

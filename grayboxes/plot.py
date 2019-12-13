@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-10-04 DWW
+      2019-12-12 DWW
 """
 
 __all__ = ['plot1', 'plot_curves', 'plot_surface', 'plot_wireframe',
@@ -31,7 +31,7 @@ from matplotlib import mlab, cm
 from mpl_toolkits.mplot3d import Axes3D          # for "projection='3d'"
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as AA
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Sequence,Tuple, Union
 
 
 def is_irregular_mesh(x: np.ndarray, y: np.ndarray, z: np.ndarray) -> bool:
@@ -312,12 +312,12 @@ def plot1(x: np.ndarray,
 
 def plot_curves(x: np.ndarray,
                 y1: np.ndarray,
-                y2: Optional[np.ndarray]=None,
-                y3: Optional[np.ndarray]=None,
-                y4: Optional[np.ndarray]=None,
-                labels: Optional[List[str]]=None,  # axis labels
+                y2: Optional[np.ndarray] = None,
+                y3: Optional[np.ndarray] = None,
+                y4: Optional[np.ndarray] = None,
+                labels: Optional[List[str]] = None,  # axis labels
                 title: str='',  # title of plot
-                styles: Optional[Tuple[str, str, str]]=None,  # curve styl('-:')
+                styles: Optional[Tuple[str, str, str]]=None, # curve styl('-:')
                 marker: str='',  # plot markers ('<>*+')
                 linestyle: str='-',  # line style ['-','--',':'']
                 units: Optional[List[str]]=None,  # axis units
@@ -337,6 +337,8 @@ def plot_curves(x: np.ndarray,
                 # dimensionless legend position in (1, 1)-space
                 file: str='',  # file name of image (no save if empty)
                 ):
+    x, y1 = np.asfarray(x), np.asfarray(y1)
+    
     plt.figure(figsize=figsize)
     plt.rcParams.update({'font.size': fontsize})
     plt.rcParams['legend.fontsize'] = fontsize
@@ -460,23 +462,25 @@ def plot_curves(x: np.ndarray,
 def plot_surface(x: np.ndarray,
                  y: np.ndarray,
                  z: np.ndarray,
-                 labels: Optional[Tuple[str, str, str]]=None,  # axis labels
-                 units: Optional[Tuple[str, str, str]]=None,  # ax.unit
-                 title: str='',
-                 xrange: Optional[Tuple[float, float]]=None,  # axis range
-                 yrange: Optional[Tuple[float, float]]=None,  # axis range
-                 zrange: Optional[Tuple[float, float]]=None,  # axis range
-                 xlog: bool=False,
-                 ylog: bool=False,
-                 grid: bool=False,
-                 figsize: Optional[Tuple[float, float]]=None,
-                 fontsize: Optional[int]=None,
-                 legend_position: Optional[Tuple[float, float]]=None,
-                 file='',
+                 labels: Optional[Tuple[str, str, str]] = None,  # axis labels
+                 units: Optional[Tuple[str, str, str]] = None,  # ax.unit
+                 title: str = '',
+                 xrange: Optional[Tuple[float, float]] = None,  # axis range
+                 yrange: Optional[Tuple[float, float]] = None,  # axis range
+                 zrange: Optional[Tuple[float, float]] = None,  # axis range
+                 xlog: bool = False,
+                 ylog: bool = False,
+                 grid: bool = False,
+                 figsize: Optional[Tuple[float, float]] = None,
+                 fontsize: Optional[int] = None,
+                 legend_position: Optional[Tuple[float, float]] = None,
+                 file: str = '',
                  ):
     """
     Plots u(x,y) data as colored 3D surface
     """
+    x, y, z = np.asfarray(x), np.asfarray(y), np.asfarray(z) 
+
     if len(x.shape) == 1 and len(y.shape) == 1:
         if len(z.shape) == 2:
             x, y = np.meshgrid(x, y)
@@ -541,9 +545,8 @@ def plot_wireframe(x: np.ndarray,
     """
     Plots one z(x,y) array as 3D wiremesh surface
     """
-    x2 = np.asarray(x)
-    y2 = np.asarray(y)
-    z2 = np.asarray(z)
+    x, y, z = np.asfarray(x), np.asfarray(y), np.asfarray(z)
+    x2, y2, z2 = np.asfarray(x), np.asfarray(y), np.asfarray(z)
 
     if not xrange:
         xrange = (0., 0.)
@@ -596,26 +599,28 @@ def plot_wireframe(x: np.ndarray,
 def plot_isomap(x: np.ndarray,
                 y: np.ndarray,
                 z: np.ndarray,
-                labels=['x', 'y', 'z'],  # axis labels
-                units=['[/]', '[/]', '[/]'],  # axis units
-                title: str='',  # title of plot
-                xrange: Optional[Tuple[float, float]]=None,
-                yrange: Optional[Tuple[float, float]]=None,
-                zrange: Optional[Tuple[float, float]]=None,
-                xlog=False,  # logarithmic scaling of axis
-                ylog=False,  # logarithmic scaling of axis
-                levels: int=100,
-                scatter: bool=False,  # indicate irregular data with marker
-                triangulation: bool=False,
-                figsize: Optional[Tuple[float, float]]=None,
-                fontsize: Optional[int]=None,
-                legend_position: Optional[Tuple[float, float]]=None,
-                cmap=None,  # color map
-                file: str='',  # name of image file
+                labels: Sequence[str] = ['x', 'y', 'z'],  # axis labels
+                units: Sequence[str] = ['[/]', '[/]', '[/]'],  # axis units
+                title: str = '',  # title of plot
+                xrange: Optional[Tuple[float, float]] = None,
+                yrange: Optional[Tuple[float, float]] = None,
+                zrange: Optional[Tuple[float, float]] = None,
+                xlog:bool = False,  # logarithmic scaling of axis
+                ylog:bool = False,  # logarithmic scaling of axis
+                levels: int = 100,
+                scatter: bool = False,  # indicate irregular data with marker
+                triangulation: bool = False,
+                figsize: Optional[Tuple[float, float]] = None,
+                fontsize: Optional[int] = None,
+                legend_position: Optional[Tuple[float, float]] = None,
+                cmap = None,  # color map
+                file: str = '',  # name of image file
                 ):
     """
     Plots one z(x,y) array as 2D isomap
     """
+    x, y, z = np.asfarray(x), np.asfarray(y), np.asfarray(z) 
+    
     if not xrange:
         xrange = (0., 0.)
     if not yrange:
@@ -681,6 +686,8 @@ def plot_isolines(x, y, z,
     """
     Plots u(x,y) data as 2D isolines
     """
+    x, y, z = np.asfarray(x), np.asfarray(y), np.asfarray(z) 
+    
     if xrange[0] is None:
         xrange[0] = min(x)
     if xrange[1] is None:
@@ -736,6 +743,9 @@ def plot_vectors(x, y,
                  fontsize=None,
                  legend_position='',
                  file=''):
+    x, y = np.asfarray(x), np.asfarray(y)
+    vx, vy = np.asfarray(vx), np.asfarray(vy) 
+
     for i in range(len(units)):
         if not units[i].startswith('['):
             units[i] = '[' + units[i] + ']'
@@ -881,7 +891,7 @@ def plot_bar_arrays(x: Optional[np.ndarray]=None,
               width=width, file=file)
 
 
-def plot_bars(x: Optional[np.ndarray]=None,
+def plot_bars(x: Optional[np.ndarray] = None,
               y1=[], y1error=[],
               y2=[], y2error=[],
               y3=[], y3error=[],

@@ -17,15 +17,15 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-20 DWW
+      2019-12-12 DWW
 """
 
 import sys
 from typing import Any, Dict, Optional, Union
 
-from grayboxes.base import Float1D, Float2D
+from grayboxes.base import Float2D, Function
 from grayboxes.boxmodel import BoxModel
-from grayboxes.neural import Neural    # , RadialBasis
+from grayboxes.neural import Neural
 try:
     from grayboxes.splines import Splines
 except ImportError:
@@ -39,8 +39,6 @@ class Black(BoxModel):
         - Neural network is employed if kwargs contains 'neurons'
 
         - Splines are employed if kwargs contains 'splines'
-
-        - Radial basis functions are employed if kwargs contains 'centers'
 
         - Weights of best model training trials are saved as 
           'self._empirical._weights'
@@ -60,17 +58,20 @@ class Black(BoxModel):
         y_tst = model(x=x)                  # prediction with test input
     """
 
-    def __init__(self, identifier: str = 'Black') -> None:
+    def __init__(self, f: Function = None, identifier: str = 'Black') -> None:
         """
         Args:
+            f:
+                Dummy parameter for compatibility with the other 
+                children of class BoxModel where 'f' is the theoretical 
+                submodel for a single data point
+
             identifier:
                 Unique object identifier
         """
         super().__init__(f=None, identifier=identifier)
-        self._empirical:Optional[Union[Neural, ]] = None 
-                                       # Instance of Neural, Splines etc
-        self.metrics: Dict[str, Any] = self.init_metrics()
-                                          # measure of model performance
+        self._empirical: Optional[Union[Neural, 
+                                        """ Splines """]] = None 
 
     @property
     def silent(self) -> bool:
@@ -101,47 +102,38 @@ class Black(BoxModel):
             splines (int or 1D array of float):
                 not specified yet
                
-            centers (int or 1D array of float)
-                number of centers in hidden layer 
-                or
-                array of centers
-
             ... additional training options, see Neural.train()
 
         Returns:
-            results:
+            metrics of best training trial
                 see BoxModel.train()
-            or
-                None
         """
-        if X is None or Y is None:
-            self.metrics = self.init_metrics()
-            return self.metrics
-
-        self.set_XY(X, Y)
-
-        neurons = kwargs.get('neurons', None)
-        splines = kwargs.get('splines', None) if neurons is None else None
-        centers = kwargs.get('centers', None)
-        if neurons:
-            empirical = Neural()
-        elif splines and  'splines' in sys.modules:
-            empirical = Splines()
-        elif centers:
-            assert 0
-#            empirical = RadialBasis()
-        else:
-            empirical = Neural()
-
-        self.write('+++ train')
-
-        if self._empirical is not None:
-            del self._empirical
-        self._empirical = empirical
-        self._empirical.silent = self.silent
-
-        self.metrics = self._empirical.train(self.X, self.Y, **kwargs)
-        self.ready = self._empirical.ready
+        self.metrics = self.init_metrics()
+        self.ready = False
+        
+        if X is not None and Y is not None:
+            self.set_XY(X, Y)
+    
+            neurons = kwargs.get('neurons', None)
+            splines = kwargs.get('splines', None) if neurons is None else None
+            if neurons:
+                empirical = Neural()
+            elif splines and  'splines' in sys.modules:
+                empirical = Splines()
+            else:
+                empirical = Neural(f=None)
+    
+            self.write('+++ train')
+    
+            if self._empirical is not None:
+                del self._empirical
+            self._empirical = empirical
+            self._empirical.silent = self.silent
+    
+            self.metrics = self._empirical.train(self.X, self.Y, 
+                                                 **self.kwargs_del(kwargs,'f'))
+            
+            self.ready = self._empirical.ready
 
         return self.metrics
 
@@ -159,13 +151,16 @@ class Black(BoxModel):
 
         Returns:
             prediction output, shape: (n_point, n_out)
+            or
+            None if model is not trained
         """
-        assert self.ready, str(self.ready)
-        assert self._empirical is not None
+        if not self.ready or self._empirical is None:
+            self.y = None
+            return self.y
 
-        self.x = x                # self.x is a setter ensuring 2D array
-        assert self._n_inp == self.x.shape[1], \
-            str((self._n_inp, self.x.shape))
+        self.x = x                            # setter ensuring 2D array
+        assert self._n_inp == self.x.shape[1], str((self._n_inp, self.x.shape))
 
         self.y = self._empirical.predict(self.x, **kwargs)
+        
         return self.y

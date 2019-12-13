@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-21 DWW
+      2019-12-09 DWW
 """
 
 import numpy as np
@@ -34,15 +34,15 @@ class Forward(Base):
     Predicts $y = \phi(x)$ for array of points, shape: (n_point, n_inp)
 
     Examples:
-        X = [[... ]]  input of training
-        Y = [[... ]]  target of training
-        x = [[... ]]  input of prediction
+        X = [[...], [...], ...]  input of training
+        Y = [[...], [...], ...]  target of training
+        x = [[...], [...], ...]  input of prediction
 
-        def function(x, c0=1,c1=1,c2=1,c3=1,c4=1,c5=1,c6=1,c7=1):
-            return 2.2 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
+        def function(x, c0=1, c1=1):
+            return c0 * np.array(np.sin(c1*x[0]) + (x[1] - 1)**2)
 
-        def method(self, x, c0=1,c1=1,c2=1,c3=1,c4=1,c5=1,c6=1,c7=1):
-            return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)
+        def method(self, x, c0=1, c1=1):
+            return c0 * np.array(np.sin(c1*x[0]) + (x[1] - 1)**2)
 
         # create operation on model
         operation = Forward(White(function))
@@ -50,18 +50,18 @@ class Forward(Base):
         operation = Forward(White(method))
 
         # training and prediction
-        best = operation(X=X, Y=Y)     # train
-        x, y = operation(x=x)          # predict
+        metrics = operation(X=X, Y=Y, trainer='lm', goal=1e-5)  # train
+        x, y = operation(x=x)                                   # predict
 
-        # compact form
-        x, y = Forward(White(function))(X=X, Y=Y, x=x)
+        # alternative: compact form
+        x, y = Forward(White(function))(X=X, Y=Y, x=x, trainer='lm', goal=1e-5)
 
 
     Note:
         - Forward.__call__() returns 2-tuple of 2D arrays of float
 
-        - Forward has no self._x or self._y attribute and employs
-          model.x and model.y for storing input and output
+        - Forward has no own self._x or self._y attribute and employs
+          therefore model.x and model.y for storing input and output
 
     """
 
@@ -104,7 +104,8 @@ class Forward(Base):
         - Assigns box type model
         - Assigns training input and target (X, Y)
         - Assigns prediction input x
-        - Trains model if (X, Y) are not None
+        - Trains model is not instance of White and 
+          if X is not None and Y is not None
 
         Kwargs:
             XY (2-tuple of 2D array_like of float):
@@ -141,7 +142,7 @@ class Forward(Base):
         if type(self).__name__ in ('Minimum', 'Maximum', 'Inverse'):
             self.x = np.atleast_2d(x) if x is not None else None
         else:
-            self.model.x = np.atleast_2d(x) if x is not None else None
+            self.model._x = np.atleast_2d(x) if x is not None else None
             
         return ok
 
@@ -162,14 +163,11 @@ class Forward(Base):
         super().task(**kwargs)
 
         if self.model.x is None:
-            self.model.y = None
+            self.model._y = None
         else:
             self.model.y = np.asfarray(self.model.predict(x=self.model.x,
                                        **self.kwargs_del(kwargs, 'x')))
-        if self.model.x is not None:
-            return self.model.x, self.model.y
-        else:
-            return None, None
+        return self.model.x, self.model.y
 
     def post(self, **kwargs: Any) -> bool:
         """
