@@ -33,7 +33,6 @@ from grayboxes.lightgray import LightGray
 from grayboxes.darkgray import DarkGray
 from grayboxes.black import Black
 from grayboxes.inverse import Inverse
-#from grayboxes.neural import RadialBasis
 
 """
     Demonstrating of use of class Inverse with box models:
@@ -76,8 +75,6 @@ def f(self, x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
     return [y0]
 
 
-
-
 class TestUM(unittest.TestCase):
     def setUp(self):
         self.X = grid(5, (0., 1.), (0., 1.))
@@ -116,8 +113,8 @@ class TestUM(unittest.TestCase):
 
     def test4(self):
         operation = Inverse(DarkGray(f))
-        x, y = operation(X=self.X, Y=self.Y, neurons=[8], x=self.x_ini, 
-                         y=self.y_inv)
+        x, y = operation(X=self.X, Y=self.Y, neurons=[10, 10], 
+                         x=self.x_ini, y=self.y_inv)
         print('x y y_inv', x, y, self.y_inv)
 
         self.assertTrue(True)
@@ -126,7 +123,7 @@ class TestUM(unittest.TestCase):
     def test5(self):
         # Example 5 (expanded form)
         model = Black()
-        metrics = model.train(self.X, self.Y, neurons=[8] )
+        metrics = model.train(self.X, self.Y, neurons=[10, 10] )
         operation = Inverse(model)
         x, y = operation(x=self.x_ini, y=self.y_inv)
         print('x y y_inv metrics', x, y, self.y_inv, metrics)

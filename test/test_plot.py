@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-22 DWW
+      2020-01-30 DWW
 """
 
 import initialize
@@ -28,15 +28,17 @@ import numpy as np
 
 from grayboxes.plot import (plot_curves, plot_surface, plot_wireframe, \
     plot_isomap, plot_isolines, plot_vectors, plot_trajectory, \
-    plot_bar_arrays, plot_bars, to_regular_mesh, clip_xyz)
+    plot_bar_arrays, plot_bars, plot_x_y_y_ref, to_regular_mesh, clip_xyz)
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
         pass
 
+
     def tearDown(self):
         pass
+
 
     def test1(self):
         # irregular grid
@@ -46,12 +48,11 @@ class TestUM(unittest.TestCase):
         plot_isomap(x, y, z)
         plot_isolines(x, y, z)
         plot_isomap(x, y, z, title=r'$\alpha$ [$\degree$]')
-        print('pl979')
         x, y, z = clip_xyz(x, y, z, zrange=[0.2, 1.2])
-        print('pl981')
         plot_isomap(x, y, z, title=r'$\alpha$ [$\degree$]', triangulation=True)
 
         self.assertTrue(True)
+
 
     def test2(self):
         # irregular grid
@@ -62,6 +63,7 @@ class TestUM(unittest.TestCase):
         plot_vectors(x, y, vx, vy)
 
         self.assertTrue(True)
+
 
     def test3(self):
         # plot of bars for two 1D arrays y(x)
@@ -94,6 +96,7 @@ class TestUM(unittest.TestCase):
 
         self.assertTrue(True)
 
+
     def test4(self):
         x = np.linspace(0, 8, 100)
         a = np.sin(x)
@@ -107,6 +110,7 @@ class TestUM(unittest.TestCase):
                     legend_position=None)
 
         self.assertTrue(True)
+
 
     def test5(self):
         n = 20
@@ -122,6 +126,7 @@ class TestUM(unittest.TestCase):
                         start_point=True)
 
         self.assertTrue(True)
+
 
     def test6(self):
         # regular

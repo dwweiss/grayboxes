@@ -27,9 +27,9 @@ import unittest
 import numpy as np
 from typing import Any, List, Optional, Sequence
 
+from grayboxes.array import grid, noise, rand
 from grayboxes.lightgray import LightGray
 from grayboxes.plot import plot_x_y_y_ref
-from grayboxes.array import grid, noise, rand
 from grayboxes.white import White
 
 
@@ -81,27 +81,25 @@ trainer = [
            ]
 
 
-
-
 class TestUM(unittest.TestCase):
     def setUp(self):
         noise_abs = 0.25
         noise_rel = 10e-2
         self.X = grid(8, (-1, 8), (0, 3))
-        self.y_exa = White(f)(x=self.X, silent=True)
-        self.Y = noise(self.y_exa, absolute=noise_abs, relative=noise_rel)
-        plot_x_y_y_ref(self.X, self.Y, self.y_exa, ['X', 'Y_{nse}', 
-                                                    'y_{exa}'])
+        self.y_tru = White(f)(x=self.X, silent=True)
+        self.Y = noise(self.y_tru, absolute=noise_abs, relative=noise_rel)
+        plot_x_y_y_ref(self.X, self.Y, self.y_tru, ['X', 'Y_{nse}', 
+                                                    'y_{tru}'])
 
     def tearDown(self):
         pass
 
 
     def test1(self):
-        s = 'Creates exact output y_exa(X), add noise, target is Y(X)'
+        s = 'Creates true solution y_tru(X), add noise, target is Y(X)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        s = 'Tunes model, compare: y(X) vs y_exa(X)'
+        s = 'Tunes model, compare: y(X) vs y_tru(X)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         # train with 9 random initial tuning parameter sets, each of size 4
@@ -116,9 +114,9 @@ class TestUM(unittest.TestCase):
                       bounds=4*[(0, 2)])
 
             y = LightGray(f2, 'test1b')(X=self.X, Y=self.Y, x=self.X, 
-                         trainer=trainer, n_it_max=5000, c_ini=_c_ini,
-                         silent=not True, detailed=True)
-            plot_x_y_y_ref(self.X, y, self.y_exa, ['X', 'y', 'y_{exa}'])
+                          trainer=trainer, n_it_max=5000, c_ini=_c_ini,
+                          silent=not True, detailed=True)
+            plot_x_y_y_ref(self.X, y, self.y_tru, ['X', 'y', 'y_{tru}'])
             if 1:
                 print('metrics:', model.metrics)
                 df = model.xy_to_frame()
@@ -133,11 +131,11 @@ class TestUM(unittest.TestCase):
 
         if variant_a:
             y = LightGray(f2, 'test2')(X=self.X, Y=self.Y, x=self.X, 
-                         c_ini=np.ones(4), silent=not True, trainer=trainer,
-                         detailed=False)
+                          c_ini=np.ones(4), silent=not True, trainer=trainer,
+                          detailed=False)
         else:
             y = LightGray(f2, 'test2b')(X=self.X, Y=self.Y, x=self.X, 
-                         silent=False, trainer='all')
+                          silent=False, trainer='all')
 
         self.assertTrue(y is not None)
 

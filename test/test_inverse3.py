@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-29 DWW
+      2020-01-30 DWW
 """
 
 import initialize
@@ -31,12 +31,14 @@ from typing import Any, Dict, Optional, Sequence, Union
 import unittest
 
 from grayboxes.array import noise, rand, xy_rand_split
-from grayboxes.base import Base
+from grayboxes.base import Base 
 from grayboxes.boxmodel import BoxModel
 from grayboxes.black import Black
+from grayboxes.datatypes import Float2D
 from grayboxes.darkgray import DarkGray
 from grayboxes.forward import Forward
 from grayboxes.inverse import Inverse
+from grayboxes.metrics import init_metrics
 from grayboxes.white import White
 
 
@@ -68,14 +70,14 @@ class Foo(Base):
 
         self.operation: Optional[Union[Forward, Inverse]] = None
 
-        self.X_exa: Optional[np.ndarray] = None  # exact solution
-        self.Y_exa: Optional[np.ndarray] = None  # exact solution
-        self.X_trn: Optional[np.ndarray] = None  # training data
-        self.Y_trn: Optional[np.ndarray] = None  # training data
-        self.X_tst: Optional[np.ndarray] = None  # test data
-        self.Y_tst: Optional[np.ndarray] = None  # test data
-        self.x_tst: Optional[np.ndarray] = None  # prediction of input
-        self.y_tst: Optional[np.ndarray] = None  # prediction of output
+        self.X_tru: Float2D = None  # true values
+        self.Y_tru: Float2D = None  # true values
+        self.X_trn: Float2D = None  # training data
+        self.Y_trn: Float2D = None  # training data
+        self.X_tst: Float2D = None  # test data
+        self.Y_tst: Float2D = None  # test data
+        self.x_tst: Float2D = None  # prediction of input
+        self.y_tst: Float2D = None  # prediction of output
 
         self.metrics_trn: Optional[Dict[str, Any]] = None  # training
         self.metrics_tst: Optional[Dict[str, Any]] = None  # test
@@ -92,12 +94,12 @@ class Foo(Base):
         x_min, x_max = kwargs.get('x_min', 0.1), kwargs.get('x_max', 0.9)
 
         # generates artificial data '$y = 1 - \cos \( x \pi \) / 2$'
-        self.X_exa = np.atleast_2d(np.linspace(x_min, x_max, n_point)).T
-        self.Y_exa = f(self.X_exa)
+        self.X_tru = np.linspace(x_min, x_max, n_point).reshape(-1, 1)
+        self.Y_tru = f(self.X_tru)
 
         # adds noise to Y
-        X_nse = self.X_exa
-        Y_nse = noise(self.Y_exa, relative=noise_rel, absolute=noise_abs)
+        X_nse = self.X_tru
+        Y_nse = noise(self.Y_tru, relative=noise_rel, absolute=noise_abs)
 
         # splits randomly into training data and test data
         X_spl, Y_spl = xy_rand_split(X_nse, Y_nse, train_test_ratio)
@@ -108,9 +110,9 @@ class Foo(Base):
         self.X_tst = np.clip(self.X_tst, 0.01, 0.99)
         self.Y_tst = np.clip(self.Y_tst, 0.01, 0.99)
         
-        # plots exact solution, training and test data 
+        # plots true solution, training and test data 
         if not False and not self.silent:
-            plt.plot(self.X_exa, self.Y_exa, '.', c='0.', label='exact')
+            plt.plot(self.X_tru, self.Y_tru, '.', c='0.', label='true')
             plt.plot(X_nse, Y_nse, '--', c='0.', label='noise')
             plt.plot(self.X_trn, self.Y_trn, 'v', c='g', label='train')
             plt.plot(self.X_tst, self.Y_tst, 'x', c='b', label='test')
@@ -120,15 +122,6 @@ class Foo(Base):
             plt.grid()
             plt.show()
 
-#        print(self.X_trn.min(), self.X_trn.max(),
-#              self.Y_trn.min(), self.Y_trn.max())
-#        print(self.X_tst.min(), self.X_tst.max(),
-#              self.Y_tst.min(), self.Y_tst.max())
-#
-#        assert self.X_trn.min() < self.X_tst.min()
-#        assert self.X_trn.max() > self.X_tst.max()
-#        assert self.Y_trn.min() < self.Y_tst.min()
-#        assert self.Y_trn.max() > self.Y_tst.max()
         return True
 
     def forward_operator(self, inverse_model: BoxModel, **kwargs: Any)-> None:
@@ -136,9 +129,9 @@ class Foo(Base):
         # trains inverse model x=phi^{-1}(y)
         self.metrics_trn = inverse_model.train(self.Y_trn, self.X_trn,**kwargs)
 
-        # optional: predicts y for x of exact and training data
+        # optional: predicts y for x of true solution and training data
         self.y_trn, self.x_trn = self.Y_trn, inverse_model.predict(self.Y_trn)
-        self.y_exa, self.x_exa = self.Y_exa, inverse_model.predict(self.Y_exa)
+        self.y_tru, self.x_tru = self.Y_tru, inverse_model.predict(self.Y_tru)
 
         # optional: computes error norm with test data
         self.metrics_tst = inverse_model.evaluate(self.Y_tst, self.X_tst)
@@ -156,10 +149,10 @@ class Foo(Base):
             self.metrics_trn = forward_model.train(X=self.X_trn, Y=self.Y_trn, 
                                                    **kwargs)
         else:
-            self.metrics_trn = BoxModel.init_metrics()
+            self.metrics_trn = init_metrics()
 
-        # optional: predicts y(x) for exact and training data
-        self.x_exa, self.y_exa = self.X_exa, forward_model.predict(self.X_exa)
+        # optional: predicts y(x) for true solution and training data
+        self.x_tru, self.y_tru = self.X_tru, forward_model.predict(self.X_tru)
         self.x_trn, self.y_trn = self.X_trn, forward_model.predict(self.X_trn)
 
         # optional: computes error norm with test data
@@ -170,17 +163,22 @@ class Foo(Base):
 
         # inverse search for every point in (X_tst, Y_tst)
         x_tst, y_tst = [], []
+        
+        print('ti3 166', self.X_tst.copy().shape, self.Y_tst.copy().shape)
+        
         for x_ini, y_trg in zip(self.X_tst.copy(), self.Y_tst.copy()):
             x_ini = rand(3, [0.1, 0.9])
             x_opt, y_opt = self.operation(x=x_ini, y=y_trg, **kwargs)
             x_tst.append(x_opt[0])
             y_tst.append(y_opt)
         self.x_tst, self.y_tst = np.asfarray(x_tst), np.asfarray(y_tst)
+        assert self.x_tst.shape == self.y_tst.shape, \
+            str((self.x_tst.shape, self.y_tst.shape))
                 
     def pre(self, **kwargs: Any)-> bool:
         """
         The pre-process provides training data (X_trn, Y_trn),
-        test data (X_tst, Y_tst) and exact solution (X_exa, Y_exa)
+        test data (X_tst, Y_tst) and true solution (X_tru, Y_tru)
         """
         super().pre(**kwargs)
 
@@ -220,11 +218,11 @@ class Foo(Base):
 
         if False:
             plt.cla()
-            plt.plot(self.x_exa, self.y_exa, '--', label='pred exa')
-            plt.plot(self.x_trn, self.y_trn, '.', label='pred trn')
-            plt.plot(self.x_tst, self.y_tst, '.', label='pred tst')
-            plt.plot(self.X_trn, self.Y_trn, 'v', 'g', label='train data')
-            plt.plot(self.X_tst, self.Y_tst, 'x', c='b', label='test data')
+            plt.plot(self.x_tru, self.y_tru, '--', label='prd tru')
+            plt.plot(self.x_trn, self.y_trn, '.', label='prd trn')
+            plt.plot(self.x_tst, self.y_tst, '.', label='prd tst')
+            plt.plot(self.X_trn, self.Y_trn, 'v', 'g', label='trn data')
+            plt.plot(self.X_tst, self.Y_tst, 'x', c='b', label='tst data')
             plt.legend(bbox_to_anchor=(1.1, 0), loc='lower left')
             plt.show()               
 
@@ -243,20 +241,24 @@ class Foo(Base):
         plt.yscale('linear')
 
         if variant == 1:
-            y = np.atleast_2d(np.linspace(0, 1, 200)).T
+            y = np.linspace(0, 1, 200).reshape(-1, 1)
             x = self.operation.model.predict(x=y)
-            plt.plot(x, y, '.', c='0.', label=r'$\varphi(y)$')
+            if x is not None:
+                plt.plot(x, y, '.', c='0.', label=r'$\varphi(y)$')
         else:
             plt.plot(self.x_tst, self.Y_tst, '.', c='0.', 
                      label=r'$inv \varphi^{}(x)$')
             
         if False:
-            plt.plot(self.X_exa, self.Y_exa, '--', c='0.', label='exact')
+            plt.plot(self.X_tru, self.Y_tru, '--', c='0.', label='true')
         plt.scatter(self.X_trn, self.Y_trn, marker='v', c='g',
                     label='train data')
         plt.scatter(self.X_tst, self.Y_tst, marker='x', c='b',
                     label='test data')
 
+        print('ti3 253 x_tst y_tst', 
+              self.x_tst.shape if self.x_tst is not None else '?',
+              self.y_tst.shape if self.y_tst is not None else '?')
         plt.scatter(self.x_tst, self.y_tst, marker='+', color='r',
                     label=r'$x = \varphi( y_{tst} )$')
         if not isinstance(self.operation.model, White):
@@ -333,7 +335,6 @@ class TestUM(unittest.TestCase):
         foo = Foo()
         foo.generate_artificial_data(**self.opt)
         nrn = ([1], [2], [3], [4], [5], [6], [7],)
-        nrn =([2],)
         optimizer = 'BFGS'
         for variant in (1, 2, ):
             for neurons in nrn:

@@ -27,9 +27,9 @@ import unittest
 import numpy as np
 from typing import Any, List, Optional, Sequence
 
-from grayboxes.plot import plot_isomap
 from grayboxes.array import grid, cross
 from grayboxes.forward import Forward
+from grayboxes.plot import plot_isomap
 from grayboxes.white import White
 
 def f_user(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \

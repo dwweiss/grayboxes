@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-22 DWW
+      2020-01-29 DWW
 """
 
 import initialize
@@ -30,6 +30,9 @@ import matplotlib.pyplot as plt
 import neurolab as nl
 
 from grayboxes.neural import Neural
+from grayboxes.neuralk import Neural as NeuralK
+from grayboxes.neuraln import Neural as NeuralN
+
 from grayboxes.plot import (plot_surface, plot_isolines, plot_isomap, \
                             plot_wireframe)
 
@@ -46,19 +49,59 @@ class TestUM(unittest.TestCase):
     def setUp(self):
         pass
 
+
     def tearDown(self):
         pass
 
+
     def test1(self):
-        s = 'Example 1 __call__()'
+        s = 'Example 1: newff and train from Neurolab'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+
+        X = np.linspace(-7, 7, 20).reshape(-1, 1)
+        Y = np.sin(X) * 10
+
+        norm_y = nl.tool.Norm(Y)
+        YY = norm_y(Y)
+        net = nl.net.newff(nl.tool.minmax(X), [5, YY.shape[1]])
+        # net.trainf = nl.train.train_rprop  # or:
+        net.trainf = nl.train.train_bfgs
+
+        mse_seq = net.train(X, YY, epochs=10000, show=100, goal=1e-6)
+        mse = mse_seq[-1]
+        y_trn = norm_y.renorm(net.sim(X))
+
+        print(mse)
+        plt.subplot(211)
+        plt.plot(mse_seq, label='mse')
+        plt.legend()
+        plt.xlabel('epochs')
+        plt.ylabel('metrics')
+
+        x_tst = np.linspace(-12, 8, 150).reshape(-1, 1)
+        y_tst = norm_y.renorm(net.sim(x_tst)).ravel()
+
+        plt.subplot(212)
+        plt.plot(x_tst, y_tst, '-')
+        plt.plot(X, Y, '.')
+        plt.legend(['pred', 'targ'])
+        plt.xlabel('$x$')
+        plt.ylabel('$y(x)$')
+        plt.show()
+
+        self.assertTrue(True)
+
+
+    def test2(self):
+        s = 'Example 2 __call__()'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         def f(x):
             return np.sin(x) * 1 + 0
 
-        X = np.atleast_2d(np.linspace(-1.75 * np.pi, 1.75 * np.pi, 50)).T
+        X = np.linspace(-1.75 * np.pi, 1.75 * np.pi, 50).reshape(-1, 1)
         dx = 0.25 * (X.max() - X.min())
-        x = np.atleast_2d(np.linspace(X.min() - dx, X.max() + dx)).T
+        x = np.linspace(X.min() - dx, X.max() + dx).reshape(-1, 1)
         X[0, 0] = x[0, 0]
         X[-1, 0] = x[-1, 0]
         Y = f(X)
@@ -90,7 +133,7 @@ class TestUM(unittest.TestCase):
                 # errorf=nl.error.MSE,
                 silent=True)
             y = net(x=x)
-            if 1:
+            if y is not None:
                 plt.plot(x, y, '-',
                          label='tst:'+str_L2(net(x=x), f(x)) + ' ' +
                                'trn:'+str_L2(net(x=X), Y))
@@ -106,35 +149,39 @@ class TestUM(unittest.TestCase):
 
         self.assertTrue(True)
 
-    def test2(self):
-        s = 'Example 2 compact form'
+
+    def test3(self):
+        s = 'Example 3 compact form'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         def f(x):
             return np.sin(x) * 10 + 0
 
-        X = np.atleast_2d(np.linspace(-1.75 * np.pi, 1.75 * np.pi, 50)).T
+        X = np.linspace(-1.75 * np.pi, 1.75 * np.pi, 50).reshape(-1, 1)
         Y = f(X)
         dx = 0.5 * (X.max() - X.min())
-        x = np.atleast_2d(np.linspace(X.min() - dx, X.max() + dx)).T
-
+        x = np.linspace(X.min() - dx, X.max() + dx).reshape(-1, 1)
+        
         net = Neural()
         y = net(X=X, Y=Y, x=x, neurons=[6], plot=1, epochs=500, goal=1e-5,
                 trials=5, trainer='cg gdx rprop bfgs',
-                regularization=0.0, show=None)
+                regularization=0.0, show=None,
+                )
 
-        plt.title('Test, L2:' + str(round(net.metrics['L2'], 5)))
-        plt.plot(x, y, '-')
-        plt.plot(X, Y, '.')
-        plt.legend(['pred', 'targ', ])
-        plt.xlabel('x')
-        plt.ylabel('y(x)')
-        plt.show()
+        if net.ready:
+            plt.title('Test, L2:' + str(round(net.metrics['L2'], 5)))
+            plt.plot(x.ravel(), y.ravel(), '-')
+            plt.plot(X, Y, '.')
+            plt.legend(['pred', 'targ', ])
+            plt.xlabel('x')
+            plt.ylabel('y(x)')
+            plt.show()
 
         self.assertTrue(True)
 
-    def test3(self):
-        s = 'Example 3'
+
+    def test4(self):
+        s = 'Example 4, get X and Y from dataframe'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         df = DataFrame({'p0': [10, 20, 30, 40], 'p1': [11, 21, 31, 41],
@@ -143,101 +190,127 @@ class TestUM(unittest.TestCase):
         xkeys = ['p0', 'p2']
         ykeys = ['r0', 'r1']
         net = Neural()
-        net.import_dataframe(df, xkeys, ykeys)
-        metrics = net.train(goal=1e-6, neurons=[10, 3], plot=1, epochs=2000,
+        net.set_XY(df[xkeys], df[ykeys], xkeys, ykeys)
+        metrics = net.train(X=None, Y=None, goal=1e-6, neurons=[10, 3], 
+                            plot=1, epochs=2000,
                             trainer='cg gdx rprop bfgs', trials=10,
                             regularization=0.01, smartTrials=False)
 
+        print('Metrics:', metrics)
+
         self.assertTrue(True)
 
-    def test4(self):
-        s = 'Example 4'
+    def test5(self):
+        s = 'Example 5, X and Y are 2D arrays'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         X = [[10, 11], [11, 33], [33, 14], [37, 39], [20, 20]]
         Y = [[10, 11], [12, 13], [35, 40], [58, 68], [22, 28]]
         x = X.copy()
 
-        net = Neural()
-        y = net(X, Y, x, neurons=6, plot=1, epochs=1000, goal=1e-6,
-                trainer='cg gdx rprop bfgs', trials=5)
-        dy = y - Y
-        X, Y, x = net.X, net.Y, net.x
-        if X.shape[1] == 2:
-            plot_wireframe(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$',
-                           labels=['x', 'y', r'$Y_{trg}$'])
-            plot_wireframe(X[:, 0], X[:, 1], Y[:, 0], title='$Y_{trg}$',
-                           labels=['x', 'y', r'$Y_{trg}$'])
-            plot_wireframe(X[:, 0], X[:, 1], dy[:, 0], title=r'$\Delta y$',
-                           labels=['x', 'y', r'$\Delta y$'])
-            plot_isolines(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$')
-            plot_isomap(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$')
-            plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='$Y_{trg}$')
-            plot_isolines(X[:, 0], X[:, 1], Y[:, 0], title='$Y_{trg}$')
-            plot_isomap(X[:, 0], X[:, 1], dy[:, 0], title=r'$\Delta y$')
-            plot_surface(X[:, 0], X[:, 1], dy[:, 0], title=r'$\Delta y$')
-            plot_surface(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$')
-
-        self.assertTrue(True)
-
-    def test5(self):
-        s = 'Example 5: newff and train without class Neural'
-        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-
-        X = np.atleast_2d(np.linspace(-7, 7, 20)).T
-        Y = np.sin(X) * 10
-
-        norm_y = nl.tool.Norm(Y)
-        YY = norm_y(Y)
-        net = nl.net.newff(nl.tool.minmax(X), [5, YY.shape[1]])
-        # net.trainf = nl.train.train_rprop  # or:
-        net.trainf = nl.train.train_bfgs
-
-        err = net.train(X, YY, epochs=10000, show=100, goal=1e-6)
-        y_trn = norm_y.renorm(net.sim(X))
-
-        print(err[-1])
-        plt.subplot(211)
-        plt.plot(err)
-        plt.legend(['L2 error'])
-        plt.xlabel('Epoch number')
-        plt.ylabel('error (default SSE)')
-
-        x_tst = np.atleast_2d(np.linspace(-5, 8, 150)).T
-        y_tst = norm_y.renorm(net.sim(x_tst)).ravel()
-
-        plt.subplot(212)
-        plt.plot(x_tst, y_tst, '-', X, Y, '.')
-        plt.legend(['pred', 'targ'])
-        plt.xlabel('x')
-        plt.ylabel('y(x)')
+        net = NeuralK()
+        y = net(X, Y, x, neurons=[10, 10], 
+                activation='sigmoid', 
+                epochs=1000, 
+                expected=0.5e-4,
+                output='sigmoid',
+                plot=1, 
+                tolerated=5e-3,
+                trainer='auto', 
+                trials=5, 
+                validation_split=0.0,
+                )
+        plt.title('Y - net.Y')
+        plt.plot((np.asfarray(Y) - net.Y).ravel())
         plt.show()
+        
+        if net.ready:
+            dy = y - Y
 
-        self.assertTrue(True)
+            X = net.X
+            Y = net.Y
+            x = net.x
+#            X, Y, x = net.X, net.Y, net.x
+#            X, Y, x = net.X, net.Y, net.x
+            
+#            X = np.asfarray(X)
+#            Y = np.asfarray(Y)
+#            x = np.asfarray(x)
+            
+            X0, X1, Y0, y0, dy0 = X[:, 0], X[:, 1], Y[:, 0], y[:, 0], dy[:, 0]
+            
+            if X.shape[1] == 2:
+                plot_wireframe(X0, X1, y0, title='$y_{prd}$',
+                               labels=['x', 'y', r'$Y_{trg}$'])
+                plot_wireframe(X0, X1, Y0, title='$Y_{trg}$',
+                               labels=['x', 'y', r'$Y_{trg}$'])
+                plot_wireframe(X0, X1, dy0, title=r'$\Delta y$',
+                               labels=['x', 'y', r'$\Delta y$'])
+                plot_isolines(X0, X1, y0, title='$y_{prd}$')
+                plot_isomap(X0, X1, y0, title='$y_{prd}$')
+                plot_isomap(X0, X1, Y0, title='$Y_{trg}$')
+                plot_isolines(X0, X1, Y0, title='$Y_{trg}$')
+                plot_isomap(X0, X1, dy0, title=r'$\Delta y$')
+                plot_surface(X0, X1, dy0, title=r'$\Delta y$')
+                plot_surface(X0, X1, y0, title='$y_{prd}$')
+
+        self.assertTrue(net.ready)
+
 
     def test6(self):
         s = 'Example 6'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        X = np.atleast_2d(np.linspace(-2 * np.pi, 2 * np.pi, 50)).T
-        Y = np.sin(X) * 5
+        
+        if 0:
+            X = np.linspace(-2 * np.pi, 2 * np.pi, 1000).reshape(-1, 1)
+            Y = np.sin(X) * 5
+        else:
+            X = np.random.uniform(-2*np.pi, 2*np.pi, (2000, 2))
+            Y = np.sin(X) + np.random.uniform(-0.2, +0.2, size=X.shape)
         x = X
-        y = Neural()(X=X, Y=Y, x=x, neurons=[8, 2], plot=1, epochs=2000,
-                     goal=1e-5, trainer='rprop bfgs', trials=8)
-
-        if X.shape[1] == 1:
-            plt.plot(X, y, label='pred')
-            plt.plot(X, Y, label='targ')
-            plt.legend()
-            plt.show()
-        elif X.shape[1] == 2:
-            plot_surface(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$')
-            plot_isolines(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$')
-            plot_isolines(X[:, 0], X[:, 1], Y[:, 0], title='$y_{trg}$')
-        dy = y - Y
-        if X.shape[1] == 2:
-            plot_isomap(X[:, 0], X[:, 1], dy[:, 0],
-                        title='$y_{prd} - y_{trg}$')
+        
+        for phi in (Neural, NeuralN, NeuralK):
+            phi = phi()
+            y = phi(X=X, Y=Y, x=x, 
+                    activation='sigmoid',
+                    epochs=300,
+                    expected=0.5e-3, 
+                    learning_rate=0.1,
+                    neurons=[10]*2,
+                    output='sigmoid',
+                    patience=50,
+                    plot=1, 
+                    show=50,
+                    tolerated=10e-3,
+                    trainer='adam', 
+                    trials=5,
+                    )
+            
+            if phi.ready:
+                dy = y - Y
+                
+                X0, Y0, y0, dy0 = X[:, 0], Y[:, 0], y[:, 0], dy[:, 0]
+                if X.shape[1] > 1:
+                    X1 = X[:, 1]
+                    if X.shape[1] > 2:
+                        X2 = X[:, 2]
+                if Y.shape[1] > 1:
+                    Y1 = Y[:, 1]
+                    if Y.shape[1] > 2:
+                        Y2 = Y[:, 2]
+        
+                if X.shape[1] == 1:
+                    plt.plot(X0, y0, label='pred')
+                    plt.plot(X0, Y0, label='targ')
+                    plt.legend()
+                    plt.show()
+                elif X.shape[1] == 2:
+                    plot_surface(X0, X1, y0, title='$y_{prd}$')
+                    plot_isolines(X0, X1, y0, title='$y_{prd}$')
+                    plot_isolines(X0, X1, Y0, title='$Y_{trg}$')
+                if X.shape[1] == 2:
+                    plot_isomap(X0, X1, dy0, title='$y_{prd} - Y_{trg}$')
 
         self.assertTrue(True)
 

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-09 DWW
+      2020-01-20 DWW
 """
 
 import initialize
@@ -84,15 +84,15 @@ class TestUM(unittest.TestCase):
 
         #################
 
-        Y_exact = White(f, 'test3')(x=X, silent=True)
-        Y_noise = noise(Y_exact, absolute=noise_abs)
-        plot_x_y_y_ref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
+        Y_truct = White(f, 'test3')(x=X, silent=True)
+        Y_noise = noise(Y_truct, absolute=noise_abs)
+        plot_x_y_y_ref(X, Y_noise, Y_truct, ['X', 'Y_{nse}', 'Y_{tru}'])
 
         #################
 
         model = LightGray(f, 'test3b')
         Y_fit = model(X=X, Y=Y_noise, c0=np.ones(3), x=X, silent=True)
-        plot_x_y_y_ref(X, Y_fit, Y_exact, ['X', 'Y_{fit}', 'Y_{exa}'])
+        plot_x_y_y_ref(X, Y_fit, Y_truct, ['X', 'Y_{fit}', 'Y_{tru}'])
 
         operation = Inverse(model, 'test3c')
         x, y = operation(x=grid((3, 2), [-10, 0], [1, 19]), y=[0.5])
@@ -109,15 +109,15 @@ class TestUM(unittest.TestCase):
         n = 10
         X = grid(n, [-1, 5], [0, 3])
 
-        Y_exact = White(f, 'test4')(x=X)
-        Y_noise = noise(Y_exact, absolute=noise_abs)
+        Y_truct = White(f, 'test4')(x=X)
+        Y_noise = noise(Y_truct, absolute=noise_abs)
 
-        plot_x_y_y_ref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
+        plot_x_y_y_ref(X, Y_noise, Y_truct, ['X', 'Y_{nse}', 'Y_{tru}'])
 
         model = Black()
         Y_blk = model(X=X, Y=Y_noise, neurons=[8], n=3, epochs=500, x=X)
 
-        plot_x_y_y_ref(X, Y_blk, Y_exact, ['X', 'Y_{blk}', 'Y_{exa}'])
+        plot_x_y_y_ref(X, Y_blk, Y_truct, ['X', 'Y_{blk}', 'Y_{tru}'])
 
         operation = Inverse(model, 'test4b')
         x_inv, y_inv = operation(y=[0.5], x=[(-10, 0), (1, 19)])
@@ -136,27 +136,29 @@ class TestUM(unittest.TestCase):
         X = grid(n, [-1, 5], [0, 3])
 
         # synthetic training data
-        Y_exact = White(f, 'test5')(x=X)
-        Y_noise = noise(Y_exact, absolute=noise_abs)
-        plot_x_y_y_ref(X, Y_noise, Y_exact, ['X', 'Y_{nse}', 'Y_{exa}'])
+        Y_true = White(f, 'test5')(x=X)
+        Y_noise = noise(Y_true, absolute=noise_abs)
+        plot_x_y_y_ref(X, Y_noise, Y_true, ['X', 'Y_{nse}', 'Y_{tru}'])
 
         print('*' * 40)
 
         # trains and executes theoretical model Y_fit=f(X,w)
         Y_fit = LightGray(f, 'test5b')(X=X, Y=Y_noise, c0=[1, 1, 1], x=X)
-        plot_x_y_y_ref(X, Y_fit, Y_exact, ['X', 'Y_{fit}', 'Y_{exa}'])
+        plot_x_y_y_ref(X, Y_fit, Y_true, ['X', 'Y_{fit}', 'Y_{tru}'])
 
         # meta-model of theoretical model Y_emp=g(X,w)
         meta = Black('test5c')
         Y_meta = meta(X=X, Y=Y_fit, neurons=[10], x=X)
-        plot_x_y_y_ref(X, Y_fit, Y_meta, ['X', 'Y_{met}', 'Y_{exa}'])
-
-        # inverse solution with meta-model (emp.model of tuned theo.model)
-        if 1:
-            operation = Inverse(meta, 'test6')
-            x_inv, y_inv = operation(x=[(-10, 0)], y=[0.5])
-            operation.plot()
-            print('id:', operation.identifier, 'x_inv', x_inv, 'y_inv', y_inv)
+        if Y_meta is not None:
+            plot_x_y_y_ref(X, Y_fit, Y_meta, ['X', 'Y_{met}', 'Y_{tru}'])
+    
+            # inverse solution with meta-model (emp.model of tuned theo.model)
+            if 1:
+                operation = Inverse(meta, 'test6')
+                x_inv, y_inv = operation(x=[(-10, 0)], y=[0.5])
+                operation.plot()
+                print('id:', operation.identifier, 'x_inv', x_inv, 
+                      'y_inv', y_inv)
 
         self.assertTrue(True)
 

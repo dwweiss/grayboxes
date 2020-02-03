@@ -58,8 +58,8 @@ class TestUM(unittest.TestCase):
         print('*' * 30, 'path:', path)
 
         file = 'sin_x_-3..3.5pi'
-        n_point = 20                 
-        max_neurons_in_layer = 3     # <==== 20
+        n_point = 100                 
+        max_neurons_in_layer = 10    # <==== 20
         n_hidden_layers = 2          # <==== 5
         MAX_HIDDEN_LAYERS = 6        # MUST NOT be modified
         assert MAX_HIDDEN_LAYERS >= n_hidden_layers
@@ -108,15 +108,20 @@ class TestUM(unittest.TestCase):
             print('+++ hidden layers:', definition)
 
             # training
-            blk = Black()
-            metrics_trn = blk(X=X, Y=Y, neurons=definition, trials=5, 
-                              epochs=500, show=500, algorithms='bfgs', 
-                              goal=1e-5)
-
+            phi = Black()
+            metrics_trn = phi(X=X, Y=Y, 
+                              epochs=300, 
+                              expected=0.5e-3,
+                              neurons=definition, 
+                              show=500, 
+                              tolerated=5e-3,
+                              trainer='auto', 
+                              trials=5, 
+                              )                        
             # prediction
-            y = blk.predict(x=x)
+            y = phi.predict(x=x)
 
-            metrics_tst = blk.evaluate(x, y_ref, silent=False)
+            metrics_tst = phi.evaluate(x, y_ref, silent=False)
             if l2_tst_best > metrics_tst['L2']:
                 l2_tst_best = metrics_tst['L2']
                 i_def_best = i_def
@@ -130,9 +135,9 @@ class TestUM(unittest.TestCase):
             # print('row:', row, len(row), 'columns:', collect.keys)
             collect.loc[collect.shape[0]] = row
 
-            if isinstance(blk._empirical, Neural):
+            if isinstance(phi._empirical, Neural):
                 print('+++ neural network definition:', definition)
-            plt.title('$' + str(definition_copy) + '\ \ L_2(tr/te):\ ' +
+            plt.title('$' + str(definition_copy) + '\ \ L_2(trn/prd):\ ' +
                       str(round(metrics_trn['L2'], 5)) + r', ' +
                       str(round(metrics_tst['L2'], 4)) +
                       '$')
@@ -140,12 +145,15 @@ class TestUM(unittest.TestCase):
             plt.ylim(-2, 2)
             plt.grid()
             plt.scatter(X, Y, marker='>', c='g', label='training data')
-            plt.plot(x, y, linestyle='-', label='prediction')
+
+            if y is not None:
+                plt.plot(x, y, linestyle='-', label='prediction')
             plt.plot(x, y_ref, linestyle=':', label='analytical')
-            plt.scatter([X[metrics_trn['i_abs']]], [Y[metrics_trn['i_abs']]], 
-                        marker='o', color='c', s=60, label='max err train')
-            plt.scatter([x[metrics_tst['i_abs']]], [y[metrics_tst['i_abs']]], 
-                        marker='o', color='r', s=60, label='max err test')
+            plt.scatter(X[metrics_trn['i_abs']], Y[metrics_trn['i_abs']], 
+                        marker='o', color='c', s=60, label='max abs trn')
+            if y is not None:
+                plt.scatter(x[metrics_tst['i_abs']], y[metrics_tst['i_abs']], 
+                            marker='o', color='r', s=60, label='max abs tst')
             plt.legend(bbox_to_anchor=(1.15, 0), loc='lower left')
             if self.save_figures:
                 f = file

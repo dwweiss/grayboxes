@@ -86,23 +86,25 @@ class TestUM(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test1(self):
+    def _test1(self):
         s = 'Dark gray box model 1'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        model = DarkGray(f='demo')
+        phi = DarkGray(f='demo')
         X, Y = frame_to_arrays(df, ['x0', 'x4'], ['y0'])
-        y = model(X=X, Y=Y, x=X, silent=True, neurons=[10])
-        plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
-        plot_isomap(X[:, 0], X[:, 1], y[:, 0], title='y(X)')
-        plot_isomap(X[:, 0], X[:, 1], (y - Y)[:, 0], title='y(X)  -Y')
 
-        print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
+        y = phi(X=X, Y=Y, x=X, silent=0, neurons=[10], plot=1)
+        if phi.ready:
+            plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
+            plot_isomap(X[:, 0], X[:, 1], y[:, 0], title='y(X)')
+            plot_isomap(X[:, 0], X[:, 1], (y - Y)[:, 0], title='y(X)  -Y')
+    
+            print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
 
         self.assertTrue(True)
 
 
-    def test2(self):
+    def _test2(self):
         s = 'Dark gray box model 2'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
@@ -115,13 +117,15 @@ class TestUM(unittest.TestCase):
         def f(x, *c, **kwargs):
             return x[0] + x[1]
 
-        y = DarkGray(f, 'test2')(X=X, Y=Y, x=X, silent=True, neurons=[10])
+        phi = DarkGray(f, 'test2') 
+        y = phi(X=X, Y=Y, x=X, silent=True, neurons=[10, 10], plot=1)
 
-        plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
-        plot_isomap(X[:, 0], X[:, 1], y[:, 0], title='y(X)')
-        plot_isomap(X[:, 0], X[:, 1], y[:, 0] - Y[:, 0], title='y(X) - Y')
-
-        print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
+        if phi.ready:
+            plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='Y(X)')
+            plot_isomap(X[:, 0], X[:, 1], y[:, 0], title='y(X)')
+            plot_isomap(X[:, 0], X[:, 1], y[:, 0] - Y[:, 0], title='y(X) - Y')
+    
+            print('*** X:', X.shape, 'Y:', Y.shape, 'y:', y.shape)
 
         self.assertTrue(True)
 
@@ -130,25 +134,39 @@ class TestUM(unittest.TestCase):
         s = 'Black box model, measured Y(X) = E(mDot, p)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        raw.seek(0)
-        data_frame = pd.read_csv(raw, sep=',', comment='#')
-        data_frame.rename(columns=data_frame.iloc[0])
-        data_frame = data_frame.apply(pd.to_numeric, errors='coerce')
-        X = np.asfarray(data_frame.loc[:, ['mDot', 'p']])
-        Y = np.asfarray(data_frame.loc[:, ['A']])
+        def f(x, *c, **kwargs):
+            return -x[0] * 3.5 - x[1] * 3.5
 
-        y = Black('test3')(X=X, Y=Y, neurons=[], silent=True, x=X)
+        for phi in (Black(), DarkGray(f), ):
+            raw.seek(0)
+            data_frame = pd.read_csv(raw, sep=',', comment='#')
+            data_frame.rename(columns=data_frame.iloc[0])
+            data_frame = data_frame.apply(pd.to_numeric, errors='coerce')
+            X = np.asfarray(data_frame.loc[:, ['mDot', 'p']])
+            Y = np.asfarray(data_frame.loc[:, ['A']])
 
-        plot_isomap(X.T[0], X.T[1], Y.T[0] * 1e3, title=r'$A_{prc}\cdot 10^3$')
-        plot_isomap(X.T[0], X.T[1], y.T[0] * 1e3, title=r'$A_{blk}\cdot 10^3$')
-        plot_isomap(X.T[0], X.T[1], (Y.T[0] - y.T[0]) * 1e3,
-                    title=r'$(A_{prc} - A_{blk})\cdot 10^3$')
-        plot_wireframe(X.T[0], X.T[1], Y.T[0] * 1e3, 
-                       title=r'$A_{prc}\cdot 10^3$')
-        plot_wireframe(X.T[0], X.T[1], y.T[0] * 1e3, 
-                       title=r'$A_{blk}\cdot 10^3$')
-        plot_wireframe(X.T[0], X.T[1], (Y.T[0] - y.T[0]) * 1e3,
-                       title=r'$(A_{prc} - A_{blk})\cdot 10^3$')
+            y = phi(X=X, Y=Y, x=X, 
+                    neurons=[10]*2, 
+                    plot=1,
+                    silent=0,
+                    tolerated=10e-3, 
+                    trainer='auto', 
+                    trials=5, 
+                    )
+    
+            if phi.ready:
+                plot_isomap(X.T[0], X.T[1], Y.T[0] * 1e3, 
+                            title=r'$A_{prc}\cdot 10^3$')
+                plot_isomap(X.T[0], X.T[1], y.T[0] * 1e3, 
+                            title=r'$A_{box}\cdot 10^3$')
+                plot_isomap(X.T[0], X.T[1], (Y.T[0] - y.T[0]) * 1e3,
+                            title=r'$(A_{prc} - A_{box})\cdot 10^3$')
+                plot_wireframe(X.T[0], X.T[1], Y.T[0] * 1e3, 
+                               title=r'$A_{prc}\cdot 10^3$')
+                plot_wireframe(X.T[0], X.T[1], y.T[0] * 1e3, 
+                               title=r'$A_{box}\cdot 10^3$')
+                plot_wireframe(X.T[0], X.T[1], (Y.T[0] - y.T[0]) * 1e3,
+                               title=r'$(A_{prc} - A_{box})\cdot 10^3$')
 
         self.assertTrue(True)
 

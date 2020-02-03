@@ -63,36 +63,36 @@ class TestUM(unittest.TestCase):
 
     def test1(self):
         x = grid(100, [0.9, 1.1], [0.9, 1.1])
-        y_exa = White('demo', 'test1')(x=x)
-        y = noise(y_exa, relative=20e-2)
+        y_tru = White('demo', 'test1')(x=x)
+        y = noise(y_tru, relative=20e-2)
 
-        plot_isomap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
-        plot_surface(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
-        plot_isolines(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$',
+        plot_isomap(x[:, 0], x[:, 1], y_tru[:, 0], title='$y_{tru,0}$')
+        plot_surface(x[:, 0], x[:, 1], y_tru[:, 0], title='$y_{tru,0}$')
+        plot_isolines(x[:, 0], x[:, 1], y_tru[:, 0], title='$y_{tru,0}$',
                       levels=[0, 1e-4, 5e-4, .003, .005, .01, .02, .05, .1, 
                               .2])
         plot_isomap(x[:, 0], x[:, 1], y[:, 0], title='$y_0$')
-        plot_isomap(x[:, 0], x[:, 1], (y - y_exa)[:, 0], 
-                    title='$y_0-y_{exa,0}$')
+        plot_isomap(x[:, 0], x[:, 1], (y - y_tru)[:, 0], 
+                    title='$y_0-y_{tru,0}$')
 
         self.assertTrue(True)
 
 
     def test2(self):
         x = grid(4, [0, 12], [0, 10])
-        y_exa = White(f, 'test2')(x=x)
-        y = noise(y_exa, relative=20e-2)
+        y_tru = White(f, 'test2')(x=x)
+        y = noise(y_tru, relative=20e-2)
 
-        plot_isomap(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
-        plot_isomap(x[:, 0], x[:, 1], y_exa[:, 1], title='$y_{exa,1}$')
-        plot_surface(x[:, 0], x[:, 1], y_exa[:, 0], title='$y_{exa,0}$')
-        plot_surface(x[:, 0], x[:, 1], y_exa[:, 1], title='$y_{exa,1}$')
+        plot_isomap(x[:, 0], x[:, 1], y_tru[:, 0], title='$y_{tru,0}$')
+        plot_isomap(x[:, 0], x[:, 1], y_tru[:, 1], title='$y_{tru,1}$')
+        plot_surface(x[:, 0], x[:, 1], y_tru[:, 0], title='$y_{tru,0}$')
+        plot_surface(x[:, 0], x[:, 1], y_tru[:, 1], title='$y_{tru,1}$')
         plot_isomap(x[:, 0], x[:, 1], y[:, 0], title='$y_0$')
         plot_isomap(x[:, 0], x[:, 1], y[:, 1], title='$y_1$')
-        plot_isomap(x[:, 0], x[:, 1], (y - y_exa)[:, 0], 
-                    title='$y_0-y_{exa,0}$')
-        plot_isomap(x[:, 0], x[:, 1], (y - y_exa)[:, 1], 
-                    title='$y_1-y_{exa,1}$')
+        plot_isomap(x[:, 0], x[:, 1], (y - y_tru)[:, 0], 
+                    title='$y_0-y_{tru,0}$')
+        plot_isomap(x[:, 0], x[:, 1], (y - y_tru)[:, 1], 
+                    title='$y_1-y_{tru,1}$')
 
         self.assertTrue(True)
 
@@ -101,19 +101,19 @@ class TestUM(unittest.TestCase):
         X = grid(5, [-1, 2], [3, 4])
         print('X:', X)
 
-        Y_exa = White(f, 'test3')(x=X)
-        plot_isomap(X[:, 0], X[:, 1], Y_exa[:, 0], title='$Y_{exa,0}$')
-        plot_isomap(X[:, 0], X[:, 1], Y_exa[:, 1], title='$Y_{exa,1}$')
-        print('Y_exa:', Y_exa)
+        Y_tru = White(f, 'test3')(x=X)
+        plot_isomap(X[:, 0], X[:, 1], Y_tru[:, 0], title='$Y_{tru,0}$')
+        plot_isomap(X[:, 0], X[:, 1], Y_tru[:, 1], title='$Y_{tru,1}$')
+        print('Y_tru:', Y_tru)
 
-        Y = noise(Y_exa, absolute=0.1, uniform=True)
+        Y = noise(Y_tru, absolute=0.1, uniform=True)
         plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='$Y_{0}$')
         plot_isomap(X[:, 0], X[:, 1], Y[:, 1], title='$Y_{1}$')
         print('Y:', Y)
 
-        dY = Y - Y_exa
-        plot_isomap(X[:, 0], X[:, 1], dY[:, 0], title='$Y - Y_{exa,0}$')
-        plot_isomap(X[:, 0], X[:, 1], dY[:, 1], title='$Y - Y_{exa,1}$')
+        dY = Y - Y_tru
+        plot_isomap(X[:, 0], X[:, 1], dY[:, 0], title='$Y - Y_{tru,0}$')
+        plot_isomap(X[:, 0], X[:, 1], dY[:, 1], title='$Y - Y_{tru,1}$')
         print('dY:', dY)
 
         self.assertTrue(True)
@@ -157,22 +157,22 @@ class TestUM(unittest.TestCase):
         Y = noise(White(f)(x=X), absolute=0.1)
 
         x = rand(n_point, [0, 10], [0, 10])
-        y_exa = White(f)(x=x)
+        y_tru = White(f)(x=x)
         y = model(X=X, Y=Y, x=x)
 
-        plt.title('Target, exact solution and prediction')
+        plt.title('Target, true solution and prediction')
         plt.scatter(X[:, 0], Y[:, 0], marker='o', label='$Y_0(X_0)$ target')
-        plt.scatter(x[:, 0], y_exa[:, 0], marker='s', label='$y_{exa,0}(x_0)$')
+        plt.scatter(x[:, 0], y_tru[:, 0], marker='s', label='$y_{tru,0}(x_0)$')
         plt.scatter(x[:, 0], y[:, 0], marker='v', label='$y_0(x_0)$')
         plt.legend()
         plt.grid()
         plt.show()
 
         plt.title('Absolute error')
-        plt.scatter(x[:, 0], y[:, 0] - y_exa[:, 0], marker='s',
-                    label='$y_0 - y_{exa,0}$')
-        plt.scatter(x[:, 0], y[:, 1] - y_exa[:, 1], marker='s',
-                    label='$y_1 - y_{exa,1}$')
+        plt.scatter(x[:, 0], y[:, 0] - y_tru[:, 0], marker='s',
+                    label='$y_0 - y_{tru,0}$')
+        plt.scatter(x[:, 0], y[:, 1] - y_tru[:, 1], marker='s',
+                    label='$y_1 - y_{tru,1}$')
         plt.legend()
         plt.grid()
         plt.show()
@@ -187,14 +187,13 @@ class TestUM(unittest.TestCase):
         Y = noise(White(f)(x=X), absolute=0.1)
 
         x = rand(n_point, [0, 10], [0, 10])
-        y_exa = White(f)(x=x)
+        y_tru = White(f)(x=x)
 
         metrics = model(X=X, Y=Y)
         print('metrics:', metrics)
 
         y = model(x=x)
-        print('L2 (prd):', L2_norm(y, Y))
-        print('L2 (exa):', L2_norm(y, Y))
+        print('L2 (prd):', L2_norm(y, y_tru))
 
         self.assertTrue(True)
 

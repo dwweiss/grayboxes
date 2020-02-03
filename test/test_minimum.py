@@ -49,7 +49,7 @@ def f1(x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
     return [+(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)]
 
 # theoretical submodel without kw-arguments, needed by scipy.optimize.minimum()
-def f_return_float(x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
+def f_returns_float(x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
         -> float:
     y = np.sin(x[0]) + (x[1])**2 + 2 
     return y
@@ -67,7 +67,7 @@ class TestUM(unittest.TestCase):
     def test1(self):
         s = 'Use scipy.optimize.minimize()'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
-        res = scipy.optimize.minimize(fun=f_return_float, x0=(4, 2), 
+        res = scipy.optimize.minimize(fun=f_returns_float, x0=(4, 2), 
                                       method='nelder-mead',)
         print('res.x:', res.x)
 

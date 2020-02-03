@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-22 DWW
+      2020-01-31 DWW
 """
 
 import initialize
@@ -53,28 +53,42 @@ class TestUM(unittest.TestCase):
         def f(x):
             return np.sin(x) * 10 + 0
 
-        X = np.atleast_2d(np.linspace(-1.75 * np.pi, 1.75 * np.pi, 50)).T
+        n_obs = 500
+        n_tst = 400
+        X = np.linspace(-2 * np.pi, 2 * np.pi, n_obs).reshape(-1, 1)
         Y = f(X)
         dx = 0.5 * (X.max() - X.min())
-        x = np.atleast_2d(np.linspace(X.min() - dx, X.max() + dx, 100)).T
+        x = np.linspace(X.min() - dx, X.max() + dx, n_tst).reshape(-1, 1)
         
-        model = Black()
+        phi = Black()
         
-        # keyword 'neurons' selects Neural as empirical model in Black
-        y1 = model(X=X, Y=Y, x=x, neurons=[8], plot=1, epochs=500, goal=1e-5,
-                   show=None)
+        # keyword 'neurons' selects Neural as empirical phi in Black
+        y1 = phi(X=X, Y=Y, x=x, 
+                 backend='keras',
+                 epochs=500,
+                 expected=0.75e-3,
+#                 neurons=[[10]*i for i in range(8)], 
+                 neurons='brute_force',
+                 patience=30,
+                 plot=1,
+                 show=None,
+                 tolerated=10e-3,
+                 trainer='adam',
+                 trials=10,
+                 )
 
-        print('+++ shapes of X Y x y:', model.X.shape, model.Y.shape, 
-              model.x.shape, model.y.shape, )
+        print('+++ shapes of X Y x y:', phi.X.shape, phi.Y.shape, 
+              phi.x.shape, phi.y.shape, )
 
-        plt.title('Test, L2:' + str(round(model.metrics['L2'], 5)))
-        plt.plot(model.x, y1, '-', label='MLP')
-        plt.plot(model.X, model.Y, '.', label='target')
+        plt.title('Test, L2:' + str(round(phi.metrics['L2'], 5)))
+        plt.plot(phi.x, y1, '-', label='MLP')
+        plt.plot(phi.X, phi.Y, '.', label='target')
         plt.xlabel('x')
         plt.ylabel('y(x)')
         plt.show()
 
         self.assertTrue(True)
+
 
 if __name__ == '__main__':
     unittest.main()

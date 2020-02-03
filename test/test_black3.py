@@ -36,6 +36,7 @@ class TestUM(unittest.TestCase):
     def setUp(self):
         self.saveFigures = True
 
+
     def tearDown(self):
         pass
 
@@ -68,7 +69,7 @@ class TestUM(unittest.TestCase):
                        f2]
 
         # neural network options
-        kwargs_ = {'trainers': 'bfgs rprop', 'neurons': []}
+        kwargs_ = {'trainers': 'auto', 'neurons': []}
 
         Y = np.array(df.loc[:, ['u']])            # extracts an 2D array
         for f in definitions:
@@ -86,6 +87,10 @@ class TestUM(unittest.TestCase):
 
             blk.train(X, Y, **kwargs_)
             y = blk.predict(X)
+            
+            if not blk.ready:
+                return
+            
             dy = y - Y
 
             # console output
