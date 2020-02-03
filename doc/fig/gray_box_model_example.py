@@ -17,8 +17,11 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-16 DWW
+      2020-01-28 DWW
 """
+
+import initialize
+initialize.set_path()
 
 import numpy as np
 from grayboxes.array import grid, noise
@@ -45,36 +48,42 @@ def func(x, *c):
 
 
 # White 
-x = grid((32, 32), [0., 1.], [-1., 3.])
-y_wht = White(f=func)(x=x, silent=True)
-y_nse = noise(y_wht, relative=5e-2)
+X = grid((32, 32), [0., 1.], [-1., 3.])
+Y_tru = White(f=func)(x=X, silent=True)
+Y_nse = noise(Y_tru, relative=5e-2)
 
 
 # LightGray
 phi = LightGray(f=func)
-phi(X=x, Y=y_nse, trials=5, goal=1e-5, n_it_max=1000, detailed=True,
+phi(X=X, Y=Y_nse, trials=5, expected=1e-5, n_it_max=1000, detailed=0,
     trainer=('BFGS', 'L-BFGS-B', 'Nelder-Mead', 'Powell', 'CG'))
-y_lgr = phi(x=x, silent=True)
+y_lgr = phi(x=X, silent=True)
 print('Metrics + weights of light gray:', phi.metrics, phi.weights)
 
 
-# Meta model of LightGray
+# Meta model of LightGray output
 M = Black()
-M(X=x, Y=y_lgr, neurons=[8, 4], trials=3, goal=1e-5, trainer='rprop', 
-  n_it_max=2000, show=100)
-y_mta = M(x=x, silent=True)
+M(X=X, Y=y_lgr,
+  backend='keras',
+  neurons=[8, 4], 
+  trials=3, 
+  expected=1e-4, 
+  trainer='rprop', 
+  n_it_max=500, 
+  show=100)
+y_mta = M(x=X, silent=True)
 print('Metrics of meta model training:', M.metrics)
 
 
-axes = x[:, 0], x[:,1]
-plot_isomap(*axes,         y_wht[:,0], labels=['x0', 'x1', 'y_wht'])
-plot_isomap(*axes,         y_nse[:,0], labels=['x0', 'x1', 'y_nse'])
-plot_isomap(*axes, (y_nse-y_wht)[:,0], labels=['x0', 'x1', 'y_nse - y_wht'])
+axes = X[:, 0], X[:, 1]
+plot_isomap(*axes,         Y_tru[:,0], labels=['x0', 'x1', 'y_wht'])
+plot_isomap(*axes,         Y_nse[:,0], labels=['x0', 'x1', 'y_nse'])
+plot_isomap(*axes, (Y_nse-Y_tru)[:,0], labels=['x0', 'x1', 'y_nse - y_tru'])
 
-plot_isomap(*axes,         y_lgr[:,0], labels=['x0', 'x1', 'y_lgr'])
-plot_isomap(*axes, (y_lgr-y_nse)[:,0], labels=['x0', 'x1', 'y_lgr - y_nse'])
-plot_isomap(*axes, (y_lgr-y_wht)[:,0], labels=['x0', 'x1', 'y_lgr - y_wht'])
+plot_isomap(*axes,         y_lgr[:,0], labels=['x0', 'x1', 'y_lgr \Delta'])
+plot_isomap(*axes, (y_lgr-Y_nse)[:,0], labels=['x0', 'x1', 'y_lgr - y_nse'])
+plot_isomap(*axes, (y_lgr-Y_tru)[:,0], labels=['x0', 'x1', 'y_lgr - y_tru'])
 
 plot_isomap(*axes,         y_mta[:,0], labels=['x0', 'x1', 'y_mta'])
-plot_isomap(*axes, (y_mta-y_nse)[:,0], labels=['x0', 'x1', 'y_mta - y_nse'])
-plot_isomap(*axes, (y_mta-y_wht)[:,0], labels=['x0', 'x1', 'y_mta - y_wht'])
+plot_isomap(*axes, (y_mta-Y_nse)[:,0], labels=['x0', 'x1', 'y_mta - y_nse'])
+plot_isomap(*axes, (y_mta-Y_tru)[:,0], labels=['x0', 'x1', 'y_mta - y_tru'])

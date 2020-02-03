@@ -24,7 +24,7 @@ from collections import OrderedDict
 import numpy as np
 import matplotlib.pyplot as plt
 
-from grayboxes.model import Model
+from grayboxes.boxmodel import BoxModel
 from grayboxes.white import White
 from grayboxes.lightgray import LightGray
 from grayboxes.mediumgray import MediumGray
@@ -66,18 +66,29 @@ if __name__ == '__main__':
     # training and test data
     nTst, xTstRng = 100, [-1 * np.pi, 1.5 * np.pi]                 # test input
     nTrn, xTrnRng = 20, [-0.5 * np.pi, 1 * np.pi]              # training input
-    X = np.atleast_2d(np.linspace(xTrnRng[0], xTrnRng[1], nTrn)).T
-    Y = np.atleast_2d([np.atleast_1d(F_noise(_x)) for _x in X])
+    X = np.linspace(xTrnRng[0], xTrnRng[1], nTrn).reshape(-1, 1)
+    Y = np.asfarray([np.atleast_1d(F_noise(_x)) for _x in X])
 
-    x = np.atleast_2d(np.linspace(xTstRng[0], xTstRng[1], nTst)).T
-    y_tru = np.atleast_2d([np.atleast_1d(F_true(_x)) for _x in x])
-    Y_tru = np.atleast_2d([np.atleast_1d(F_true(_x)) for _x in X])
+    x = np.linspace(xTstRng[0], xTstRng[1], nTst).reshape(-1, 1)
+    y_tru = np.asfarray([np.atleast_1d(F_true(_x)) for _x in x])
+    Y_tru = np.asfarray([np.atleast_1d(F_true(_x)) for _x in X])
 
-    models = [White(f), LightGray(f), MediumGray(f), DarkGray(f), Black()]
+    models = [White(f), 
+              LightGray(f), 
+              # MediumGray(f), 
+              DarkGray(f), 
+              Black()]
 
-    opt = {'neurons': [4], 'regularization': 0.5,  'epochs': 1000,
-           'goal': 1e-5, 'methods': ['rprop', 'BFGS'], 'trials': 3,
-           'c0': np.ones(3), 'local': 1, 'shuffle': True}
+    opt = {'neurons': [4], 
+           'regularization': 0.5,  
+           'epochs': 1000,
+           'expected': 0.1e-3, 
+           'tolerated': 10e-3, 
+           'trainer': 'auto', 
+           'trials': 3,
+           'c0': np.ones(3), 
+           'local': 1, 
+           'shuffle': True}
 
     results = OrderedDict()
     for model in models:
@@ -91,10 +102,8 @@ if __name__ == '__main__':
     plt.xlabel('$x\, /\, \pi$')
     plt.ylabel('$y$')
     for model, xy in results.items():
-        if isinstance(model, Model):
-            key = model.identifier
-        else:
-            key = model
+        key = model.identifier if isinstance(model, BoxModel) else model
+        
         if isinstance(model, White) or (isinstance(key, str) and
                                         key in ('true')):
             plt.plot(xy[0][:, 0]/np.pi, xy[1][:, 0], label=key, ls='-')
@@ -111,10 +120,7 @@ if __name__ == '__main__':
     plt.xlabel('$x\, /\, \pi$')
     plt.ylabel('$y$')
     for model, xy in results.items():
-        if isinstance(model, Model):
-            key = model.identifier
-        else:
-            key = model
+        key = model.identifier if isinstance(model, BoxModel) else model
         if key != 'noise':
             ls = '-'
             if key in ('train'):
@@ -136,7 +142,7 @@ if __name__ == '__main__':
     plt.ylabel(r'$y - y_{nse}$')
 
     for model, xy in results.items():
-        if isinstance(model, Model):
+        if isinstance(model, BoxModel):
             key = model.identifier
         else:
             key = model
@@ -161,7 +167,7 @@ if __name__ == '__main__':
         plt.xlabel('$x\, /\, \pi$')
         plt.ylabel(r'$y - y_{tru}$')
         for model, xy in results.items():
-            if isinstance(model, Model):
+            if isinstance(model, BoxModel):
                 key = model.identifier
             else:
                 key = model
