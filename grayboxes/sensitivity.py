@@ -17,15 +17,15 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-13 DWW
+      2020-02-03 DWW
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Any, Tuple
 
-from grayboxes.base import Float1D, Float2D
 from grayboxes.boxmodel import BoxModel
+from grayboxes.datatypes import Float1D, Float2D
 from grayboxes.forward import Forward
 from grayboxes.plot import plot_bar_arrays
 
@@ -64,19 +64,19 @@ class Sensitivity(Forward):
 
     def task(self, **kwargs: Any) -> Tuple[Float1D, Float2D]:
         """
-        Analyzes sensitivity
+        Analyzes sensitivity dy/dx
 
         Kwargs:
-            X (2D array of float, optional):
+            X (2D array of float):
                 training input, shape: (n_point, n_inp) 
                 default: self.model.X
 
-            Y (2D array of float, optional):
+            Y (2D array of float):
                 training target, shape: (n_point, n_out)
                 default: self.model.Y
 
             x (2D array of float):
-                cross-type input points, see BoxModel.cross()
+                cross-type input points, see array.cross()
                 default: self.model.x
 
         Returns:
@@ -86,7 +86,7 @@ class Sensitivity(Forward):
                 dy/dx:
                     gradient of y with respect to x in reference point
             OR
-            (None, None) if self.model.x is None
+            2-typle (None, None) if self.model.x is None
         """
         # training if X and Y are not None, 
         # and prediction of self.model.y if self.model.x is not None 
@@ -95,14 +95,14 @@ class Sensitivity(Forward):
         if self.model.x is None:
             return None, None
 
-        # ref point (x, y)_ref is stored as: (self.model.x[0], self.model.y[0])
+        # (x, y)_ref is stored as: (self.model.x[0], self.model.y[0])
         x, y = self.model.x, self.model.y
         x_ref = x[0]
         n_point, n_inp, n_out = x.shape[0], x.shape[1], y.shape[1]
 
         self.indices_with_equal_Xj = [[] for _ in range(n_inp)]
 
-        # i is point index, j is input index and k is output index
+        # i is point index, j is input index
         for i in range(1, n_point):
             for j in range(n_inp):
                 if np.isclose(x[0, j], x[i, j]):

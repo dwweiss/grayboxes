@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-12 DWW
+      2020-01-21 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
@@ -28,8 +28,9 @@ import numpy as np
 import scipy.optimize
 from typing import Any, Dict, List, Sequence, Union
 
-from grayboxes.base import Float1D, Float2D, Function
 from grayboxes.boxmodel import BoxModel
+from grayboxes.datatypes import Float1D, Float2D, Function
+from grayboxes.metrics import init_metrics
 try:
     import modestga
 except ImportError:
@@ -194,13 +195,15 @@ class LightGray(BoxModel):
             ... specific optimizer options
 
         Returns:
-            results, see BoxModel.train()
+            metrics, see init_metrics()
         """
-        results = self.init_metrics('trainer', trainer)
+        results = init_metrics({'trainer': trainer})
         
-        # self.weights and self.reday are used in BoxModel.predict()
-        self.weights = None
+        # self.ready must be True to avoid that self.predict() returns None       
         self.ready = True
+
+        # self.weights must be None to ensure default of coefficients of f()
+        self.weights = None
 
         if trainer in self.scipy_minimizers:
             if trainer.startswith('bas'):
@@ -337,6 +340,7 @@ class LightGray(BoxModel):
             self.ready = self.weights is not None
         else:
             results['weights'] = None
+            # TODO .
             self.weights = None
             self.ready = False
         
@@ -376,7 +380,7 @@ class LightGray(BoxModel):
                 If c_ini is None, the initialvalues are returned from
                 f(x=None)
 
-                c_ini.shape: (number of trials,number of tuning params)
+                c_ini.shape: (number of trials, number of tuning params)
                 [IS PASSED IN KWARGS to be compatible to parallel.py]
 
         Returns:
@@ -400,26 +404,26 @@ class LightGray(BoxModel):
             str(c_ini_trials)
         c_ini_trials = np.atleast_2d(c_ini_trials)     # shape: (n_trial, n_tun)
 
-        # replace 'all' and 'auto' in trainer, checksvalidity of trainer 
-        trainer = self.kwargs_get(kwargs, 'trainer')
-        trainer = np.atleast_1d(trainer)
-        if trainer[0] is None:
-            trainer = ['auto']
-        if trainer[0].lower() == 'all':
-            trainer = self.valid_trainers
-        if any([trn not in self.valid_trainers + ['auto'] for trn in trainer]):
-            self.write("    !!! trainer: '" + str(trainer) + "' ==> 'auto'")
-            trainer = ['auto']
-        if trainer[0].lower() == 'auto':
+        # replace 'all' and 'auto' in trainer, checks validity of trainer 
+        trainers = self.kwargs_get(kwargs, 'trainer')
+        trainers = np.atleast_1d(trainers)
+        if trainers[0] is None:
+            trainers = ['auto']
+        if trainers[0].lower() == 'all':
+            trainers = self.valid_trainers
+        if any([tr not in self.valid_trainers + ['auto'] for tr in trainers]):
+            self.write("    !!! trainer: '" + str(trainers) + "' ==> 'auto'")
+            trainers = ['auto']
+        if trainers[0].lower() == 'auto':
             if self.X.shape[1] == 1 and self.Y.shape[1] == 1:
                 # consider 'lm' or 'curve_fit' if n_inp == n_out == 1
-                trainer = ['leastsq']
+                trainers = ['leastsq']
             else:
-                trainer = ['BFGS']
-            self.write("    !!! trainer: 'auto' ==> '" + trainer[0] + "'")
+                trainers = ['BFGS']
+            self.write("    !!! trainer: 'auto' ==> '" + trainers[0] + "'")
             
-        assert all([trn in self.valid_trainers for trn in trainer]), \
-            str(trainer)
+        assert all([trn in self.valid_trainers for trn in trainers]), \
+            str(trainers)
             
         # sets detailed print (only if not silent)
         if 'silent' in kwargs:
@@ -427,13 +431,14 @@ class LightGray(BoxModel):
         print_details = kwargs.get('detailed', False) and not self.silent
 
         # loop over all trainers
-        self.metrics = self.init_metrics()
-        self.metrics['trainer'] = trainer[0]
-        self.metrics['weights'] = None
+        self.metrics = init_metrics({'trainer': trainers[0], 
+                                     'weights': [None, ]})
         message = ''
         self.write('+++ Loop over trainers')
+
                 
-        for trainer_ in trainer:
+        self.ready = True
+        for trainer_ in trainers:
             self.write(4 * ' ' + trainer_)
 
             # tries all initial tuning par sets if not global method
@@ -449,9 +454,10 @@ class LightGray(BoxModel):
                     **self.kwargs_del(kwargs, ('trainer', 'c_ini', 'tun0')))
 
                 if results['weights'] is not None:
-                    self.weights = results['weights']
-                                                # for BoxModel.predict()
+                    self.weights = results['weights']  # for BoxModel.predict()
                     metrics = self.evaluate(X=X, Y=Y, silent=True)
+                    
+                    metrics['trainer'] = trainer_
                     self.weights = None         # back to None for train
                     if self.metrics['L2'] > metrics['L2']:
                         self.metrics['trainer'] = trainer_
@@ -479,7 +485,7 @@ class LightGray(BoxModel):
                                                             4)))) + ', '
         self.write(message)
         message = (4+0) * ' ' + 'w: '
-        if self.weights is not None:
+        if self.weights is not None and self.weights[0] is not None:            
             message += str(np.round(self.weights, 4))
         else:
             message += str(None)
@@ -492,6 +498,7 @@ class LightGray(BoxModel):
 
         # the 'weights' keys is only locally used in self.train()
         del self.metrics['weights']
+        self.metrics['ready'] = self.ready
 
         return self.metrics
 

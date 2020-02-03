@@ -17,15 +17,15 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-09 DWW
+      2020-01-30 DWW
 """
 
 import numpy as np
 from typing import Any, Optional, Tuple
 
 from grayboxes.base import Base
-from grayboxes.base import Float2D
 from grayboxes.boxmodel import BoxModel
+from grayboxes.datatypes import Float2D
 from grayboxes.white import White
 
 
@@ -124,6 +124,9 @@ class Forward(Base):
                 input to forward prediction or to sensitivity analysis
                 shape: (n_point, n_inp) or (n_inp,)
                 default: self._x
+                
+        Returns:
+            True on success of pre() of parent class
         """
         ok = super().pre(**kwargs)
 
@@ -173,6 +176,9 @@ class Forward(Base):
         """
         Kwargs:
             Keyword arguments passed to super.post()
+            
+        Returns:
+            True on success of post() of parent class
         """
         ok = super().post(**kwargs)
 

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-21 DWW
+      2020-02-03 DWW
 """
 
 __all__ = ['mpi', 'communicator', 'rank', 'predict_scatter', 'split', 'merge']
@@ -25,7 +25,6 @@ __all__ = ['mpi', 'communicator', 'rank', 'predict_scatter', 'split', 'merge']
 import numpy as np
 import psutil
 import sys
-from nptyping import Array
 from typing import Any, Callable, List, Optional, Union
 import os
 if os.name == 'posix':
@@ -37,7 +36,20 @@ if os.name == 'posix':
             print('!!! mpi4py.MPI import failed')
     except ImportError:
         print('!!! mpi4py import failed')
-
+        
+try:
+    from grayboxes.datatypes import Float1D, Float2D, Float3D, None2D
+except ImportError:
+    try:
+        from datatypes import Float1D, Float2D, Float3D, None2D
+    except ImportError:
+        print('!!! Module datatypes not imported')
+        print('    continue with unauthorized definition of Float1D, ' +
+              'Float2D, Float3D, None2D')
+        Float1D = Optional[np.ndarray]
+        Float2D = Optional[np.ndarray]
+        Float3D = Optional[np.ndarray]
+        None2D = Optional[np.ndarray]
 
 """
     Tools for splitting & merging data sets, and execution of task on 
@@ -95,11 +107,9 @@ def rank() -> Optional[int]:
     return comm.Get_rank()
 
 
-def predict_scatter(f: Callable[..., List[float]], 
-                    x: Union[Array[float, ..., ...], Array[float, ...]], 
-                    *args: float, 
-                    **kwargs: Any) \
-        -> Union[Array[float, ..., ...], Array[None]]:
+def predict_scatter(f: Callable[..., List[float]], x: Union[Float2D, Float1D], 
+                    *args: float, **kwargs: Any) \
+                    -> Union[Float2D, None2D]:
     """
     Parallelizes prediction of model y = f(x) employing scatter() and 
     gather()
@@ -121,7 +131,7 @@ def predict_scatter(f: Callable[..., List[float]],
     Returns:
         output array, shape: (n_point, n_out)
         or 
-        np.array([[None]]) if no MPI, , shape: (1, 1)
+        np.array([[None]]) if no MPI
     """
     assert os.name == 'posix', os.name
     assert f is not None
@@ -163,7 +173,8 @@ def predict_scatter(f: Callable[..., List[float]],
     return y
 
 
-# def predict_subprocess(f, x, **kwargs):
+# def predict_subprocess(f: Callable, x: Union[Float2D, Float1D], 
+#                        **kwargs: Any) -> Float2D:
 #    """
 #    Parallelizes prediction of model y = f(x) employing subprocess
 #
@@ -174,7 +185,7 @@ def predict_scatter(f: Callable[..., List[float]],
 #        x (2D or 1D array_like of float):
 #            input array, shape: (n_point, n_inp)
 #
-#        kwargs (dict, optional):
+#        kwargs:
 #            keyword arguments
 #
 #    Returns:
@@ -232,15 +243,13 @@ def predict_scatter(f: Callable[..., List[float]],
 #    return y
 
 
-def split(x2d: Optional[Union[Array[float, ..., ...], Array[float, ...]]], 
-          n_proc: int) -> Union[Array[float, ..., ..., ...], 
-                                Array[float, 1, 1, 1]]:
+def split(x2d: Union[Float2D, Float1D], n_proc: int) -> Float3D:
     """
     - Fills up given 2D array with 'np.inf' to a size of multiple of 'nProc'
     - Splits the 2D array into an 3D array
 
     Args:
-        x2d (2D or 1D array_like of float):
+        x2d:
             input array, shape: (n_proc, n_inp) or (n_inp,)
 
         n_proc:
@@ -249,7 +258,7 @@ def split(x2d: Optional[Union[Array[float, ..., ...], Array[float, ...]]],
     Returns:
         array of 2D arrays, shape: (n_proc, n_point_per_proc, n_inp)
         or 
-        np.array([[[np.inf]]]]) if x2d is None, shape: (1, 1, 1)
+        np.array([[[np.inf]]]]) if x2d is None
     """
     if x2d is None:
         return np.atleast_3d(np.inf)
@@ -262,8 +271,7 @@ def split(x2d: Optional[Union[Array[float, ..., ...], Array[float, ...]]],
     return np.array(np.split(x2d, n_proc))
 
 
-def merge(y3d: Optional[Array[float, ..., ..., ...]]) \
-        -> Union[Array[float, ..., ...], Array[float, 1, 1]]:
+def merge(y3d: Float3D) -> Float2D:
     """
     - Merges output from predictions of all processes to single 2D output array
     - Excludes output points with first element equaling np.inf
@@ -293,8 +301,7 @@ def merge(y3d: Optional[Array[float, ..., ..., ...]]) \
     return np.array(y2d)
 
 
-def x3d_to_str(data: Array[float, ..., ..., ...], 
-               indent: Union[str, int] = '    ') -> str:
+def x3d_to_str(data: Float3D, indent: Union[str, int] = '    ') -> str:
     """
     Creates string matrix with of MPI input or output
 
@@ -326,7 +333,7 @@ def x3d_to_str(data: Array[float, ..., ..., ...],
     return s
 
 
-def x_demo(n_point: int = 24, n_inp: int = 2) -> Array[float, ..., ...]:
+def x_demo(n_point: int = 24, n_inp: int = 2) -> Float2D:
     """
     Args:
         n_point:

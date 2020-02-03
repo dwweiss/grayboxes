@@ -17,16 +17,16 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-03 DWW
+      2020-02-03 DWW
 """
 
 import numpy as np
 from typing import Any, Dict, List
 
-from grayboxes.base import Float2D, Function
-from grayboxes.boxmodel import BoxModel
-from grayboxes.lightgray import LightGray
 from grayboxes.black import Black
+from grayboxes.boxmodel import BoxModel
+from grayboxes.datatypes import Float2D, Function
+from grayboxes.lightgray import LightGray
 from grayboxes.neural import Neural
 
 
@@ -210,6 +210,7 @@ class MediumGray(BoxModel):
 
         self.ready = True
         self.metrics = self.evaluate(self.X, self.Y, **kwargs_)
+        self.metrics['ready'] = self.ready
         
         return self.metrics
 
@@ -240,7 +241,7 @@ class MediumGray(BoxModel):
         self.x = x                            # setter ensuring 2D array
         
         if not self.ready or self._n_inp == -1:
-            self._y = None
+            self.y = None
             return self.y
         
         assert self._n_inp == self.x.shape[1], \

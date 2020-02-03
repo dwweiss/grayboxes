@@ -23,16 +23,15 @@
 __all__ = ['xyz', 'xyzt']
 
 import numpy as np
-from nptyping import Array
-from typing import Optional, Sequence, Tuple, Union
+from typing import Optional, Iterable, Tuple, Union
 
 
-def _rotate2d(phi_rad: Union[float, Array[float]],
-              xx: Union[float, Array[float]],
-              yy: Union[float, Array[float]],
+def _rotate2d(phi_rad: Union[float, Iterable[float]],
+              xx: Union[float, Iterable[float]],
+              yy: Union[float, Iterable[float]],
               xx0: float = 0., yy0: float = 0.) \
         -> Union[Tuple[float, float], 
-                 Tuple[Array[float], Array[float]]]:
+                 Tuple[np.ndarray, np.ndarray]]:
     """
     Helper method for rotation of (XX,YY) point in 2D plane
 
@@ -155,7 +154,7 @@ class xyz(object):
                    self.z * P.x - self.x * P.z,
                    self.x * P.y - self.y * P.x)
 
-    def translate(self, offset: Union[Sequence[float], 'xyz']) -> None:
+    def translate(self, offset: Union[np.ndarray, 'xyz']) -> None:
         if isinstance(offset, xyz):
             self.x += offset.x
             self.y += offset.y
@@ -166,8 +165,8 @@ class xyz(object):
             self.z += offset[2]
 
     def rotate(self, 
-               phi_rad: Sequence[float],
-               rot_axis: Sequence[float]) -> None:
+               phi_rad: Iterable[float],
+               rot_axis: Iterable[float]) -> None:
         """
         Coordinate transformation: rotate this point in Cartesian system
 
@@ -195,8 +194,8 @@ class xyz(object):
             assert 0
 
     def rotate_deg(self, 
-                   phi_deg: Sequence[float],
-                   rot_axis: Sequence[float]) -> None:
+                   phi_deg: Iterable[float],
+                   rot_axis: Iterable[float]) -> None:
         """
         Coordinate transformation: rotate this point in Cartesian system
 
@@ -213,7 +212,7 @@ class xyz(object):
         self.rotate(np.asfarray(phi_deg) / 180. * np.pi, rot_axis)
 
     def scale(self, scaling_factor: Union[int, float, 
-                                          Sequence[float], 'xyz']) -> None:
+                                          Iterable[float], 'xyz']) -> None:
         if isinstance(scaling_factor, (int, float)):
             if self.x is not None:
                 self.x *= float(scaling_factor)

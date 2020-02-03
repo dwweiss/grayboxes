@@ -17,15 +17,23 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-12 DWW
+      2020-01-31 DWW
 """
 
 import sys
 from typing import Any, Dict, Optional, Union
 
-from grayboxes.base import Float2D, Function
 from grayboxes.boxmodel import BoxModel
-from grayboxes.neural import Neural
+from grayboxes.datatypes import Float2D, Function
+from grayboxes.metrics import init_metrics
+try:
+    from grayboxes.neuralk import Neural as NeuralK
+except ImportError:
+    print('!!! Module neuralk not imported')
+try:
+    from grayboxes.neuraln import Neural as NeuralN
+except ImportError:
+    print('!!! Module neuraln not imported')
 try:
     from grayboxes.splines import Splines
 except ImportError:
@@ -44,7 +52,7 @@ class Black(BoxModel):
           'self._empirical._weights'
 
     Example:
-        X = np.atleast_2d(np.linspace(0.0, 1.0, 20)).T
+        X = np.linspace(0.0, 1.0, 20).reshape(-1, 1)
         x = X * 2
         Y = X**2
 
@@ -52,10 +60,10 @@ class Black(BoxModel):
         y = Black()(XY=(X, Y), neurons=[2, 3], x=x)
 
         # black box, neural network, expanded variant:
-        model = Black()                       # create instance of Black
-        metrics = model(X=X, Y=Y, neurons=[2, 3])             # training
-        y_trn = model(x=X)              # prediction with training input
-        y_tst = model(x=x)                  # prediction with test input
+        beta = Black()                        # create instance of Black
+        metrics = beta(X=X, Y=Y, neurons=[2, 3])              # training
+        y_prd = beta(x=X)               # prediction with training input
+        y_prd = beta(x=x)                   # prediction with test input
     """
 
     def __init__(self, f: Function = None, identifier: str = 'Black') -> None:
@@ -70,9 +78,9 @@ class Black(BoxModel):
                 Unique object identifier
         """
         super().__init__(f=None, identifier=identifier)
-        self._empirical: Optional[Union[Neural, 
-                                        """ Splines """]] = None 
-
+        self._empirical: Optional[Union[NeuralK, NeuralN, 
+                                        # Splines,
+                                        ]] = None 
     @property
     def silent(self) -> bool:
         return self._silent
@@ -96,32 +104,56 @@ class Black(BoxModel):
                 training target, shape: (n_point, n_out)
 
         Kwargs:
+            backend (str):
+                identifier of backend:
+                    'keras'
+                    'neurolab'
+                default: 'keras'
+                    
             neurons (int or 1D array of int):
                 number of neurons in hidden layer(s) of neural network
 
             splines (int or 1D array of float):
                 not specified yet
+                
+            trainer (str or list of str):
+                optimizer of network, eg. 'auto' or 'adam'
                
             ... additional training options, see Neural.train()
 
         Returns:
             metrics of best training trial
                 see BoxModel.train()
-        """
-        self.metrics = self.init_metrics()
+        """        
+        self.metrics = init_metrics()
         self.ready = False
         
         if X is not None and Y is not None:
             self.set_XY(X, Y)
     
+            backend = kwargs.get('backend', 'keras').lower()
             neurons = kwargs.get('neurons', None)
             splines = kwargs.get('splines', None) if neurons is None else None
-            if neurons:
-                empirical = Neural()
-            elif splines and  'splines' in sys.modules:
+            
+            if neurons is not None:
+                if backend.startswith(('k', 'tensor', 'tf', )):
+                    print('+++ backend:', backend)
+                    assert 'grayboxes.neuralk' in sys.modules
+                    empirical = NeuralK(self.f)
+                    
+                elif backend.startswith(('n', )):
+                    print('+++ backend:', backend)
+                    assert 'grayboxes.neuraln' in sys.modules
+                    empirical = NeuralN(self.f)
+                    
+                else:
+                    assert 0, str(backend)
+
+            elif splines and 'splines' in sys.modules:
                 empirical = Splines()
+
             else:
-                empirical = Neural(f=None)
+                assert 0, 'neither import of neuralk, neuraln nor splines'
     
             self.write('+++ train')
     
@@ -132,8 +164,8 @@ class Black(BoxModel):
     
             self.metrics = self._empirical.train(self.X, self.Y, 
                                                  **self.kwargs_del(kwargs,'f'))
-            
             self.ready = self._empirical.ready
+            self.metrics['ready'] = self.ready
 
         return self.metrics
 
@@ -152,13 +184,13 @@ class Black(BoxModel):
         Returns:
             prediction output, shape: (n_point, n_out)
             or
-            None if model is not trained
+            None if self._empirical is not None or not ready
         """
         if not self.ready or self._empirical is None:
             self.y = None
             return self.y
 
-        self.x = x                            # setter ensuring 2D array
+        self.x = x  # setter ensuring 2D array
         assert self._n_inp == self.x.shape[1], str((self._n_inp, self.x.shape))
 
         self.y = self._empirical.predict(self.x, **kwargs)

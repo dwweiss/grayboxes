@@ -23,7 +23,7 @@
 import numpy as np
 from typing import Any, Union
 
-from grayboxes.base import Float1D, Float2D
+from grayboxes.datatypes import Float1D, Float2D
 from grayboxes.minimum import Minimum
 
 

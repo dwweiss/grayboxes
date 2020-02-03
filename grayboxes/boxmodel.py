@@ -17,18 +17,20 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-12 DWW
+      2020-02-03 DWW
 """
 
 import inspect
 from collections import OrderedDict
 import numpy as np
 from pandas import DataFrame
-from typing import (Any, Dict, Optional, List, Sequence, Tuple, Union)
+from typing import (Any, Dict, Iterable, Optional, List, Sequence, Tuple, 
+                    Union)
 
 from grayboxes.array import convert_to_2d
 from grayboxes.base import Base
-from grayboxes.base import Float1D, Float2D, Function, Str1D
+from grayboxes.datatypes import Float1D, Float2D, Function, Str1D
+from grayboxes.metrics import init_metrics, update_errors
 from grayboxes.parallel import communicator, predict_scatter
 
 
@@ -39,8 +41,8 @@ class BoxModel(Base):
     - Inputs and outputs are 2D arrays
     - First index is data point index
     - If X, Y or x are passed as 1D array_like, they are transformed to
-          self.X = np.atleast_2d(X).T and 
-          self.Y = np.atleast_2d(Y).T
+          self.X = np.asfarray(X).reshape(len(X), 1) 
+          self.Y = np.asfarray(Y).reshape(len(Y), 1)
 
     - Upper case 'X' is 2D training input and 'Y' is 2D training target
     - Lower case 'x' is 2D prediction input and 'y' is 2D pred. output
@@ -69,47 +71,9 @@ class BoxModel(Base):
         self._y: Union[Float1D, Float2D] = None      # prediction output 
         self._x_keys: Str1D = None           # x-keys for data selection
         self._y_keys: Str1D = None           # y-keys for data selection
-        self._metrics: Dict[str, Any] = self.init_metrics()    # metrics
+        self._metrics: Dict[str, Any] = init_metrics()    # metrics
         self._weights: Float1D = None    # weights of empirical submodel
         self._n_inp: int = -1                         # number of inputs
-
-    def init_metrics(self, keys: Optional[Union[str, Sequence[str]]] = None,
-                     values: Optional[Union[Any, Sequence[Any]]] = None) \
-            -> Dict[str, Any]:
-        """
-        Sets default values to metrics describing model performance
-
-        Args:
-            keys:
-                list of keys to be updated or added
-
-            values:
-                list of values to be updated or added
-
-        Returns:
-            default settings for 
-                - metrics of best training trial 
-                - model evaluation
-            see description of metrics in BoxModel.train()
-        """
-        keys, values  = np.atleast_1d(keys), np.atleast_1d(values)
-        assert len(keys) == len(values), str((keys, values))
-        
-        metrics = {'abs': np.inf,
-                   'epochs': -1,                   
-                   'evaluations': -1, 
-                   'i_abs': -1,
-                   'i_trial': -1, 
-                   'iterations': -1, 
-                   'L2': np.inf, 
-                   'trainer': None
-                   }
-        
-        if keys is not None and values is not None:
-            for key, value in zip(np.atleast_1d(keys), np.atleast_1d(values)):
-                metrics[key] = value
-                
-        return metrics
 
     @property
     def f(self) -> Function:
@@ -315,7 +279,8 @@ class BoxModel(Base):
         return self._X, self._X, self._x_keys, self._y_keys
 
     @XY.setter
-    def XY(self, value: Union[Tuple[Float2D, Float2D, Str1D, Str1D],
+    def XY(self, value: Union[Tuple[Float2D, Float2D, 
+                                    Iterable[str], Iterable[str]],
                               Tuple[Float2D, Float2D]]) -> None:
         """
         Args:
@@ -336,8 +301,13 @@ class BoxModel(Base):
                     use self._y_keys keys if y_keys is None,
                     default: ['y0', 'y1', ... ]
 
-        Side effects:
+        Note:
             self._X, self._Y, self._x_keys, self._y_keys will be overwritten
+            
+        Example:
+            phi = BoxModel()
+            phi.set_XY(X, Y)
+            phi.set_XY(X, Y, ['x0', 'x1'], ['y0'])
         """
         if len(value) == 2:
             X, Y, x_keys, y_keys = [value[0], value[1], None, None]
@@ -349,8 +319,8 @@ class BoxModel(Base):
         
         assert X is not None and Y is not None, str(X is not None)
 
-        self.X = X                      # setter ensuring valid 2D shape
-        self.Y = Y                      # setter ensuring valid 2D shape
+        self.X = X                              # ensures valid 2D array
+        self.Y = Y                              # ensures valid 2D array
 
         assert self._X.shape[0] == self._Y.shape[0], \
             str(self._X.shape) + str(self._Y.shape)
@@ -388,8 +358,8 @@ class BoxModel(Base):
             X = self._X
         if Y is None:
             Y = self._Y
-        X = convert_to_2d(X)                       # sets valid 2D array
-        Y = convert_to_2d(Y)                       # sets valid 2D array
+        X = convert_to_2d(X)                    # ensures valid 2D array
+        Y = convert_to_2d(Y)                    # ensures valid 2D array
         x_keys, y_keys = self._x_keys, self._y_keys
         
         if X is None or Y is None:
@@ -463,7 +433,7 @@ class BoxModel(Base):
                 None -> set initial metrics data
         """
         if value is None:
-            self._metrics = self.init_metrics()
+            self._metrics = init_metrics()
         else:
             self._metrics = value
 
@@ -494,14 +464,7 @@ class BoxModel(Base):
             ...
 
         Returns:
-            metrics of best training trial:
-                'abs'      (float): max{|phi(x) - Y|} of best train
-                'i_abs'      (int): index of Y where absolute error is max
-                'i_trial'    (int): index of best trial
-                'epochs'     (int): number of epochs of best (neural) train
-                'iterations' (int): number of iterations
-                'L2'       (float): sqrt{sum{(phi(x)-Y)^2}/N} of best train
-                'trainer'    (str): best training method
+            metrics of best training trial, see init_metrics()
 
         Note:
             self.metrics['trainer'] is set to None 
@@ -510,7 +473,7 @@ class BoxModel(Base):
         """
         self.ready = True
         self._weights = None
-        self.metrics = self.init_metrics()
+        self.metrics = init_metrics()
 
         if X is not None and Y is not None:
             self.X, self.Y = X, Y
@@ -524,7 +487,7 @@ class BoxModel(Base):
             #    self.metrics = {'trainer': ..., 'L2': ..., 'abs': ...,
             #                    'epochs': ...}
             # else:
-            #    self.metrics = self.init_metrics()
+            #    self.metrics = init_metrics()
 
         return self.metrics
 
@@ -551,8 +514,8 @@ class BoxModel(Base):
             prediction output 
             or
             None if x is None or not self.ready
-        """
-        self.x = x                      # setter ensuring valid 2D array
+        """        
+        self.x = x  # ensures valid 2D array
 
         assert self._n_inp == -1 or self._n_inp == self.x.shape[1], \
             str((self._n_inp, self.x.shape, self.x))
@@ -597,35 +560,15 @@ class BoxModel(Base):
         Note:
             maximum abs index is 1D index, eg yAbsMax=Y.ravel()[i_abs_max]
         """
-        metrics = self.init_metrics()
-        metrics = {key: metrics[key] for key in ('L2', 'abs', 'i_abs')}
+        metrics = init_metrics()
         
         if X is None or Y is None or not self.ready:
             return metrics
 
-        X = convert_to_2d(X)
-        Y = convert_to_2d(Y)
-        
-        assert X.shape[0] == Y.shape[0], str((X.shape, Y.shape))
-
         y = self.predict(x=X, *c, **self.kwargs_del(kwargs, 'x'))
 
-        try:
-            dy = y.ravel() - Y.ravel()
-        except (ValueError,AttributeError):
-            print('X Y y:', X.shape, Y.shape, y.shape)
-            assert 0
-            
-        i_abs = np.abs(dy).argmax()
-        metrics = {'L2': np.sqrt(np.mean(np.square(dy))), 'i_abs': i_abs}
-        metrics['abs'] = dy.ravel()[metrics['i_abs']]
-
-        if not kwargs.get('silent', True):
-            self.write('    L2: ' + str(np.round(metrics['L2'], 4)) +
-                       ' max(abs(y-Y)): '+str(np.round(metrics['abs'], 5))+
-                       ' [' + str(i_abs) + '] x,y:(' +
-                       str(np.round(X.ravel()[i_abs], 3)) + ', ' +
-                       str(np.round(Y.ravel()[i_abs], 3)) + ')')
+        if y is not None:
+            update_errors(metrics, X, Y, y, silent=self.silent)
             
         return metrics
 
@@ -635,23 +578,19 @@ class BoxModel(Base):
             XY (tuple of two 2D array of float, and optionally two list 
                 of str):
                 training input & training target, optional keys of X and Y
-                'XY' supersedes 'X' and 'Y'
 
             X (2D array of float):
                 training input, shape: (n_point, n_inp)
-                'XY' supersede 'X' and 'Y'
-                default: self.X
 
             Y (2D array of float):
                 training target, shape: (n_point, n_out)
-                'XY' supersede 'X' and 'Y'
-                default: self.Y
 
          Returns:
             metrics of best training trial if 'XY' or ('X' and 'Y') 
             in 'kwargs', see description of metrics in BoxModel.train()
 
         Note:
+            'XY' supersedes 'X' and 'Y'
             self.X and self.Y are overwritten by setters of XY or (X, Y)
         """
         super().pre(**kwargs)
@@ -660,21 +599,19 @@ class BoxModel(Base):
         if XY is not None:
             self.XY = XY                 # sets tuple of valid 2d arrays
         else:
-            self.X = kwargs.get('X', None)         # sets valid 2D array
-            self.Y = kwargs.get('Y', None)         # sets valid 2D array
+            self.X = kwargs.get('X', None)      # ensures valid 2D array
+            self.Y = kwargs.get('Y', None)      # ensures valid 2D array
 
         # trains model if self.X is not None and self.Y is not None
         if type(self).__name__ == 'White':
-            self.metrics = self.init_metrics()
+            self.metrics = init_metrics()
             self.ready = True
-        
             return self.metrics
-        
+
         if self.X is not None and self.Y is not None:
             kwargs_ = self.kwargs_del(kwargs, ('X', 'Y'))
             self.metrics = self.train(X=self.X, Y=self.Y, **kwargs_)
-            self.ready = self.metrics['trainer'] is not None
-        
+                
         return self.metrics
                 
 
@@ -695,17 +632,17 @@ class BoxModel(Base):
 
         Note:
             x will be saved as self.x and the output as self.y
-        """
+        """        
         super().task(**kwargs)
 
         x = kwargs.get('x', None)
         if x is None:
             return self.metrics
 
-        self.x = x                                 # sets valid 2D array
+        self.x = x                              # ensures valid 2D array
         if self.ready:
             self.y = self.predict(x=self.x, **self.kwargs_del(kwargs, 'x'))
         else:
-            self.y = None                          # sets valid 2D array
+            self.y = None                       # ensures valid 2D array
  
         return self.y

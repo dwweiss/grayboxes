@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-12 DWW
+      2020-02-03 DWW
 
   Acknowledgements:
       Neurolab is a contribution by E. Zuev (pypi.python.org/pypi/neurolab)
@@ -30,21 +30,28 @@ import inspect
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from nptyping import Array
-from typing import (Any, Callable, Dict, Iterable, List, Optional, Sequence, 
-                    Union)
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
+
 try:
     import neurolab as nl
     _has_neurolab = True
 except ImportError:
     print('??? Package neurolab not imported')
     _has_neurolab = False
-        
-Float1D  = Optional[Array[float, ...]]
-Float2D  = Optional[Array[float, ..., ...]]
-Float3D  = Optional[Array[float, ..., ..., ...]]
-Str1D    = Optional[Iterable[str]]
-Function = Optional[Callable[..., List[float]]]
+    
+try:
+    from grayboxes.datatypes import Float1D, Float2D, Float3D, Function, Str1D
+except ImportError:
+    try:
+        from datatypes import Float1D, Float2D, Float3D, Function, Str1D
+    except ImportError:
+        print('    continue with unauthorized definition of Float1D, ' +
+              'Float2D, Float3D, Function, Str1D')        
+        Float1D = Optional[np.ndarray]
+        Float2D = Optional[np.ndarray]
+        Float3D = Optional[np.ndarray]
+        Function = Optional[Callable[..., List[float]]]
+        Str1D = Optional[np.ndarray]
 
 
 def propose_hidden_neurons(X: Float2D, Y: Float2D, alpha: float = 2.,
@@ -107,7 +114,7 @@ class NeuralBase(object):
         """
         self.f = f                 # theor. submodel, single data point
 
-        self._model = None         # model
+        self._net = None           # model
         self._X: Float2D = None    # input of training
         self._Y: Float2D = None    # target
         self._x: Float2D = None    # input of prediction
@@ -116,19 +123,27 @@ class NeuralBase(object):
         self._x_keys: Str1D = None # x-keys for import from data frame
         self._y_keys: Str1D = None # y-keys for import from data frame
         self._trainers = ''        # list of trainers
-        self._final_errors = []    
-                                   # error (SSE, MSE) of best trial of 
-                                   # each training method
+        self._final_errors = []    # error (SSE, MSE) of best trial of 
+                                   #   each training method
         self._final_L2_norms = []  # L2-norm of best trial of each train
         self._best_epochs = []     # epochs of best trial of each method
         self._ready: bool = False  # flag indicating successful training
 
         self._silent: bool = False
+        
         plt.rcParams.update({'font.size': 14})
         plt.rcParams['legend.fontsize'] = 14            # fonts in plots
 
-        self._metrics: Dict[str, Any] = {'trainer': None, 'L2': np.inf, 
-            'abs': np.inf, 'i_abs': -1, 'epochs': -1}       # best trial
+        self._metrics: Dict[str, Any] = {  # see metrics.init_metrics()
+            'abs': np.inf, 
+            'activation': None, 
+            'i_abs': -1, 
+            'epochs': -1,
+            'L2': np.inf,  # L2-norm || phi(x_vld) - y_vld || 
+            'mse': np.inf, 
+            'neurons': None,
+            'trainer': None, 
+            }
 
     def __call__(self, X: Float2D = None, Y: Float2D = None, x: Float2D = None, 
                  **kwargs: Any) -> Union[Dict[str, Any], Float2D]:
@@ -230,6 +245,10 @@ class NeuralBase(object):
         """
         return self._metrics
 
+    @metrics.setter
+    def metrics(self, value):
+        self._metrics = value
+
     def import_dataframe(self, df: pd.DataFrame, x_keys: Sequence[str],
                          y_keys: Sequence[str]) -> None:
         """
@@ -258,7 +277,7 @@ class NeuralBase(object):
         self._norm_y = nl.tool.Norm(self._Y)
         self._Y = self._norm_y(self._Y)
 
-    def set_arrays(self, X: Float2D, Y: Float2D,
+    def set_XY(self, X: Float2D, Y: Float2D,
                    x_keys: Str1D = None, y_keys: Str1D = None) -> None:
         """
         - Imports training input X and training target Y
@@ -381,9 +400,9 @@ class Neural(NeuralBase):
         - compact form:
               y = Neural()(X=X, Y=Y, x=x, neurons=[6])
         - expanded form:
-              submodel = Neural()
-              metrics = submodel(X=X, Y=Y, neurons=[6])
-              y = submodel(x=x)
+              phi = Neural()
+              metrics = phi(X=X, Y=Y, neurons=[6])
+              y = phi(x=x)
               L2_norm = metrics['L2']  # or: submodel.metrics['L2']
 
     Major methods and attributes (return type in the comment):
@@ -394,10 +413,6 @@ class Neural(NeuralBase):
         - self.ready                                              # bool
         - self.metrics                        # dict{str: float/str/int}
         - self.plot()
-
-    Note:
-        This class has not the connectivity functionality of the 
-        box type models derived vom class BoxModel.
 
     References:
         - Recommended training algorithms:
@@ -424,7 +439,7 @@ class Neural(NeuralBase):
               **kwargs: Any) -> Dict[str, Any]:
         """
         Trains model, stores X and Y as self.X and self.Y, and stores 
-        result of best training trial as self.metrics
+        metrics of best training trial as self.metrics
 
         Args:
             X:
@@ -438,6 +453,12 @@ class Neural(NeuralBase):
                 default: self.Y
 
         Kwargs:
+            activation (str or function):
+                activation function of hidden layers, 
+                usually 'tansig': TanSig(): tanh(x) or 
+                        'logsig': LogSig(): 1 / (1 + exp(-z))
+                default: 'tansig'
+
             alpha (float):
                 factor for autodefinition of number of hidden neurons,
                 see: propose_hidden_neurons()
@@ -447,14 +468,14 @@ class Neural(NeuralBase):
                 max number of iterations of single trial
                 default: 1000
 
-            errorf (function)
-                error function: (nl.error.MSE() or nl.error.SSE())
-                default: MSE
+            errorf (function or str)
+                error function: (nl.error.MSE() nl.error.MAE(), )
+                default: 'mse'
 
             goal (float):
                 limit of 'errorf' for stop of training (0. < goal < 1.)
                 default: 1e-3
-                [note: MSE of 1e-3 corresponds to L2-norm of 1e-6]
+                [note: MSE=1e-6 corresponds to L2-norm=1e-3]
 
             trainer (str or list of str):
                 if string, then space sep. string is converted to list
@@ -465,11 +486,11 @@ class Neural(NeuralBase):
                 array of number of neurons in hidden layers
                 default: [] ==> use estimate of propose_hidden_neurons()
 
-            outputf (str or function):
+            output (str or function):
                 activation function of output layer
-                usually 'tansig': TanSig(): tanh(x) or 
+                usually 'tanh' or 'tansig': TanSig(): tanh(x) or 
                         'logsig': LogSig(): 1 / (1 + exp(-z))
-                default: 'tansig'
+                default: 'tanh'
 
             plot (int):
                 controls frequency of plotting progress of training
@@ -499,12 +520,6 @@ class Neural(NeuralBase):
                 if False, perform all trials even if goal was reached
                 default: True
 
-            transf (str or function):
-                activation function of hidden layers, 
-                usually 'tansig': TanSig(): tanh(x) or 
-                        'logsig': LogSig(): 1 / (1 + exp(-z))
-                default: 'tansig'
-
             trials (int):
                 maximum number of training trials
                 default: 3
@@ -521,50 +536,63 @@ class Neural(NeuralBase):
             - If training fails, then self.metrics['trainer'] is None
             - Reference to optional theor. submodel is stored as self.f
             - Reference to training data is stored as self.X and self.Y
-            - The best network is assigned to 'self._model'
+            - The best network is assigned to 'self._net'
         """
         if X is not None and Y is not None:
-            self.set_arrays(X, Y)
+            self.set_XY(X, Y)
             
         assert self._X is not None and self._Y is not None, \
             str(self.X) + ' ' + str(self.Y)
 
-        alpha        = kwargs.get('alpha',          2.)
-        epochs       = kwargs.get('epochs',         1000)
-        errorf       = kwargs.get('errorf',         nl.error.MSE())
-        goal         = kwargs.get('goal',           1e-3)
-        trainer      = kwargs.get('trainer',        'bfgs rprop')
-        neurons      = kwargs.get('neurons',        None)
-        outputf      = kwargs.get('outputf',        'tansig')
-        if isinstance(outputf, str):
-            if outputf.lower() == 'tansig':
-                outputf = nl.trans.TanSig
-            elif outputf.lower() in ('lin', 'linear', 'purelin'):
-                outputf = nl.trans.PureLin
+        alpha = kwargs.get('alpha', 2.)
+        epochs = kwargs.get('epochs', 1000)
+        errorf = kwargs.get('errorf', nl.error.MSE())
+        if isinstance(errorf, str):
+            if errorf.lower() == 'mse':
+                errorf = nl.error.MSE()
+            elif errorf.lower() == 'sse':
+                errorf = nl.error.SSE()
+            elif errorf.lower() == 'sae':
+                errorf = nl.error.SAE()
+            elif errorf.lower() == 'mae':
+                errorf = nl.error.MAE()
             else:
+                errorf = nl.error.MSE()
+        goal = kwargs.get('goal', 1e-3)
+        trainer = kwargs.get('trainer', ['bfgs', 'rprop'])
+        neurons = kwargs.get('neurons', None)
+        outputf = kwargs.get('output', 'tanh')
+        if isinstance(outputf, str):
+            if outputf.lower() in ('tansig', 'tanh', ):
+                outputf = nl.trans.TanSig
+            elif outputf.lower() in ('lin', 'linear', 'purelin', ):
+                outputf = nl.trans.PureLin
+            elif outputf.lower() in ('logsig', 'sigmoid', ):
                 outputf = nl.trans.LogSig
+            else:
+                outputf = nl.trans.TanSig
         assert outputf in (nl.trans.TanSig, nl.trans.LogSig, nl.trans.PureLin)
-        plot         = kwargs.get('plot',           1)
+        plot         = kwargs.get('plot', 1)
         rr           = kwargs.get('regularization', None)
         if rr is None:
-            rr       = kwargs.get('rr',             None)
+            rr       = kwargs.get('rr', None)
         if rr is None:
             rr = 1.
-        show         = kwargs.get('show',           0)
-        self.silent  = kwargs.get('silent',         self.silent)
+        show         = kwargs.get('show', 0)
+        self.silent  = kwargs.get('silent', self.silent)
         if show is not None and show > 0:
             self.silent = False
-        smart_trials = kwargs.get('smart_trials',   True)
-        transf       = kwargs.get('transf',         'tansig')
+        smart_trials = kwargs.get('smart_trials', True)
+        transf       = kwargs.get('activation', 'tanh')
         if isinstance(transf, str):
-            if transf.lower() in ('tansig', 'tanh'):
+            if transf.lower() in ('tansig', 'tanh', ):
                 transf = nl.trans.TanSig
-            elif transf.lower() in ('lin', 'linear', 'purelin'):
+            elif transf.lower() in ('lin', 'linear', 'purelin', ):
                 transf = nl.trans.PureLin
             else:
                 transf = nl.trans.LogSig
         assert transf in (nl.trans.TanSig, nl.trans.LogSig, nl.trans.PureLin)
-        trials         = kwargs.get('trials',         3)
+        trials         = kwargs.get('trials', 3)
 
         if self.silent:
             show = 0
@@ -582,30 +610,39 @@ class Neural(NeuralBase):
             neurons = [1]
         if isinstance(neurons, (int, float)):
             neurons = list([int(neurons)])
+
+        print('neurons', neurons)
+
         if not neurons or len(neurons) == 0 or not all(neurons):
-            neurons = propose_hidden_neurons(X=self._X, Y=self._Y, alpha=alpha,
+            neurons = propose_hidden_neurons(X=self._X, Y=self._Y, 
+                                             alpha=alpha,
                                              silent=self.silent)
+        print('2neurons', neurons)
+
         if not isinstance(neurons, list):
             neurons = list(neurons)
-        assert all(x > 0 for x in neurons), str(neurons)
+            
+        print('neurons', neurons)
+            
+        assert all(nrn > 0 for nrn in np.array(neurons).reshape(-1))
 
         size = neurons.copy()
         size.append(self._Y.shape[1])
         assert size[-1] == self._Y.shape[1]
 
-        trainf_dict = {'genetic':    nl.train.train_bfgs,   # TODO .
-                       'derivative': nl.train.train_bfgs,   # TODO .
-                       'bfgs':       nl.train.train_bfgs,
-                       'cg':         nl.train.train_cg,
-                       'gd':         nl.train.train_gd,
-                       'gda':        nl.train.train_gda,
-                       'gdm':        nl.train.train_gdm,
-                       'gdx':        nl.train.train_gdx,
-                       'rprop':      nl.train.train_rprop
-                       }
+        trainer_pool = {'genetic':    nl.train.train_bfgs,      # TODO .
+                        'derivative': nl.train.train_bfgs,      # TODO .
+                        'bfgs':       nl.train.train_bfgs,
+                        'cg':         nl.train.train_cg,
+                        'gd':         nl.train.train_gd,
+                        'gda':        nl.train.train_gda,
+                        'gdm':        nl.train.train_gdm,
+                        'gdx':        nl.train.train_gdx,
+                        'rprop':      nl.train.train_rprop
+                        }
 
         default_trainers = ['rprop', 'bfgs']
-        assert all([trn in trainf_dict for trn in default_trainers])
+        assert all([tr in trainer_pool for tr in default_trainers])
 
         if self.f is not None:
             # alternative training if theoretical submodel 'f'
@@ -622,7 +659,7 @@ class Neural(NeuralBase):
                 if trainer == 'auto':
                     trainer = default_trainers
             trainer = list(OrderedDict.fromkeys(trainer))   # redundancy
-        trainer = [trn.lower() for trn in trainer if trn in trainf_dict]
+        trainer = [trn.lower() for trn in trainer if trn in trainer_pool]
         self._trainers = trainer if trainer else default_trainers 
         
         if not self.silent:
@@ -631,29 +668,31 @@ class Neural(NeuralBase):
 
         self._ready = True # predict() returns None if self._ready is False
 
-        self._model = None
+        self._net = None
         sequence_error = np.inf
         best_trainer = self._trainers[0]
         self._final_errors, self._final_L2norms, self._best_epochs = [], [], []
 
         for trainer in self._trainers:
-            trainf = trainf_dict[trainer]
+            trainf = trainer_pool[trainer]
             trainer_err = np.inf
             trainer_epochs = None
             trainer_l2norm = np.inf
 
             margin = 0.0
-            minmax = [[x[0] - margin*(x[1]-x[0]), x[1] + margin*(x[1]-x[0])] 
-                      for x in nl.tool.minmax(self._X)]
+            minmax = [[x[0] - margin*(x[1] - x[0]), 
+                       x[1] + margin*(x[1] - x[0])]
+                                              for x in nl.tool.minmax(self._X)]
             net = nl.net.newff(minmax, size)
             net.transf = transf
-            net.outputf = outputf
             net.trainf = trainf
             net.errorf = errorf
-
             net.f = self.f
+            
             if self.f is not None:
                 net.outputf = nl.trans.PureLin
+            else:
+                net.outputf = outputf
 
             for j_trial in range(trials):
                 if trainer in ('genetic', ):
@@ -683,8 +722,8 @@ class Neural(NeuralBase):
                 
                 if sequence_error > trial_errors[-1]:
                     sequence_error = trial_errors[-1]
-                    del self._model
-                    self._model = net.copy()
+                    del self._net
+                    self._net = net.copy()
                 if (trainer_err < goal and trainer_epochs > len(trial_errors))\
                    or (trainer_err >= goal and trainer_err > trial_errors[-1]):
                     trainer_err = trial_errors[-1]
@@ -720,7 +759,7 @@ class Neural(NeuralBase):
                 print('    ' + trainer + ':' + str(round(trainer_err, 5)) +
                       '[' + str(trainer_epochs) + '], ')
 
-        if self._model is None:
+        if self._net is None:
             if not self.silent:
                 print('??? All training trials failed')
             self._ready = False
@@ -746,14 +785,15 @@ class Neural(NeuralBase):
         y = self.predict(self._X)
         dy = y - Y
         i_abs_max = np.abs(dy).argmax()
-        self._metrics = {'trainer': self._trainers[i_best],
-                         'L2': np.sqrt(np.mean(np.square(dy))),
+        self._metrics = {
                          'abs': Y.ravel()[i_abs_max],
                          'i_abs': i_abs_max,
-                         'epochs': self._best_epochs[i_best]}
-        
-        
-        
+                         'epochs': self._best_epochs[i_best],
+                         'L2': np.sqrt(np.mean(np.square(dy))),
+                         'ready': self.ready,
+                         'trainer': self._trainers[i_best],
+                         }
+
         return self.metrics
 
     def predict(self, x: Float2D, **kwargs: Any) -> Float2D:
@@ -773,7 +813,7 @@ class Neural(NeuralBase):
         Returns:
             prediction y = net(x)
             or
-            None if x is None or not self.ready or not self._model
+            None if x is None or not self.ready or not self._net
 
         Note:
             - Shape of x is corrected to: (n_point, n_inp)
@@ -781,16 +821,22 @@ class Neural(NeuralBase):
         """
         self.silent = kwargs.get('silent', self.silent)
 
-        if not self._model or x is None or not self.ready:
+        if not self._net or not self.ready:
+            if not self.silent:
+                print('!!! Neural model.ready is False ==> returned y is None')
+            self._y = None
+        elif x is None:
+            if not self.silent:
+                print('!!! Neural x is None ==> returned y is None')
             self._y = None
         else:
             x = np.asfarray(x)
             if x.ndim == 1:
-                x = x.reshape(x.size, 1)
-            if x.shape[1] != self._model.ci:
+                x = x.reshape(-1, 1)
+            if x.shape[1] != self._net.ci:
                 x = np.transpose(x)
             self._x = x    
-            self._y = self._model.sim(x)
+            self._y = self._net.sim(x)
             self._y = self._norm_y.renorm(self._y)
 
         return self._y

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-06 DWW
+      2020-02-03 DWW
 
   Note on program arguments:
     - no arguments          : program starts in default mode
@@ -33,7 +33,7 @@
 
 """
 
-__all__ = ['Base', 'Float1D', 'Float2D', 'Float3D', 'Str1D', 'Function']
+__all__ = ['Base']
 
 import os
 from datetime import datetime
@@ -41,15 +41,13 @@ from getpass import getpass
 from hashlib import sha224
 import collections
 from matplotlib.figure import Figure
-#from nptyping.array import Array
 import numpy as np
 from path import Path
 from re import sub
 import sys
 from time import time
 from tempfile import gettempdir
-from typing import (Any, Callable, Dict, Iterable, Sequence, Tuple, List, 
-                    Optional, Union)
+from typing import Any, Dict, Sequence, Tuple, List, Optional, Union
 try:
     from tkinter import Button
     from tkinter import Entry
@@ -62,7 +60,18 @@ except ImportError:
           '.' + str(sys.version_info.micro) + "') or 'tkinter' not imported")
 import logging
 logger = logging.getLogger(__name__)
+#logging.getLogger('tensorflow').disabled = True # disable tensorflow log
 
+try:
+    from grayboxes.datatypes import Float1D, Float2D
+except ImportError:
+    try:
+        from datatypes import Float1D, Float2D
+    except ImportError:
+        print('!!! Module datatypes not imported')
+        print('    continue with unauthorized definition of Float1D, Float2D')
+        Float1D = Optional[np.ndarray]
+        Float2D = Optional[np.ndarray]
 try:
     import grayboxes.parallel as parallel
 except ImportError:
@@ -70,15 +79,6 @@ except ImportError:
         import parallel as parallel
     except ImportError:
         print('!!! Module parallel not imported')
-
-#Float1D  = Optional[Array[float, ...]]
-#Float2D  = Optional[Array[float, ..., ...]]
-#Float3D  = Optional[Array[float, ..., ..., ...]]
-Float1D  = Optional[np.ndarray]
-Float2D  = Optional[np.ndarray]
-Float3D  = Optional[np.ndarray]
-Str1D    = Optional[Iterable[str]]
-Function = Optional[Callable[..., List[float]]]
 
 
 class Base(object):
@@ -853,6 +853,7 @@ class Base(object):
         if self.gui:
             messagebox.showerror("Termination: '" + self.program + "'",
                                  message)
+        logger.propagate = False
         logger.critical(self.identifier + ' : ' + message)
         self.destruct()
 
@@ -870,6 +871,9 @@ class Base(object):
             wait:
                 Wait with program execution if True
         """
+#        save_propagate = logger.propagate 
+#        logger.propagate = False
+
         if not self.silent:
             print("!!! '" + self.program + "', warning: '" + message + "'")
         if self.gui:
@@ -878,6 +882,8 @@ class Base(object):
         if not self.silent and wait:
             # consider to replace input() with os.system('pause')
             input('!!! Press Enter to continue ...')
+
+#        logger.propagate = save_propagate  
 
     def write(self, message: str) -> None:
         """
@@ -888,10 +894,15 @@ class Base(object):
             message:
                 Message to be written to log file and console
         """
+#        save_propagate = logger.propagate 
+#        logger.propagate = False
+#
         now = datetime.now().strftime('%H:%M:%S.%f')[:-4]
         if not self.silent:
             print(self.indent() + message)
         logger.info(now + ' ' + self.indent() + message)
+
+#        logger.propagate = save_propagate  
 
     def _authenticate(self) -> None:
         """
@@ -985,6 +996,7 @@ class Base(object):
             self.write('*** ' + message)
 
         if logger.handlers:
+            logger.propagate=False
             logger.info('')
             logger.handlers = []
         sys.stdout.flush()
@@ -1139,5 +1151,5 @@ class Base(object):
                                                                       2)))
             self._exe_time_start = time()
         self.write('=== Post-processing')
-        
+                
         return task_result

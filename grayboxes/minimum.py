@@ -32,8 +32,8 @@ from mpl_toolkits.mplot3d import Axes3D   # needed for "projection='3d'"
 from typing import Any, List, Optional, Sequence, Tuple, Union
 
 from grayboxes.base import Base
-from grayboxes.base import Float1D, Float2D
 from grayboxes.boxmodel import BoxModel
+from grayboxes.datatypes import Float1D, Float2D
 from grayboxes.forward import Forward
 try:
     import modestga as mg
@@ -92,11 +92,11 @@ class Minimum(Forward):
         self._y_opt: Float1D = None    # 1D array of target or optimal y
 
         SINGLE_EVALUATION = Tuple[Float1D, Float1D, float]
-                                                     # [x, y, objective]
+                   # return type of single evaluation: [x, y, objective]
         self._single_hist: List[SINGLE_EVALUATION] = []
-                            # _trialHistory[jEvaluation]=(x,y,objective)
+                                  # _single_hist[j_eval]=(x,y,objective)
         self._multiple_hist: List[List[SINGLE_EVALUATION]] = []
-                # _multiple_hist[i_trial][jEvaluation] = (x,y,objective)
+                     # _multiple_hist[i_trial][j_eval] = (x,y,objective)
 
         # three leading chars are significant, case-insensitive
         self._valid_optimizers = ['Nelder-Mead',
@@ -326,20 +326,19 @@ class Minimum(Forward):
                 self.write('         y: ' + str(history[-1][1]))
                 self.write('         objective: ' + str(history[-1][2]))
 
-            # self._multiple_hist[i_trial][iLast=-1][jObj=2] -> list of best obj.
+            # self._multiple_hist[i_trial][iLast=-1][jObj=2] -> list best obj.
             final_objectives = [hist[-1][2] for hist in self._multiple_hist]
             if self.__class__.__name__ == 'Inverse':
                 abs_final_obj = np.absolute(final_objectives)
                 i_best_trial = final_objectives.index(min(abs_final_obj))
             else:
                 i_best_trial = final_objectives.index(min(final_objectives))
-
         else:
             i_best_trial = 0
 
         # y: self._multiple_hist[i_best_trial][iLastEvaluation=-1][jY=1]
         history_best = self._multiple_hist[i_best_trial]
-        final_best = history_best[-1]
+        final_best = history_best[-1] if history_best else 3 * [[np.inf]]
         
         self.x = final_best[0]
         self.y = final_best[1]
@@ -370,6 +369,11 @@ class Minimum(Forward):
 
     def plot_multiple_hist(self) -> None:
         for i_trial, trial in enumerate(self._multiple_hist):
+            if len(trial) == 0:
+                continue
+            
+            print('min372 trial', trial)
+            
             self.write('    Plot[i_trial: ' + str(i_trial) + '] ' +
                        str(trial[-1][1]) + ' = f(' +
                        str(trial[-1][0]) + ')')
@@ -446,6 +450,11 @@ class Minimum(Forward):
                     plt.show()
 
     def plot_objective(self) -> None:
+        if not len(self._multiple_hist[0]):
+            self.write('??? minimum.plot_objective(): ' +
+                       'self._multiple_hist is empty')
+            return 
+
         n_inp = len(self._multiple_hist[0][0][0])   # trial:0 evaluation:0 x:0
         n_trial = len(self._multiple_hist)
 
@@ -471,6 +480,11 @@ class Minimum(Forward):
         plt.show()
 
     def plot_trajectory(self) -> None:
+        if not len(self._multiple_hist[0]):
+            self.write('??? minimum.plot_trajectory(): ' +
+                       'self._multiple_hist is empty')
+            return 
+
         n_inp = len(self._multiple_hist[0][0][0])  # trial:0 eval:0 x_index=0
         n_out = len(self._multiple_hist[0][0][1])  # trial:0 eval:0 y_index=0
 

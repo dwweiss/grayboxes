@@ -17,13 +17,14 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-12 DWW
+      2020-01-28 DWW
 """
 
 from typing import Any, Dict
 
-from grayboxes.base import Float2D, Function
 from grayboxes.boxmodel import BoxModel
+from grayboxes.datatypes import Float2D, Function
+from grayboxes.metrics import init_metrics
 
 
 class White(BoxModel):
@@ -44,7 +45,7 @@ class White(BoxModel):
 
     def train(self, X: Float2D, Y: Float2D, **kwargs: Any) -> Dict[str, Any]:
         """
-        Sets self.ready to True and returns an empty training metrics
+        Sets self.ready to True and returns empty metrics
 
         Args:
             X:
@@ -57,8 +58,8 @@ class White(BoxModel):
             Keyword arguments, not used
             
         Returns:
-            Empty training metrics, see BoxModel.init_metrics() 
+            Empty training metrics, see metrics.init_metrics() 
         """
         self.ready = True
         
-        return self.init_metrics()
+        return init_metrics()

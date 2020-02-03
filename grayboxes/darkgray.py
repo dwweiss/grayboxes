@@ -17,15 +17,16 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-12 DWW
+      2020-02-03 DWW
 """
 
 import numpy as np
 from typing import Any, Dict
 
-from grayboxes.base import Float2D, Function
 from grayboxes.black import Black
 from grayboxes.boxmodel import BoxModel
+from grayboxes.datatypes import Float2D, Function
+from grayboxes.metrics import init_metrics
 
 
 class DarkGray(BoxModel):
@@ -63,7 +64,7 @@ class DarkGray(BoxModel):
                 object identifier
         """
         super().__init__(identifier=identifier, f=f)
-        self._black = Black()
+        self._empirical = Black()
 
     @property
     def silent(self) -> bool:
@@ -72,7 +73,7 @@ class DarkGray(BoxModel):
     @silent.setter
     def silent(self, value: bool) -> None:
         self._silent = value
-        self._black._silent = value
+        self._empirical._silent = value
 
     def train(self, X: Float2D, Y: Float2D, **kwargs: Any) -> Dict[str, Any]:
         """
@@ -90,24 +91,24 @@ class DarkGray(BoxModel):
         Returns:
             metrics of training, see BoxModel.train()
         """
-        if X is None or Y is None or self._black is None:
+        if X is None or Y is None or self._empirical is None:
             self.ready = False
-            return self.init_metrics()
+            return init_metrics()
 
         self.set_XY(X, Y)
         
-        self.ready = True  # predict() returns None if self.ready is False
+        # self.ready must be True to avoid that self.predict() returns None       
+        self.ready = True  
         y = BoxModel.predict(self, self.X, **self.kwargs_del(kwargs, 'x'))
         
-        X_drk = np.c_[self.X, y]
-        Y_drk = y - self.Y
-        self.metrics = self._black.train(X_drk, Y_drk, **kwargs)
-        self.ready = self._black.ready
+        X_emp = np.c_[self.X, y]
+        Y_emp = y - self.Y
+        self.metrics = self._empirical.train(X_emp, Y_emp, **kwargs)
+        self.ready = self._empirical.ready
 
         return self.metrics
 
     def predict(self, x: Float2D, *c: float, **kwargs: Any) -> Float2D:
-
         """
         Executes box model, stores input x as self.x and output as self.y
 
@@ -133,14 +134,13 @@ class DarkGray(BoxModel):
             self.y = None
             return self.y
 
-        self.x = x                       # setter ensures valid 2D array
-        y = np.asfarray(BoxModel.predict(self, x, **kwargs))
+        self.x = x                              # ensures valid 2D array
+        y = np.asfarray(BoxModel.predict(self, x, *c, **kwargs))
         
         if y is not None:
-            y_delta = self._black.predict(np.c_[self.x, self._y], **kwargs)
+            y_delta = self._empirical.predict(np.c_[self.x, self._y], **kwargs)
             if y_delta is not None:
                 y = np.asfarray(y) - np.asfarray(y_delta)
-        self.y = y
+        self.y = y                              # ensures valid 2D array
         
         return self.y
-

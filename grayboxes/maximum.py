@@ -22,7 +22,7 @@
 
 from typing import Any, Union
 
-from grayboxes.base import Float2D, Float1D
+from grayboxes.datatypes import Float2D, Float1D
 from grayboxes.minimum import Minimum
 
 

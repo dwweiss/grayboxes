@@ -17,24 +17,35 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-09 DWW
+      2020-02-03 DWW
 """
 
 __all__ = ['grid', 'cross', 'rand', 'noise', 'xy_rand_split', \
            'xy_thin_out', 'frame_to_arrays', 'scale', 'smooth', 
            'convert_to_2d']
 
-from nptyping import Array
 import numpy as np
 from pandas import DataFrame
 import random
 from statsmodels.nonparametric.smoothers_lowess import lowess
-from typing import Optional, List, Sequence, Tuple, Union
+from typing import Optional
+
+try:
+    from grayboxes.datatypes import Float1D, Float2D
+except ImportError:
+    try:
+        from datatypes import Float1D, Float2D
+    except ImportError:
+        print('    continue with unauthorized definition of Float1D, ' +
+              'Float2D')        
+        Float1D = Optional[np.ndarray]
+        Float2D = Optional[np.ndarray]
+
+from typing import Iterable, Optional, List, Tuple, Union
 
 
-def grid(size: Union[int, Sequence[int]], 
-         *ranges: Union[Tuple[float, float], Sequence[float]]) \
-        -> Array[float, ..., ...]:
+def grid(size: Union[int, Iterable[int]], 
+         *ranges: Union[Tuple[float, float], Iterable[float]]) -> Float2D:
     """
     Sets initial (uniformly spaced) grid input, for instance for 2 input
     with 4 nodes on all axes: grid(n=4, [3., 6.], [-7., -5.5])
@@ -95,7 +106,7 @@ def grid(size: Union[int, Sequence[int]],
         size = N + [N[-1]] * (len(ranges_) - len(N))  
         assert len(size) == len(ranges_), str((size, ranges_))
 
-    x_var: List[Array[float]] = []
+    x_var: List[Float1D] = []
     for rng, _n in zip(ranges_, size):
         rng_min = min(rng[0], rng[1])
         rng_max = max(rng[0], rng[1])
@@ -138,8 +149,8 @@ def grid(size: Union[int, Sequence[int]],
     return np.asfarray(x)
 
 
-def cross(n: Union[int, Sequence[int]], 
-          *ranges: Tuple[float, float]) -> Array[float, ..., ...]:
+def cross(n: Union[int, Iterable[int]], 
+          *ranges: Tuple[float, float]) -> Float2D:
     """
     Sets initial (uniformly spaced) cross input, for instance for 2 
     input with 5 nodes per axis: cross(5, [3., 7.], [-4., -2.])
@@ -191,7 +202,7 @@ def cross(n: Union[int, Sequence[int]],
     return np.asfarray(x)
 
 
-def rand(n: int, *ranges: Tuple[float, float]) -> Array[float, ..., ...]:
+def rand(n: int, *ranges: Tuple[float, float]) -> Float2D:
     """
     Sets initial (uniformly distributed) random input, for instance for
     2 input with 12 trials: rand(12, [1., 3.], [-7., -5.])
@@ -226,10 +237,10 @@ def rand(n: int, *ranges: Tuple[float, float]) -> Array[float, ..., ...]:
     return x
 
 
-def noise(y: Sequence[float], 
+def noise(y: np.ndarray, 
           absolute: float = 0.0, 
           relative: float = 0e-2,
-          uniform: bool = True) -> Optional[Array[float]]:
+          uniform: bool = True) -> Optional[np.ndarray]:
     """
     Adds noise to an array_like argument 'y'. The noise can be:
         - normally distributed or
@@ -275,7 +286,7 @@ def noise(y: Sequence[float],
             noise value is 60.7% of max noise )
 
     Returns:
-        copy of y plus noise if y is not None. Dimension i same as that of x
+        copy of y plus noise if y is not None, return shape is: x.shape
         or
         None if y is None
 
@@ -303,7 +314,7 @@ def noise(y: Sequence[float],
     return y_
 
 
-def frame_to_arrays(df: DataFrame, *keys: str) -> Optional[List[Array[float]]]:
+def frame_to_arrays(df: DataFrame, *keys: str) -> Optional[List[Float1D]]:
     """
     Extracts 1D arrays of float from columns of a pandas DataFrame
 
@@ -329,18 +340,17 @@ def frame_to_arrays(df: DataFrame, *keys: str) -> Optional[List[Array[float]]]:
             if key not in df:
                 assert str((keys, df.columns))
 
-    col: List[Array[float]] = []
+    col: List[Float1D] = []
     for key in keys:
         col.append(np.asfarray(df.loc[:, key]))
         
     return col
 
 
-def xy_rand_split(x: Array[float, ..., ...],
-                  y: Optional[Array[float, ..., ...]] = None,
-                  fractions: Optional[Sequence[float]] = None) \
-        -> Tuple[Array[float, ..., ...], 
-                 Optional[Array[float, ..., ...]]]:
+def xy_rand_split(x: Float2D,
+                  y: Float2D = None,
+                  fractions: Optional[Iterable[float]] = None) \
+        -> Tuple[Float2D, Float2D]:
     """
     Splits randomly one or two 2D arrays into sub-arrays, size of sub 
     arrays is defined by a list of 'fractions'
@@ -372,7 +382,9 @@ def xy_rand_split(x: Array[float, ..., ...],
             fractions list relative to sum of fractions
             
     Returns:
-        Pair of lists of 2D sub-arrays of float
+        2-tuple of (list of 2D x-sub-arrays, list of 2D y-sub-arrays)
+        or
+        2-tuple of (list of 2D x-sub-arrays, None)
     """
     assert len(x.shape) == 2, str(x.shape)
     if y is not None:
@@ -393,8 +405,8 @@ def xy_rand_split(x: Array[float, ..., ...],
         end = begin + subset_sizes[i]
         subset_indices.append(all_indices[begin:end])
         begin += subset_sizes[i]
-    x_split: Array[float, ..., ...] = []
-    y_split: Optional[Array[float, ..., ...]] = [] if y is not None else None
+    x_split: List[Float2D] = []
+    y_split: Optional[List[Float2D]] = [] if y is not None else None
     for indices in subset_indices:
         x_split.append(x[indices, :])
         if y is not None:
@@ -403,12 +415,21 @@ def xy_rand_split(x: Array[float, ..., ...],
     return x_split, y_split
 
 
-def xy_thin_out(x: Sequence[float], 
-                y: Sequence[float], 
+def xy_thin_out(x: Iterable[float], 
+                y: Iterable[float], 
                 bins: int = 32) \
-        -> Tuple[Array[float], Array[float]]:
+        -> Tuple[Float1D, Float1D]:
     """
     Thinning out an a fine array of (x, y) points -> to coarse array
+    
+    
+    x x x x x x x x x x x x x x x x x x x x x x x x x  fine array
+    
+                            |
+                            v
+                            
+    x   x   x   x   x   x   x   x   x   x   x   x   x  thinned-out array
+    
     
     Args
         x:
@@ -447,10 +468,10 @@ def xy_thin_out(x: Sequence[float],
     return np.asfarray(x_thin_corner), np.asfarray(y_thin_center)
 
 
-def scale(X: Sequence[float], 
+def scale(X: Iterable[float], 
           lo: float = 0., 
           hi: float = 1., 
-          axis: Optional[int] = None) -> Array[float]:
+          axis: Optional[int] = None) -> Float1D:
     """
     Normalizes elements of array to [lo, hi] interval (linear)
 
@@ -479,11 +500,8 @@ def scale(X: Sequence[float],
     return hi - (((hi - lo) * (max_ - X)) / delta)
 
 
-def convert_to_2d(value: Optional[Union[float, 
-                                        Sequence[float], 
-                                        Array[float], 
-                                        Array[float, ..., ...]]]) \
-            -> Array[float, ..., ...]: 
+def convert_to_2d(value: Optional[Union[float, Iterable[float], 
+                                        Float1D, Float2D]]) -> Float2D: 
     """
     Args:
         value:
@@ -501,15 +519,15 @@ def convert_to_2d(value: Optional[Union[float,
     if value is not None:
         value = np.atleast_1d(value)
         if len(value.shape) == 1:              
-            value = np.atleast_2d(value).T
+            value = value.reshape(-1, 1)
             
     return value
 
 
-def smooth(x: Optional[Sequence[float]], 
-           y: Sequence[float],  
+def smooth(x: Optional[Iterable[float]], 
+           y: Iterable[float],  
            frac: float = 0.2, 
-           it: int = 3) -> Array[float]:
+           it: int = 3) -> Float1D:
     """
     Smoothes array elements
     
@@ -533,7 +551,7 @@ def smooth(x: Optional[Sequence[float]],
         
     Note: 
         lowess() returns a 2D array if argument 'return_sorted' is True
-        In this case, the returned is returned as 
+        In this case, the result is returned as 
         y_smooth = lowess(y, x, return_sorted=True)[:, 1] 
     """   
     if x is None:
