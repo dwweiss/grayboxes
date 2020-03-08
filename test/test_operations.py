@@ -251,7 +251,7 @@ class TestUM(unittest.TestCase):
         Y_tru = White('demo')(x=X, silent=True)
         Y = noise(Y_tru, relative=10e-2)
         X0, X1 = X.T[0], X.T[1]
-        plot_isomap(X0, X1, Y, title='Init. White: Y', 
+        plot_isomap(X0, X1, Y, title='Initial White: Y', 
                     labels=['x0', 'x1', 'Y'])
 
         for model_type in model_types:            

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-01-29 DWW
+      2020-02-13 DWW
 """
 
 import initialize
@@ -29,12 +29,11 @@ from pandas import DataFrame
 import matplotlib.pyplot as plt
 import neurolab as nl
 
-from grayboxes.neural import Neural
-from grayboxes.neuralk import Neural as NeuralK
-from grayboxes.neuraln import Neural as NeuralN
+from grayboxes.neuraltf import Neural as NeuralTf
+from grayboxes.neuralnl import Neural as NeuralNl
 
-from grayboxes.plot import (plot_surface, plot_isolines, plot_isomap, \
-                            plot_wireframe)
+from grayboxes.plot import (plot_surface, plot_isolines, 
+                            plot_isomap, plot_wireframe)
 
 
 def L2(y: np.ndarray, Y: np.ndarray) -> float:
@@ -54,7 +53,7 @@ class TestUM(unittest.TestCase):
         pass
 
 
-    def test1(self):
+    def _test1(self):
         s = 'Example 1: newff and train from Neurolab'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
@@ -92,7 +91,7 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
 
-    def test2(self):
+    def _test2(self):
         s = 'Example 2 __call__()'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
@@ -125,7 +124,7 @@ class TestUM(unittest.TestCase):
                 delta, reciprocal = 1e-6, 1e6
                 return (self(y + delta) - self(y)) * reciprocal
 
-        net = Neural()
+        net = NeuralNl()
         for outputf in (nl.trans.PureLin, ):  # TanSig2, ):
             net(X=X, Y=Y, neurons=[6], epochs=2000, goal=1e-6, show=0,
                 trials=3, trainer='rprop', regularization=0.0, plot=0,
@@ -150,7 +149,7 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
 
-    def test3(self):
+    def _test3(self):
         s = 'Example 3 compact form'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
@@ -162,7 +161,7 @@ class TestUM(unittest.TestCase):
         dx = 0.5 * (X.max() - X.min())
         x = np.linspace(X.min() - dx, X.max() + dx).reshape(-1, 1)
         
-        net = Neural()
+        net = NeuralTf()
         y = net(X=X, Y=Y, x=x, neurons=[6], plot=1, epochs=500, goal=1e-5,
                 trials=5, trainer='cg gdx rprop bfgs',
                 regularization=0.0, show=None,
@@ -180,7 +179,7 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
 
-    def test4(self):
+    def _test4(self):
         s = 'Example 4, get X and Y from dataframe'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
@@ -189,7 +188,7 @@ class TestUM(unittest.TestCase):
                         'r1': [32, 42, 52, 55]})
         xkeys = ['p0', 'p2']
         ykeys = ['r0', 'r1']
-        net = Neural()
+        net = NeuralTf()
         net.set_XY(df[xkeys], df[ykeys], xkeys, ykeys)
         metrics = net.train(X=None, Y=None, goal=1e-6, neurons=[10, 3], 
                             plot=1, epochs=2000,
@@ -200,7 +199,7 @@ class TestUM(unittest.TestCase):
 
         self.assertTrue(True)
 
-    def test5(self):
+    def _test5(self):
         s = 'Example 5, X and Y are 2D arrays'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
@@ -208,7 +207,7 @@ class TestUM(unittest.TestCase):
         Y = [[10, 11], [12, 13], [35, 40], [58, 68], [22, 28]]
         x = X.copy()
 
-        net = NeuralK()
+        net = NeuralTf()
         y = net(X, Y, x, neurons=[10, 10], 
                 activation='sigmoid', 
                 epochs=1000, 
@@ -261,56 +260,64 @@ class TestUM(unittest.TestCase):
         s = 'Example 6'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        
-        if 0:
-            X = np.linspace(-2 * np.pi, 2 * np.pi, 1000).reshape(-1, 1)
-            Y = np.sin(X) * 5
-        else:
-            X = np.random.uniform(-2*np.pi, 2*np.pi, (2000, 2))
-            Y = np.sin(X) + np.random.uniform(-0.2, +0.2, size=X.shape)
-        x = X
-        
-        for phi in (Neural, NeuralN, NeuralK):
+        N = 2000
+        n = 300
+        m = 1   
+        nse = 0e-2
+        X = np.random.uniform(-2*np.pi, 2*np.pi, size=(N, m))
+        Y_tru = np.sin(X)
+        Y = Y_tru + np.random.uniform(-nse, +nse, size=X.shape)
+        x = np.random.uniform(-2*np.pi, 2*np.pi, size=(n, m))
+        y_tru = np.sin(x)
+    
+        for phi in (
+#                    Neural, 
+#                    NeuralNl, 
+                    NeuralTf,
+                    ):
             phi = phi()
-            y = phi(X=X, Y=Y, x=x, 
-                    activation='sigmoid',
-                    epochs=300,
-                    expected=0.5e-3, 
+            y = phi(X=X, Y=Y, x=x,
+                    activation='tanh',
+                    epochs=150,
+                    expected=1e-3, 
                     learning_rate=0.1,
-                    neurons=[10]*2,
-                    output='sigmoid',
-                    patience=50,
+                    neurons=[[i]*j for i in range(3, 6) for j in range(1, 5)],
+                    output=None,
+                    patience=25,
                     plot=1, 
-                    show=50,
-                    tolerated=10e-3,
+                    tolerated=5e-3,
                     trainer='adam', 
                     trials=5,
                     )
             
             if phi.ready:
-                dy = y - Y
+                dy = y - y_tru
                 
-                X0, Y0, y0, dy0 = X[:, 0], Y[:, 0], y[:, 0], dy[:, 0]
+                X0, Y0, x0, y0, dy0 = X[:,0], Y[:,0], x[:,0], y[:,0], dy[:,0]
                 if X.shape[1] > 1:
                     X1 = X[:, 1]
                     if X.shape[1] > 2:
                         X2 = X[:, 2]
+                if x.shape[1] > 1:
+                    x1 = x[:, 1]
+                    if X.shape[1] > 2:
+                        x2 = x[:, 2]
                 if Y.shape[1] > 1:
                     Y1 = Y[:, 1]
                     if Y.shape[1] > 2:
                         Y2 = Y[:, 2]
         
                 if X.shape[1] == 1:
-                    plt.plot(X0, y0, label='pred')
+                    plt.plot(x0, y0, label='pred')
                     plt.plot(X0, Y0, label='targ')
                     plt.legend()
                     plt.show()
                 elif X.shape[1] == 2:
-                    plot_surface(X0, X1, y0, title='$y_{prd}$')
+                    plot_surface(x0, x1, y0, title='$y_{prd}$')
                     plot_isolines(X0, X1, y0, title='$y_{prd}$')
                     plot_isolines(X0, X1, Y0, title='$Y_{trg}$')
                 if X.shape[1] == 2:
-                    plot_isomap(X0, X1, dy0, title='$y_{prd} - Y_{trg}$')
+                    plot_isomap(x0, x1, dy0, title='$y_{prd} - Y_{trg}$')
 
         self.assertTrue(True)
 

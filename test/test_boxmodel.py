@@ -26,7 +26,7 @@ initialize.set_path()
 import unittest
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import List, Optional, Sequence
+from typing import List, Optional, Iterable
 
 from grayboxes.boxmodel import BoxModel
 from grayboxes.plot import plot_isomap, plot_surface, plot_isolines
@@ -35,7 +35,7 @@ from grayboxes.white import White
 from grayboxes.lightgray import LightGray
 
 
-def f(x: Optional[Sequence[float]], *c: float) -> List[float]:
+def f(x: Optional[Iterable[float]], *c: float) -> List[float]:
     """
     Theoretical submodel y=f(x_com, x_tun) for single data point
     """
@@ -49,7 +49,7 @@ def f(x: Optional[Sequence[float]], *c: float) -> List[float]:
     return [y0, y1]
 
 
-def L2_norm(y: Sequence[float], Y: Sequence[float]) -> float:
+def L2_norm(y: Iterable[float], Y: Iterable[float]) -> float:
     return np.sqrt(np.mean(np.square(np.asfarray(y) - np.asfarray(Y))))
 
 

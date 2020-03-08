@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-01-30 DWW
+      2020-02-03 DWW
 """
 
 import initialize
@@ -27,14 +27,14 @@ from collections import OrderedDict
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import Any, Dict, Iterable, Optional, Union
 import unittest
 
 from grayboxes.array import noise, rand, xy_rand_split
 from grayboxes.base import Base 
 from grayboxes.boxmodel import BoxModel
 from grayboxes.black import Black
-from grayboxes.datatypes import Float2D
+from grayboxes.datatype import Float2D
 from grayboxes.darkgray import DarkGray
 from grayboxes.forward import Forward
 from grayboxes.inverse import Inverse
@@ -42,7 +42,7 @@ from grayboxes.metrics import init_metrics
 from grayboxes.white import White
 
 
-def f(x: Union[float, Sequence[float]]) -> float:
+def f(x: Union[float, Iterable[float]]) -> float:
     x = np.atleast_1d(x)
     y = (1 - np.cos(x * np.pi)) / 2
 #    if x[0] < 0.:
@@ -259,8 +259,13 @@ class Foo(Base):
         print('ti3 253 x_tst y_tst', 
               self.x_tst.shape if self.x_tst is not None else '?',
               self.y_tst.shape if self.y_tst is not None else '?')
+        assert self.x_tst is not None and self.x_tst is not None and \
+            self.x_tst.shape == self.y_tst.shape, \
+            str((self.x_tst, self.y_tst))
+        
         plt.scatter(self.x_tst, self.y_tst, marker='+', color='r',
                     label=r'$x = \varphi( y_{tst} )$')
+        
         if not isinstance(self.operation.model, White):
             if 'i_abs' in self.metrics_trn:
                 i_abs_trn = self.metrics_trn['i_abs']

@@ -26,13 +26,13 @@ initialize.set_path()
 import unittest
 import numpy as np
 import psutil
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Optional, Iterable
 
 from grayboxes.parallel import mpi, communicator, predict_scatter, split, \
                                merge, x_demo, x3d_to_str
 
 
-def f(x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+def f(x: Optional[Iterable[float]], *args: float, **kwargs: Any) \
         -> List[float]:
     for i in range(10*1000):
         _sum = 0

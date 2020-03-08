@@ -26,7 +26,7 @@ initialize.set_path()
 import unittest
 import numpy as np
 import scipy
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Optional, Iterable
 
 from grayboxes.minimum import Minimum
 from grayboxes.plot import plot_surface, plot_isomap
@@ -36,20 +36,20 @@ from grayboxes.white import White
 
 
 # theoretical submodel
-def f(x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
+def f(x: Optional[Iterable[float]], *c: float, **kwargs: Any) \
         -> List[float]:
     c0, c1, c2 = c if len(c) > 2 else (1, 1, 1)
     return [+(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)]
 
 
 # alternative theoretical submodel 
-def f1(x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
+def f1(x: Optional[Iterable[float]], *c: float, **kwargs: Any) \
         -> List[float]:
     c0, c1, c2 = c if len(c) > 2 else (1, 1, 1)
     return [+(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)]
 
 # theoretical submodel without kw-arguments, needed by scipy.optimize.minimum()
-def f_returns_float(x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
+def f_returns_float(x: Optional[Iterable[float]], *c: float, **kwargs: Any) \
         -> float:
     y = np.sin(x[0]) + (x[1])**2 + 2 
     return y

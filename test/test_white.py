@@ -25,14 +25,14 @@ initialize.set_path()
 
 import unittest
 import numpy as np
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Optional, Iterable
 
 from grayboxes.array import grid, cross
 from grayboxes.forward import Forward
 from grayboxes.plot import plot_isomap
 from grayboxes.white import White
 
-def f_user(self, x: Optional[Sequence[float]], *args: float, **kwargs: Any) \
+def f_user(self, x: Optional[Iterable[float]], *args: float, **kwargs: Any) \
         -> List[float]:
     c0, c1, c2, c3 = args if len(args) > 0 else np.ones(4)
     x0, x1 = x[0], x[1]

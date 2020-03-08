@@ -25,7 +25,7 @@ initialize.set_path()
 
 import unittest
 import numpy as np
-from typing import List, Optional, Sequence
+from typing import List, Optional, Iterable
 
 from grayboxes.array import rand
 from grayboxes.maximum import Maximum
@@ -33,7 +33,7 @@ from grayboxes.white import White
 
 
 # user defined method with theoretical submodel
-def f(self, x: Optional[Sequence[float]], *c: float) -> List[float]:
+def f(self, x: Optional[Iterable[float]], *c: float) -> List[float]:
     c0, c1, c2 = c if len(c) >= 3 else 1., 1., 1.
     return -(np.sin(c0 * x[0]) + c1 * (x[1] - 1)**2 + c2)
 

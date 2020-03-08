@@ -25,7 +25,7 @@ initialize.set_path()
 
 import unittest
 import numpy as np
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Optional, Iterable
 
 from grayboxes.array import grid, noise
 from grayboxes.white import White
@@ -43,7 +43,7 @@ from grayboxes.inverse import Inverse
 """
 
 
-def f(self, x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
+def f(self, x: Optional[Iterable[float]], *c: float, **kwargs: Any) \
         -> List[float]:
     """
     Theoretical submodel for single data point, x = (x_0, x_1), y = (y_0)

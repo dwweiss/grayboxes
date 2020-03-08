@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-02-03 DWW
+      2020-02-24 DWW
 """
 
 import initialize
@@ -25,140 +25,101 @@ initialize.set_path()
 
 import matplotlib.pyplot as plt
 import numpy as np
-import sys
-from typing import List
 import unittest
 
-from grayboxes.array import grid, noise 
 from grayboxes.black import Black
-from grayboxes.datatypes import Float1D 
-from grayboxes.white import White
 
 
 class TestUM(unittest.TestCase):
     def setUp(self):
-        self.saveFigures = True
-
+        pass
 
     def tearDown(self):
         pass
 
-
     def test1(self):
-        n_point = 500
-        X = np.linspace(-1., 1., n_point).reshape(-1, 1)
-        Y_tru = White(f=lambda x: [np.cos(x[0] * 2 * np.pi)])(x=X)
-        Y = noise(Y_tru, absolute=0.1)
+        N = 200          # number training samples
+        n = 2 * N        # number of test samples
+        noise = 0.2      # absolute noise added to true values
+        
+        def f_true(x):   # calculate true values
+            return np.sin(x * 2. * np.pi)
+        
+        # training data
+        X = np.linspace(-1., 1., N).reshape(-1, 1)
+        Y_tru = f_true(X)
+        Y = Y_tru + np.random.uniform(-noise, +noise, Y_tru.shape)
 
+        # test data
+        x = np.linspace(-2., 2., n).reshape(-1, 1)
+        y_tru = f_true(x)
+
+        plt.title('training data and true values')
+        plt.plot(X.ravel(), Y_tru.ravel(), '-', label='true')
+        plt.plot(X.ravel(), Y.ravel(), '-', label='train')
+        plt.plot(x.ravel(), y_tru.ravel(), ':', label='true')
+        plt.ylim(-2., 2.)
+        plt.legend()
+        plt.grid()
+        plt.show()
+        
         ok = True
-        for backend in ['keras',
-#                               'neurolab'
-                               ]:
+        for backend in [
+                        'tensorflow',
+#                        'neurolab'
+                       ]:
             phi = Black()
-            y = phi(X=X, Y=Y, x=X.copy(), 
-                    activation='sigmoid', 
+            y = phi(X=X, Y=Y, x=x,
+#                    activation='auto',
+#                    activation=('leaky',),
+                    activation=('leakyrelu', 'elu', 'tanh', 'sigmoid', 'relu')
+                               if backend == 'tensorflow' else 'auto',
                     backend=backend,
-                    epochs=500 if backend == 'neurolab' else 250,
-                    expected=1e-3,
-                    learning_rate=0.5, 
-                    neurons=[10, 10] if backend == 'neurolab' else 'auto',
-                    output='sigmoid',
-                    patience=30,
-                    plot=True, 
-    #                regularization=None,
+                    batch_size=None, # N // 8,
+                    epochs=250 if backend == 'tensorflow' else 100,
+                    expected=0.5e-3 if backend == 'tensorflow' else 1e-5, 
+                    learning_rate=0.1,
+#                    neurons='auto',
+                    neurons=[[10*i] for i in range(1, 100)],
+#                    neurons=[[n]*h for h in range(1, 8+1) for n in 
+#                        range(4, 64+1)] if backend == 'tensorflow' else 'auto',
+                    output='linear',
+                    patience=25,
+                    plot=1,
+                    rr = 0.1,
                     show=100,
                     silent=False,
-                    tolerated=10e-3,
-                    trainer='auto' if backend == 'neurolab' else 'adam',
-                    trials=10,
+                    tolerated=5e-3,
+                    trainer=('adam',) if backend == 'tensorflow' else 'rprop',
+                    trials=5,
                     validation_split=0.2,
                     verbose=0,
                     )
     
-            if phi.ready:            
-                plt.plot(X.ravel(), Y.ravel(), '.', label='trn')
-                if y is not None:
-                    plt.plot(X.ravel(), y.ravel(), '.', label='tst')
+            if phi.ready:
+                plt.title('train and pred, mse (trn/val): ' + 
+                    str(np.round(phi.metrics['mse_trn']*1e3, 3)) + 'e-3 / ' + 
+                    str(np.round(phi.metrics['mse_val']*1e3, 3)) + 'e-3')
+                plt.plot(X.ravel(), Y.ravel(), '-', label='train')
+                plt.plot(x.ravel(), y.ravel(), '-', label='test')
+                plt.plot(x.ravel(), y_tru.ravel(), ':', label='true')
+                plt.ylim(-2., 2.)
                 plt.legend() 
                 plt.grid()
                 plt.show()
+
+                plt.title('true values minus prediction/training data')
+                plt.plot(X.ravel(), (Y - Y_tru).ravel(), '-', label='train')
+                plt.plot(x.ravel(), (y - y_tru).ravel(), ':', label='test')
+                plt.ylim(-0.2, 0.2)
+                plt.legend() 
+                plt.grid()
+                plt.show()                
             else:
-                print('??? backend:', backend, 
-                      ' ==> phi.ready is False')
                 ok = False
+                print('??? backend:', backend, '==> phi.ready is False')
 
         self.assertTrue(ok)
-
-
-    def _test2(self):
-        # neural network, 1D problem sin(x) with noise
-        def f(x: Float1D, *c: float) -> List[float]:
-            c0, c1 = c if len(c) > 0 else 1., 1.
-            return np.sin(x) + c0 * x + c1
-
-        # training data
-        n_trn = 300
-        noise_abs = 0.1
-        X = grid((n_trn, 1), [-np.pi, np.pi])
-        Y_tru = White(f)(x=X, silent=True)
-        Y_nse = noise(Y_tru, absolute=noise_abs)
-
-        # test data
-        dx = 1. * np.pi
-        n_tst = 100
-        x = grid((n_tst, 1), [X.min() - dx, X.max() + dx])
-
-        if 'grayboxes.neuralk' in sys.modules:
-            neurons = [[4]*i for i in range(1, 6+1)]
-        else:
-            neurons = [10, 10]
-
-        phi = Black('black')
-
-        metrics_trn = phi(X=X, Y=Y_nse, 
-                          activation='sigmoid',
-                          epochs=500, 
-                          expected=0.1e-3,
-                          goal=1e-6,
-                          neurons=neurons,
-                          output='lin',
-                          plot=1,
-                          silent=0,
-                          tolerated=5e-3,
-                          trainer='auto',
-                          trials=3, 
-                          )
-        
-        y = phi(x=x, silent=True)
-
-        if phi.ready:
-            y_tru = White(f)(x=x, silent=True)
-            metrics_tst = phi.evaluate(x, y_tru)
-    
-            plt.title('$L_2^{trn}:' + str(round(metrics_trn['L2'], 4)) + ',' +
-                      ' L_2^{tst}:' + str(round(metrics_tst['L2'], 4)) + '$')
-#            plt.ylim(min(-2, Y_nse.min(), y.min()), 
-#                     max(2, Y_nse.max(), Y_nse.max()))
-            plt.yscale('linear')
-            plt.xlim(-0.1 + x.min(), 0.1 + x.max())
-            
-            plt.scatter(X, Y_nse, marker='x', c='r', label='trn')
-            plt.plot(x, y, c='b', label='tst')
-            plt.plot(x, f(x), linestyle=':', label='tru')
-    
-            i_abs_trn = metrics_trn['i_abs']
-            plt.scatter(X[i_abs_trn], Y_nse[i_abs_trn], marker='o', 
-                        color='r', s=66, label='max abs train')
-    
-            i_abs_tst = metrics_tst['i_abs']
-            plt.scatter(x[i_abs_tst], y[i_abs_tst], marker='o', 
-                        color='b', s=66, label='max abs test')
-    
-            plt.legend(bbox_to_anchor=(1.1, 0), loc='lower left')
-            plt.grid()
-            plt.show()
-
-        self.assertTrue(phi.ready)
 
 
 if __name__ == '__main__':

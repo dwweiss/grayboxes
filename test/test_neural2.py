@@ -53,7 +53,7 @@ class TestUM(unittest.TestCase):
         def f(x):
             return np.sin(x) * 10 + 0
 
-        n_obs = 500
+        n_obs = 2000
         n_tst = 400
         X = np.linspace(-2 * np.pi, 2 * np.pi, n_obs).reshape(-1, 1)
         Y = f(X)
@@ -64,28 +64,31 @@ class TestUM(unittest.TestCase):
         
         # keyword 'neurons' selects Neural as empirical phi in Black
         y1 = phi(X=X, Y=Y, x=x, 
+                 activation='auto',
                  backend='keras',
-                 epochs=500,
-                 expected=0.75e-3,
+                 epochs=250,
+                 expected=0.5e-3,
 #                 neurons=[[10]*i for i in range(8)], 
-                 neurons='brute_force',
-                 patience=30,
+                 neurons=(10,10,10),#'brute_force',
+                 output=None,
+                 patience=20,
                  plot=1,
                  show=None,
-                 tolerated=10e-3,
+                 tolerated=5e-3,
                  trainer='adam',
                  trials=10,
                  )
 
-        print('+++ shapes of X Y x y:', phi.X.shape, phi.Y.shape, 
-              phi.x.shape, phi.y.shape, )
-
-        plt.title('Test, L2:' + str(round(phi.metrics['L2'], 5)))
-        plt.plot(phi.x, y1, '-', label='MLP')
-        plt.plot(phi.X, phi.Y, '.', label='target')
-        plt.xlabel('x')
-        plt.ylabel('y(x)')
-        plt.show()
+        if phi.ready:
+            print('+++ shapes of X Y x y:', phi.X.shape, phi.Y.shape, 
+                  phi.x.shape, phi.y.shape, )
+    
+            plt.title('Test, L2:' + str(round(phi.metrics['L2'], 5)))
+            plt.plot(phi.x, y1, '-', label='MLP')
+            plt.plot(phi.X, phi.Y, '.', label='target')
+            plt.xlabel('x')
+            plt.ylabel('y(x)')
+            plt.show()
 
         self.assertTrue(True)
 

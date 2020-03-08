@@ -25,14 +25,14 @@ initialize.set_path()
 
 import unittest
 import numpy as np
-from typing import List, Optional, Sequence
+from typing import List, Optional, Iterable
 
 from grayboxes.sensitivity import Sensitivity
 from grayboxes.array import cross
 from grayboxes.white import White
 
 
-def f(self, x: Optional[Sequence[float]], *c: float) -> List[float]:
+def f(self, x: Optional[Iterable[float]], *c: float) -> List[float]:
     return np.sin(x[0]) + (x[1] - 1)**2
 
 

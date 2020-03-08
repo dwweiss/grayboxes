@@ -25,7 +25,7 @@ initialize.set_path()
 
 import unittest
 import numpy as np
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Optional, Iterable
 
 from grayboxes.array import grid, cross, rand
 from grayboxes.forward import Forward
@@ -35,7 +35,7 @@ from grayboxes.white import White
 
 
 # function without access to 'self' attributes
-def func(x: Optional[Sequence[float]], *c: float, **kwargs: Any) \
+def func(x: Optional[Iterable[float]], *c: float, **kwargs: Any) \
         -> List[float]:
 #    print('0')
     return 3.3 * np.array(np.sin(x[0]) + (x[1] - 1)**2)

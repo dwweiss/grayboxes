@@ -25,6 +25,7 @@ import os
 
 
 def set_path():
+    sys.path.append(os.path.abspath('.'))
     sys.path.append(os.path.abspath('..'))
 
 

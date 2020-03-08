@@ -28,8 +28,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from grayboxes.array import grid
-from grayboxes.neuraln import Neural as NeuralN
-from grayboxes.neuralk import Neural as NeuralK
+from grayboxes.neuralnl import Neural as NeuralNl
+from grayboxes.neuraltf import Neural as NeuralTf
 from grayboxes.plot import (plot_surface, plot_isolines, plot_isomap, \
                             plot_wireframe)
 try:
@@ -82,10 +82,10 @@ class TestUM(unittest.TestCase):
         
 
         for net in (
-#                    NeuralN(),
-                    NeuralK(),
+#                    NeuralNl(),
+                    NeuralTf(),
                     ):
-            if isinstance(net, NeuralK):
+            if isinstance(net, NeuralTf):
                 trainer = (
                            'adam', 
 #                           'nadam'
@@ -144,14 +144,17 @@ class TestUM(unittest.TestCase):
         s = 'Test 2, 2D input and 2D target'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        X = grid((16,)*2, [0, 1]*2)
+        X = grid((256,)*2, [0, 1]*2)
         Y = np.sin(X * 2 * np.pi)
+        print('+++ shapes X Y:', X.shape, Y.shape)
         x = X.copy()
 
-        net = NeuralK()
-        y = net(X, Y, x, neurons=[10, 10], plot=1, epochs=500, expected=0.5e-3,
-                trainer='auto', trials=5, activation='tanh',
-                validation_split=0.0)
+        net = NeuralTf()
+        y = net(X, Y, x, 
+                neurons='auto', 
+                plot=1, epochs=250, expected=1e-3,
+                trainer='adam', trials=3, activation='tanh', output='tanh',
+                validation_split=0.2)
         dy = y - Y
         X, Y, x = net.X, net.Y, net.x
         if X.shape[1] == 2:
