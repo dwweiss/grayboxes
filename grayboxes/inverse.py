@@ -23,7 +23,7 @@
 import numpy as np
 from typing import Any, Union
 
-from grayboxes.datatypes import Float1D, Float2D
+from grayboxes.datatype import Float1D, Float2D
 from grayboxes.minimum import Minimum
 
 
@@ -39,7 +39,7 @@ class Inverse(Minimum):
         bounds = [(x0min, x0max), (x1min, x1max), ... ]
         y_inv = (y0, y1, ... )
 
-        def f(self, x: Sequence[float], *c: float) -> List[float]:
+        def f(self, x: Iterable[float], *c: float) -> List[float]:
             c = args if len(weights) > 0 else np.ones(1)
             return [c[0] * x[0]]
         op = Inverse(DarkGray(f=f))

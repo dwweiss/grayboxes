@@ -17,19 +17,19 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-02-03 DWW
+      2020-02-10 DWW
 """
 
 import inspect
 from collections import OrderedDict
+import matplotlib.pyplot as plt
 import numpy as np
 from pandas import DataFrame
-from typing import (Any, Dict, Iterable, Optional, List, Sequence, Tuple, 
-                    Union)
+from typing import Any, Dict, Iterable, Optional, List, Tuple, Union
 
 from grayboxes.array import convert_to_2d
 from grayboxes.base import Base
-from grayboxes.datatypes import Float1D, Float2D, Function, Str1D
+from grayboxes.datatype import Float1D, Float2D, Function, Str1D
 from grayboxes.metrics import init_metrics, update_errors
 from grayboxes.parallel import communicator, predict_scatter
 
@@ -41,8 +41,8 @@ class BoxModel(Base):
     - Inputs and outputs are 2D arrays
     - First index is data point index
     - If X, Y or x are passed as 1D array_like, they are transformed to
-          self.X = np.asfarray(X).reshape(len(X), 1) 
-          self.Y = np.asfarray(Y).reshape(len(Y), 1)
+          self.X = np.asfarray(X).reshape(-1, 1) 
+          self.Y = np.asfarray(Y).reshape(-1, 1)
 
     - Upper case 'X' is 2D training input and 'Y' is 2D training target
     - Lower case 'x' is 2D prediction input and 'y' is 2D pred. output
@@ -54,9 +54,9 @@ class BoxModel(Base):
         Args:
             f:
                 Theoretical submodel for single data point 
-                    f(self, x: Sequence[float], *c: float, **kwargs: Any) 
+                    f(self, x: Iterable[float], *c: float, **kwargs: Any) 
                 or
-                    f(x: Sequence[float], *c: float, **kwargs: Any) 
+                    f(x: Iterable[float], *c: float, **kwargs: Any) 
 
             identifier:
                 Unique object identifier
@@ -71,7 +71,7 @@ class BoxModel(Base):
         self._y: Union[Float1D, Float2D] = None      # prediction output 
         self._x_keys: Str1D = None           # x-keys for data selection
         self._y_keys: Str1D = None           # y-keys for data selection
-        self._metrics: Dict[str, Any] = init_metrics()    # metrics
+        self._metrics: Dict[str, Any] = init_metrics()         # metrics
         self._weights: Float1D = None    # weights of empirical submodel
         self._n_inp: int = -1                         # number of inputs
 
@@ -105,7 +105,7 @@ class BoxModel(Base):
                 f = f.__get__(self, self.__class__)
         self._f = f
 
-    def f_demo(self, x: Optional[Sequence[float]], *c: float, 
+    def f_demo(self, x: Optional[Iterable[float]], *c: float, 
                **kwargs: Any) -> List[float]:
         """
         Rosenbrook function as demo function f(self, x) for single data 
@@ -646,3 +646,66 @@ class BoxModel(Base):
             self.y = None                       # ensures valid 2D array
  
         return self.y
+
+
+    def plot(self, **kwargs) -> None:
+        """
+        Simple plot of training data and prediction data as flatted 
+        1D arrays
+        
+        Kwargs:
+            x_axis (int):
+                index of input to be plotted, , 0 < x_axis < n_inp
+                default: 0
+
+            y_axis (int):
+                index of output to be plotted, 0 < y_axis < n_out
+                default: 0
+            
+            see self.predict()
+        
+        Note:
+            If self.plot() is called by self.predict(), it causes 
+            a problem because self.plot() calls self.predict(),
+            see BruteForce.plot() for a remedy
+        """
+        x_axis = kwargs.get('x_axis', 0)
+        y_axis = kwargs.get('y_axis', 0)
+        title = kwargs.get('title', None)
+        
+        y = self.y
+        x = self.x if self.x is not None else self.X
+        if x is None:
+            print('??? BoxModel.plot(): no x-array')
+            return
+        if y is None and self.ready:
+            y = self.predict(x, **self.kwargs_del('x'))
+                    
+        if (self.X is not None and self.Y is not None) or \
+                (x is not None and y is not None):
+            print('??? BoxModel.plot(): no arrays to plot')
+            return
+        
+        if title is None:
+            if self.X and self.Y:
+                if x and y:
+                    title = 'Train data versus prediction'
+                else:
+                    title = 'Train data'
+            else:
+                title = 'Prediction data'
+        plt.title(str(title))
+        plt.xlabel('$x$')
+        plt.ylabel('$y$')
+
+        if self.X and self.Y:
+            X_, Y_ = self.X[:, x_axis], self.Y[:, y_axis]
+            plt.plot(X_, Y_, '.', c='r', label='train')
+
+        if x and y:
+            x_, y_ = x[:, x_axis], y[:, y_axis]
+            plt.plot(x_, y_, '.', c='b', label='pred')
+
+        plt.legend()
+        plt.grid()
+        plt.show()

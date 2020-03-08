@@ -296,7 +296,7 @@ def plot1(x: np.ndarray,
           title: str = '',
           labels: Optional[Tuple[str, str]]=None,
           xlog: bool = False,
-          ylog: bool  =False,
+          ylog: bool = False,
           grid: bool = True,
           figsize: Optional[Tuple[float, float]] = None,
           fontsize: Optional[int] = None,
@@ -317,14 +317,15 @@ def plot_curves(x: np.ndarray,
                 y2: Optional[np.ndarray] = None,
                 y3: Optional[np.ndarray] = None,
                 y4: Optional[np.ndarray] = None,
-                labels: Optional[List[str]] = None,  # axis labels
-                title: str='',  # title of plot
-                styles: Optional[Tuple[str, str, str]]=None, # curve styl('-:')
-                marker: str = '',  # plot markers ('<>*+')
-                linestyle: str = '-',  # line style ['-','--',':'']
+                labels: Optional[List[str]] = None,        # axis labels
+                title: str = '',                         # title of plot
+                styles: Optional[Tuple[str, str, str]] = None, 
+                                                     # curve style('-:')
+                marker: str = '',                # plot markers ('<>*+')
+                linestyle: str = '-',       # line style ['-','--',':'']
                 units: Optional[List[str]] = None,  # axis units
-                offset_axis2: int = 90,  # space to 1st right-hd. axis
-                offset_axis3: int = 180,  # space to 2nd right-hd. axis
+                offset_axis2: int = 90,    # space to 1st right-hd. axis
+                offset_axis3: int = 180,   # space to 2nd right-hd. axis
                 xrange: Optional[Tuple[float, float]] = None,
                 y1range: Optional[Tuple[float, float]] = None,
                 y2range: Optional[Tuple[float, float]] = None,
@@ -336,7 +337,7 @@ def plot_curves(x: np.ndarray,
                 figsize: Optional[Tuple[float, float]] = (6, 3.5),
                 fontsize: Optional[int] = 14,
                 legend_position: Optional[Tuple[float, float]] = None,
-                # dimensionless legend position in (1, 1)-space
+                       # dimensionless legend position in (1., 1.)-space
                 file: str = '',  # file name of image (no save if empty)
                 ):
     x, y1 = np.asfarray(x), np.asfarray(y1)
@@ -883,17 +884,17 @@ def plot_trajectory(x, y, z,  # trajectory to be plotted
                     x3=[], y3=[], z3=[],  # third trajectory to be plotted
                     labels=['x', 'y', 'z', '', '', ''],
                     units=['[/]', '[/]', '[/]'],
-                    title='',
-                    xrange=[0., 0.],
-                    yrange=[0., 0.],
-                    zrange=[0., 0.],
-                    ylog=False,
-                    grid=False,
-                    figsize=(10, 8),
-                    fontsize=None,
-                    legend_position='',
-                    file='',
-                    start_point=False,
+                    title: Optional[str] ='',
+                    xrange: Optional[Tuple[float, float]] = (0., 0.),
+                    yrange: Optional[Tuple[float, float]] = (0., 0.),
+                    zrange: Optional[Tuple[float, float]] = (0., 0.),
+                    ylog: bool = False,
+                    grid: bool = False,
+                    figsize: Tuple[float, float] = (10, 8),
+                    fontsize: Optional[int] = None,
+                    legend_position: Optional[str] = '',
+                    file: str = '',
+                    start_point: bool = False,
                     ):
     """
     Plots up to three (x,y,z)  trajectories in 3D space
@@ -950,15 +951,16 @@ def plot_bar_arrays(x: Optional[np.ndarray] = None,
                     yarrays: Optional[np.ndarray] = None,
                     labels: Optional[List[str]] = None,
                     units: Optional[List[str]] = None,
-                    title: str='',
+                    title: str = '',
                     yrange: Optional[Tuple[float, float]] = None,
                     grid: bool = False,
-                    figsize: Optional[Tuple[float, float]]=None,
-                    fontsize: int=14,
-                    legend_position: Optional[Tuple[float, float]]=None,
-                    show_ylabel: bool=True,
-                    width: float=0.15,
-                    file: str=''):
+                    figsize: Optional[Tuple[float, float]] = None,
+                    fontsize: int = 14,
+                    legend_position: Optional[Tuple[float, float]] = None,
+                    show_ylabel: bool = True,
+                    width: float = 0.15,
+                    file: str=''
+                    ):
     """
     Plots bars without errorbars if y_arrays is 2D array of float
     """
@@ -980,10 +982,18 @@ def plot_bar_arrays(x: Optional[np.ndarray] = None,
               y4=y4, y4error=[],
               y5=y5, y5error=[],
               y6=y6, y6error=[],
-              labels=labels, units=units, title=title, yrange=yrange,
-              grid=grid, figsize=figsize, fontsize=fontsize,
-              legend_position=legend_position, show_ylabel=show_ylabel,
-              width=width, file=file)
+              yrange=yrange,
+              labels=labels, 
+              figsize=figsize, 
+              file=file,
+              fontsize=fontsize,
+              grid=grid, 
+              legend_position=legend_position, 
+              show_ylabel=show_ylabel,
+              title=title, 
+              width=width, 
+              units=units, 
+              )
 
 
 def plot_bars(x: Optional[np.ndarray] = None,
@@ -1169,48 +1179,65 @@ def plot_bars(x: Optional[np.ndarray] = None,
     plt.show()
 
 
-def plot_x_y_y_ref(X: np.ndarray,  # 2D array 
-                   Y: np.ndarray,  # 2D array
-                   Y_ref: np.ndarray,  # 2D array
-                   labels: Iterable[str] = None, 
+def plot_x_y_y_ref(x: np.ndarray,  # 2D array 
+                   y: np.ndarray,  # 2D array
+                   y_ref: np.ndarray,  # 2D array
+                   labels: Optional[Iterable[str]] = None, 
                    presentation: str = 'all') -> None:
     """
-    Plots Y(X), Y_ref(X) and the difference Y-Y_ref(X) as 
-        - isomap and surface if X, Y and Y_ref are 2D arrays
-        - curves oherwise
+    Plots y(x), y_ref(x) and the difference y-y_ref(x) as 
+        - isomap and surface if x, y and y_ref are 2D arrays
+        - or as curves otherwise
+        
+    Args:
+        x (2D array of float):
+            arguments, shape: (n_point, n_inp)
+
+        y (2D array of float):
+            dependent variable Y(x), shape: (n_point, n_out)
+
+        y_ref (2D array of float):
+            reference y_ref(x), shape: (n_point, n_out)
+        
+        labels:
+            list of x, y and z labels
+            
+        presentation:
+            placeholder
     """
     if labels is None:
-        labels = ('X', 'Y', 'Y_{ref}', )
+        labels = ('x', 'y', 'y^{ref}', )
+    assert len(labels) >= 3
+        
     
-    if any(arr is None for arr in (X, Y, Y_ref)):
-        print('!!! one of the plot_x_y_y_ref() args is None)
+    if any(arr is None for arr in (x, y, y_ref)):
+        print('!!! one of the plot_x_y_y_ref() args is None')
         return
     
-    X, Y, Y_ref = np.asfarray(X), np.asfarray(Y), np.asfarray(Y_ref)
+    x, y, y_ref = np.asfarray(x), np.asfarray(y), np.asfarray(y_ref)
 
-    if all(len(arr.shape) == 2 for arr in (X, Y, Y_ref, )):
-        # plots Y
-        plot_isomap(X[:, 0], X[:, 1], Y[:, 0], title='$' + labels[1] + '$',
+    if any(len(arr.shape) != 2 for arr in (x, y, y_ref, )):
+        plot_curves(x.flatten(), y.flatten(), y_ref.flatten(), labels=labels)
+    else:
+        plot_isomap(x[:, 0], x[:, 1], y[:, 0], title='$' + labels[1] + '$',
                     labels=['$' + labels[0] + '_0$',
-                           '$' + labels[0] + '_1$', '$' + labels[1] + '$'])
-        plot_surface(X[:, 0], X[:, 1], Y[:, 0], title='$' + labels[1] + '$',
+                            '$' + labels[0] + '_1$', '$' + labels[1] + '$'])
+        plot_surface(x[:, 0], x[:, 1], y[:, 0], title='$' + labels[1] + '$',
                      labels=['$' + labels[0] + '_0$',
-                            '$' + labels[0] + '_1$', '$' + labels[1] + '$'])    
-        # plots Y_ref
-        plot_isomap(X[:, 0], X[:, 1], Y_ref[:, 0], title='$' + labels[2] + '$',
+                             '$' + labels[0] + '_1$', '$' + labels[1] + '$'])    
+        # plots y_ref
+        plot_isomap(x[:, 0], x[:, 1], y_ref[:, 0], title='$' + labels[2] + '$',
                     labels=['$' + labels[0] + '_0$',
-                           '$' + labels[0] + '_1$', '$' + labels[2] + '$'])
-        plot_surface(X[:, 0], X[:, 1], Y_ref[:, 0], title='$' + labels[2] +'$',
+                            '$' + labels[0] + '_1$', '$' + labels[2] + '$'])
+        plot_surface(x[:, 0], x[:, 1], y_ref[:, 0], title='$' + labels[2] +'$',
                      labels=['$' + labels[0] + '_0$',
-                            '$' + labels[0] + '_1$', '$' + labels[2] + '$'])    
-        # plots Y - Y_ref
-        plot_isomap(X[:, 0], X[:, 1], (Y - Y_ref)[:, 0],
+                             '$' + labels[0] + '_1$', '$' + labels[2] + '$'])    
+        # plots y - y_ref
+        plot_isomap(x[:, 0], x[:, 1], (y - y_ref)[:, 0],
                     title='$' + labels[1] + ' - ' + labels[2] + '$',
                     labels=['$' + labels[0] + '_0$', '$' + labels[0] + '_1$',
-                           '$' + labels[1] + ' - ' + labels[2] + '$'])
-        plot_surface(X[:, 0], X[:, 1], (Y - Y_ref)[:, 0],
+                            '$' + labels[1] + ' - ' + labels[2] + '$'])
+        plot_surface(x[:, 0], x[:, 1], (y - y_ref)[:, 0],
                      title='$' + labels[1] + ' - ' + labels[2] + '$',
                      labels=['$' + labels[0]+ '_0$', '$' + labels[0] + '_1$',
-                            '$' + labels[1] + ' - ' + labels[2] + '$'])
-    else:
-        plot_curves(X.flatten(), Y.flatten(), Y_ref.flatten(), labels=labels)
+                             '$' + labels[1] + ' - ' + labels[2] + '$'])

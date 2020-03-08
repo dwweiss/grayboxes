@@ -38,12 +38,12 @@ if os.name == 'posix':
         print('!!! mpi4py import failed')
         
 try:
-    from grayboxes.datatypes import Float1D, Float2D, Float3D, None2D
+    from grayboxes.datatype import Float1D, Float2D, Float3D, None2D
 except ImportError:
     try:
-        from datatypes import Float1D, Float2D, Float3D, None2D
+        from datatype import Float1D, Float2D, Float3D, None2D
     except ImportError:
-        print('!!! Module datatypes not imported')
+        print('!!! Module datatype not imported')
         print('    continue with unauthorized definition of Float1D, ' +
               'Float2D, Float3D, None2D')
         Float1D = Optional[np.ndarray]
@@ -107,9 +107,10 @@ def rank() -> Optional[int]:
     return comm.Get_rank()
 
 
-def predict_scatter(f: Callable[..., List[float]], x: Union[Float2D, Float1D], 
-                    *args: float, **kwargs: Any) \
-                    -> Union[Float2D, None2D]:
+def predict_scatter(f: Callable[..., List[float]], 
+                    x: Union[Float2D, Float1D], 
+                    *args: float, 
+                    **kwargs: Any) -> Union[Float2D, None2D]:
     """
     Parallelizes prediction of model y = f(x) employing scatter() and 
     gather()
@@ -170,6 +171,7 @@ def predict_scatter(f: Callable[..., List[float]], x: Union[Float2D, Float1D],
 
     # merges array of 2D group outputs to single 2D output array
     y = merge(y_all)
+    
     return y
 
 
@@ -265,9 +267,11 @@ def split(x2d: Union[Float2D, Float1D], n_proc: int) -> Float3D:
 
     x2d = np.atleast_2d(x2d)
     n_point, n_inp = x2d.shape
+    
     if n_point % n_proc != 0:
         n_fill_up = (n_point // n_proc + 1) * n_proc - n_point
         x2d = np.r_[x2d, [[np.inf] * n_inp] * n_fill_up]
+        
     return np.array(np.split(x2d, n_proc))
 
 

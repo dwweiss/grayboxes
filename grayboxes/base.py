@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-02-03 DWW
+      2020-02-04 DWW
 
   Note on program arguments:
     - no arguments          : program starts in default mode
@@ -47,7 +47,7 @@ from re import sub
 import sys
 from time import time
 from tempfile import gettempdir
-from typing import Any, Dict, Sequence, Tuple, List, Optional, Union
+from typing import Any, Dict, Iterable, Tuple, List, Optional, Union
 try:
     from tkinter import Button
     from tkinter import Entry
@@ -63,12 +63,12 @@ logger = logging.getLogger(__name__)
 #logging.getLogger('tensorflow').disabled = True # disable tensorflow log
 
 try:
-    from grayboxes.datatypes import Float1D, Float2D
+    from grayboxes.datatype import Float1D, Float2D
 except ImportError:
     try:
-        from datatypes import Float1D, Float2D
+        from datatype import Float1D, Float2D
     except ImportError:
-        print('!!! Module datatypes not imported')
+        print('!!! Module datatype not imported')
         print('    continue with unauthorized definition of Float1D, Float2D')
         Float1D = Optional[np.ndarray]
         Float2D = Optional[np.ndarray]
@@ -233,10 +233,10 @@ class Base(object):
     def __call__(self, **kwargs: Any) \
             -> Union[float,              
                      Dict[str, Any],   
-                     Float2D,          
-                     Tuple[Float1D, Float1D], 
-                     Tuple[Float1D, Float2D], 
-                     Tuple[Float2D, Float2D]]: 
+                     Float2D,                    
+                     Tuple[Float1D, Float1D],    
+                     Tuple[Float1D, Float2D],    
+                     Tuple[Float2D, Float2D]]:   
         """
         Executes object
 
@@ -264,10 +264,11 @@ class Base(object):
         if not ok:
             self.write('??? Base.pre() returned with False\n')
 
-        task_result: Union[float, 
-                           Dict[str, Any],
-                           Float2D,
-                           Tuple[Float2D, Float2D]] = self.control(**kwargs)
+        task_result: Union[float,                     # residuum
+                           Dict[str, Any],            # model training  
+                           Float2D,                   # model prediction
+                           Tuple[Float2D, Float2D]    # operation
+                           ] = self.control(**kwargs)
 
         ok = self.post(**kwargs)
         if not ok:
@@ -426,7 +427,7 @@ class Base(object):
         return self._argv
 
     @argv.setter
-    def argv(self, value: Optional[Sequence[str]]) -> None:
+    def argv(self, value: Optional[Iterable[str]]) -> None:
         if value is None:
             self._argv = sys.argv
         else:
@@ -540,7 +541,7 @@ class Base(object):
 
     @followers.setter
     def followers(self, other: Union[Optional['Base'], 
-                                     Sequence[Optional['Base']]]) -> None:
+                                     Iterable[Optional['Base']]]) -> None:
         self.set_follower(other)
 
     @property
@@ -549,7 +550,7 @@ class Base(object):
 
     @links.setter
     def links(self, other: Union[Optional['Base'], 
-                                 Sequence[Optional['Base']]]) -> None:
+                                 Iterable[Optional['Base']]]) -> None:
         self.set_link(other)
 
     @property
@@ -641,9 +642,9 @@ class Base(object):
         return None
 
     def set_follower(self, other: Union[Optional['Base'], \
-                                        Sequence[Optional['Base']]])\
+                                        Iterable[Optional['Base']]])\
                                -> Union[Optional['Base'], 
-                                        Sequence[Optional['Base']]]:
+                                        Iterable[Optional['Base']]]:
         """
         Adds other node(s)
 
@@ -680,9 +681,9 @@ class Base(object):
         return other
 
     def set_link(self, other: Union[Optional['Base'], \
-                                    Sequence[Optional['Base']]])\
+                                    Iterable[Optional['Base']]])\
                            -> Union[Optional['Base'], 
-                                    Sequence[Optional['Base']]]:
+                                    Iterable[Optional['Base']]]:
         """
         Adds other node(s) to array of links
 
@@ -747,9 +748,9 @@ class Base(object):
         return other._leader == self and other in self._followers
 
     def set_cooperator(self, other: Union[Optional['Base'], \
-                                          Sequence[Optional['Base']]])\
+                                          Iterable[Optional['Base']]])\
                                  -> Union[Optional['Base'], 
-                                          Sequence[Optional['Base']]]:
+                                          Iterable[Optional['Base']]]:
         """
         Adds other node as cooperator.
         'other' keep(s) its/their original leader(s)
@@ -762,7 +763,7 @@ class Base(object):
             'other'
         """
         if other:
-            if not isinstance(other, collections.Sequence):
+            if not isinstance(other, collections.Iterable):
                 if other not in self._followers:
                     self._followers.append(other)
             else:
@@ -798,7 +799,7 @@ class Base(object):
         return sub('[ \t\n\v\f\r]', '', s)
 
     def kwargs_del(self, kwargs_: Dict[str, Any],
-                   remove: Union[str, Sequence[str]]) -> Dict[str, Any]:
+                   remove: Union[str, Iterable[str]]) -> Dict[str, Any]:
         """
         Makes copy of keyword dictionary and removes given key(s)
 
@@ -819,7 +820,7 @@ class Base(object):
         return dic
 
     def kwargs_get(self, kwargs_: Any,
-                   keys: Union[str, Sequence[str]], 
+                   keys: Union[str, Iterable[str]], 
                    default: Any = None) -> Any:
         """
         Returns value of _kwargs for first matching key or 'default' if
@@ -998,7 +999,10 @@ class Base(object):
         if logger.handlers:
             logger.propagate=False
             logger.info('')
-            logger.handlers = []
+            for handler in logger.handlers:
+                handler.close()
+                logger.removeHandler(handler)
+#            logger.handlers = []
         sys.stdout.flush()
     
         return ok

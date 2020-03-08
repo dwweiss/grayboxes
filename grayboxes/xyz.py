@@ -23,7 +23,7 @@
 __all__ = ['xyz', 'xyzt']
 
 import numpy as np
-from typing import Optional, Iterable, Tuple, Union
+from typing import Iterable, Optional, Tuple, Union
 
 
 def _rotate2d(phi_rad: Union[float, Iterable[float]],

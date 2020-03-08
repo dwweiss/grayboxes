@@ -25,7 +25,7 @@ from typing import Any, Dict, List
 
 from grayboxes.black import Black
 from grayboxes.boxmodel import BoxModel
-from grayboxes.datatypes import Float2D, Function
+from grayboxes.datatype import Float2D, Function
 from grayboxes.lightgray import LightGray
 from grayboxes.neural import Neural
 
@@ -43,13 +43,13 @@ class MediumGray(BoxModel):
         """
         Args:
             f:
-                theoretical submodel f(self, x, *args, **kwargs) or
-                f(x, *args, **kwargs) for single data point
+                theoretical submodel f(self, x, *c, **kwargs) or
+                f(x, *c, **kwargs) for single data point
 
                 - argument 'x' to function f() corresponds to test input
                   x_prc
-                - model input is x_prc (x_prc = x_com + x_unq)
-                - in f() the subset x_unq of x_prc is unused
+                - model input is x_prc, (x_prc = x_com + x_unq)
+                - the subset x_unq of x_prc is unused in f()
 
             identifier:
                 Unique object identifier
@@ -79,13 +79,15 @@ class MediumGray(BoxModel):
         Args:
             X:
                 training input X_prc, shape: (n_point, n_inp)
+                shape (n_point,) is tolerated
 
             Y:
                 training target Y_com, shape: (n_point, n_out)
+                shape (n_point,) is tolerated
 
         Kwargs:
             bounds (2-tuple of float or 2-tuple of 1D array of float):
-                list of pairs (xMin, xMax) limiting tuning parameters
+                list of pairs (x_min, x_max) limiting tuning parameters
 
             local (int or None):
                 size of subset sizes if local training type of medium gray
@@ -262,5 +264,5 @@ class MediumGray(BoxModel):
                                           **kwargs_)
         else:
             self.y = self._black.predict(x=x, **kwargs_)
-
+                                              # setter ensuring 2D array
         return self.y

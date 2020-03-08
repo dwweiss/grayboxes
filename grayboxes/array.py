@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-02-03 DWW
+      2020-02-07 DWW
 """
 
 __all__ = ['grid', 'cross', 'rand', 'noise', 'xy_rand_split', \
@@ -31,13 +31,14 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 from typing import Optional
 
 try:
-    from grayboxes.datatypes import Float1D, Float2D
+    from grayboxes.datatype import Float1D, Float2D
 except ImportError:
     try:
-        from datatypes import Float1D, Float2D
+        from datatype import Float1D, Float2D
     except ImportError:
         print('    continue with unauthorized definition of Float1D, ' +
               'Float2D')        
+        
         Float1D = Optional[np.ndarray]
         Float2D = Optional[np.ndarray]
 
@@ -383,7 +384,7 @@ def xy_rand_split(x: Float2D,
             
     Returns:
         2-tuple of (list of 2D x-sub-arrays, list of 2D y-sub-arrays)
-        or
+        OR
         2-tuple of (list of 2D x-sub-arrays, None)
     """
     assert len(x.shape) == 2, str(x.shape)
@@ -428,7 +429,7 @@ def xy_thin_out(x: Iterable[float],
                             |
                             v
                             
-    x   x   x   x   x   x   x   x   x   x   x   x   x  thinned-out array
+     x    x    x    x    x    x    x    x    x    x    thinned-out array
     
     
     Args
@@ -477,7 +478,7 @@ def scale(X: Iterable[float],
 
     Args:
         X:
-            array of data to be normalised
+            array of data to be scaled
 
         lo:
             minimum of returned array
@@ -505,7 +506,7 @@ def convert_to_2d(value: Optional[Union[float, Iterable[float],
     """
     Args:
         value:
-            Scalar or, 1D or 2D array of float
+            Scalar, iterable, 1D array, or 2D array of float
             
     Returns:
         2D numpy array

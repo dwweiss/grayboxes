@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-02-03 DWW
+      2020-02-11 DWW
 """
 
 import numpy as np
@@ -25,7 +25,7 @@ from typing import Any, Dict
 
 from grayboxes.black import Black
 from grayboxes.boxmodel import BoxModel
-from grayboxes.datatypes import Float2D, Function
+from grayboxes.datatype import Float2D, Function
 from grayboxes.metrics import init_metrics
 
 
@@ -46,12 +46,13 @@ class DarkGray(BoxModel):
             x = [[..], [..], ..]
 
             # expanded form:
-            model = DarkGray(f)
-            metrics = model.train(X, Y, neurons=[5])
-            y = model.predict(x)
-
+            phi = DarkGray(f)
+            metrics = phi.train(X, Y)
+            y = phi.predict(x)       # print(phi.X, phi.Y, phi.x, phi.x, 
+                                     #       phi.metrics)
+            
             # compact form:
-            y = DarkGray(f)(X=X, Y=Y, neurons=[5], x=x)
+            y = DarkGray(f)(X=X, Y=Y, x=x)
     """
 
     def __init__(self, f: Function, identifier: str = 'DarkGray') -> None:
@@ -86,7 +87,7 @@ class DarkGray(BoxModel):
 
         Kwargs:
             Keyword arguments to be passed to train() of this object
-            and of black box model
+            and to train() of empirical sub- model
 
         Returns:
             metrics of training, see BoxModel.train()

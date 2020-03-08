@@ -17,12 +17,12 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-11-22 DWW
+      2020-02-06 DWW
 """
 
 from math import isclose
 import numpy as np
-from typing import List, Optional, Sequence, Union
+from typing import Iterable, List, Optional, Union
 import matplotlib.pyplot as plt
 
 from grayboxes.loop import Loop
@@ -62,8 +62,8 @@ class Move(Loop):
         self._i_last_waypoint: int = 0    # index of last passed way point
         self._trajectory_history: Optional[List[List[float]]] = None
 
-    def set_trajectory(self, waypoints: Sequence[Union[xyz, xyzt]],
-                       orientations: Optional[Sequence[xyz]] = None,
+    def set_trajectory(self, waypoints: Iterable[Union[xyz, xyzt]],
+                       orientations: Optional[Iterable[xyz]] = None,
                        speed: Optional[float] = None,
                        t_begin: float = 0.,
                        t_end: Optional[float] = None) -> None:

@@ -20,7 +20,7 @@
       2019-11-22 DWW
 
   Acknowledgement:
-      Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
+      Modestga is a contribution by Krzyzstof Arendt
 """
 
 import sys
@@ -29,16 +29,20 @@ import scipy.optimize
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D   # needed for "projection='3d'"
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, Iterable, List, Optional, Tuple, Union
 
 from grayboxes.base import Base
 from grayboxes.boxmodel import BoxModel
-from grayboxes.datatypes import Float1D, Float2D
+from grayboxes.datatype import Float1D, Float2D
 from grayboxes.forward import Forward
 try:
     import modestga as mg
 except ImportError:
     print('??? Package modestga not imported')
+
+
+# return type of single evaluation: [x_opt, y_opt, objective]
+SINGLE_EVALUATION = Tuple[Float1D, Float1D, float]
 
 
 class Minimum(Forward):
@@ -86,13 +90,11 @@ class Minimum(Forward):
         """
         super().__init__(identifier=identifier, model=model)
 
-        self._bounds: Optional[Sequence[Tuple[float, float]]] = None
+        self._bounds: Optional[Iterable[Tuple[float, float]]] = None
                                                          # x-constraints
         self._x_opt: Float1D = None   # 1D array of initial or optimal x
         self._y_opt: Float1D = None    # 1D array of target or optimal y
 
-        SINGLE_EVALUATION = Tuple[Float1D, Float1D, float]
-                   # return type of single evaluation: [x, y, objective]
         self._single_hist: List[SINGLE_EVALUATION] = []
                                   # _single_hist[j_eval]=(x,y,objective)
         self._multiple_hist: List[List[SINGLE_EVALUATION]] = []
@@ -212,7 +214,7 @@ class Minimum(Forward):
                                            Tuple[Float1D, Float1D]]:
         """
         Kwargs:
-            bounds (Sequence[Tuple[float, float]]):
+            bounds (Iterable[Tuple[float, float]]):
                 array of min/max pairs for optimization constraints etc
 
             optimizer (str):
@@ -227,8 +229,8 @@ class Minimum(Forward):
                 Inverse), shape: (n_out,)
 
         Returns:
-            model input at optimum shape: (n_inp,) and corresponding 
-                model output: shape: (n_out,)
+            2-tuple of model input at optimum with (shape: (n_inp,)) and 
+                corresponding model output with (shape: (n_out,))
             OR
             0.0 if 'self' is instance of Inverse
                 
@@ -264,9 +266,8 @@ class Minimum(Forward):
         
         success: Optional[bool] = None
         res: Optional[Any] = None
-        x_ini = self.x.copy()
-        for x0 in x_ini:            # x_ini.shape[0] is number of trials
-
+        x_ini: Float2D = self.x.copy()          # shape (n_trial, n_inp)
+        for x0 in x_ini:
             #
             # Note: self._trialHistory list is populated in objective()
             #
@@ -527,7 +528,8 @@ class Minimum(Forward):
                 ax.set_zlabel('x'+str(j_inp_z))
 
                 # type of 'trial': List[Tuple[x: np.ndarray,
-                #                             y: np.ndarray, obj:float]]
+                #                             y: np.ndarray, 
+                #                             obj:float]]
                 for i_trial, trial in enumerate(self._multiple_hist):
                     x_seq = []
                     for j_inp in range(n_inp):

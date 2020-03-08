@@ -20,8 +20,8 @@
       2019-11-29 DWW
 """
 
-from time import time
 import numpy as np
+from time import time
 from typing import Any
 
 from grayboxes.base import Base

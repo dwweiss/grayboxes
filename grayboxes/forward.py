@@ -25,7 +25,7 @@ from typing import Any, Optional, Tuple
 
 from grayboxes.base import Base
 from grayboxes.boxmodel import BoxModel
-from grayboxes.datatypes import Float2D
+from grayboxes.datatype import Float2D
 from grayboxes.white import White
 
 
@@ -109,18 +109,21 @@ class Forward(Base):
 
         Kwargs:
             XY (2-tuple of 2D array_like of float):
-                input and target of training, this argument
-                supersedes X, Y
+                input and target of training, 
+                shapes: (n_point, n_inp) and (n_point, n_out)
+                Note: this argument supersedes X, Y
 
-            X (2D array_like of float):
-                training input, shape: (n_point, n_inp)
+            X (2D array of float):
+                training input, 
+                shape: (n_point, n_inp)
                 default: self._X
 
-            Y (2D array_like of float):
-                training target, shape: (n_point, n_out)
+            Y (2D array of float):
+                training target, 
+                shape: (n_point, n_out)
                 default: self._Y
 
-            x (2D or 1D array_like of float):
+            x (2D or 1D array of float):
                 input to forward prediction or to sensitivity analysis
                 shape: (n_point, n_inp) or (n_inp,)
                 default: self._x

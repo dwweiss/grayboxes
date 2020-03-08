@@ -23,7 +23,7 @@
 from typing import Any, Dict
 
 from grayboxes.boxmodel import BoxModel
-from grayboxes.datatypes import Float2D, Function
+from grayboxes.datatype import Float2D, Function
 from grayboxes.metrics import init_metrics
 
 

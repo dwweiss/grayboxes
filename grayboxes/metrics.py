@@ -17,24 +17,25 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-01-28 DWW
+      2020-03-08 DWW
 """
 
 __all__ = ['Metrics', 'init_metrics', 'update_errors']
 
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 try:
-    from grayboxes.datatypes import Float2D
+    from grayboxes.datatype import Float2D
 except:
     try:
-        from datatypes import Float2D
+        from datatype import Float2D
     except:
-        print('??? module array not imported')
-        print('    ==> copy file datatypes.py to this directory')
+        print('??? module datatype not imported')
+        print('    ==> copy file datatype.py to this directory')
         print('    continue with unauthorized definition of Float2D')
+        
         Float2D = np.ndarray
 
 
@@ -150,12 +151,12 @@ def init_metrics(other: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
        'epochs': -1,                    # number of epochs of best trial        
        'evaluations': -1,          # number of evaluations of best trial
        'i_abs': -1,                 # 1D index of maximum absolute error
-       'trial': -1,                                # index of best trial 
        'iterations': -1,            # number of iterations of best trial 
        'L2': np.inf,              # prediction minus true/reference data
        'mse': np.inf,                 # prediction minus validation data
        'ready': True,                     # True if ready for prediction
-       'trainer': None                           # trainer of best trial
+       'trainer': None,                          # trainer of best trial
+       'trial': -1,                                # index of best trial 
        }
 
     if other is not None:            
@@ -163,6 +164,11 @@ def init_metrics(other: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
             metrics[key] = value
             
     return metrics
+
+def best_metrics(metrics_sequence: Iterable[Dict[str, Any]]) \
+        -> Optional[Dict[str, Any]]:
+    best = metrics_sequence
+    metrics_sequence
 
 
 def update_errors(metrics: Dict[str, Any], 
@@ -208,17 +214,17 @@ def update_errors(metrics: Dict[str, Any],
     if X is None or Y is None or y is None:
         if not silent:
             if X is None:
-                print('??? X is None')
+                print('??? metrics: X is None')
             if Y is None:
-                print('??? Y is None')
+                print('??? metrics: Y is None')
             if y is None:
-                print('??? y is None')
+                print('??? metrics: y is None')
         return metrics
 
     if len(Y) != len(y):
         if not silent:
-            print('??? len(Y) != len(y)')
-            print('??? shapes of X Y y:', X.shape, Y.shape, y.shape)
+            print('??? metrics: len(Y) != len(y)')
+            print('??? metrics: shapes of X Y y:', X.shape, Y.shape, y.shape)
         return metrics
 
     X = np.asfarray(X)

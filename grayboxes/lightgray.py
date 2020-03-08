@@ -17,19 +17,19 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-01-21 DWW
+      2020-02-07 DWW
 
   Acknowledgement:
-      Modestga is a contribution by Krzyzstof Arendt, SDU, Denmark
+      Modestga is a contribution by Krzyzstof Arendt
 """
 
 import sys
 import numpy as np
 import scipy.optimize
-from typing import Any, Dict, List, Sequence, Union
+from typing import Any, Dict, Iterable, List, Union
 
 from grayboxes.boxmodel import BoxModel
-from grayboxes.datatypes import Float1D, Float2D, Function
+from grayboxes.datatype import Float1D, Float2D, Function
 from grayboxes.metrics import init_metrics
 try:
     import modestga
@@ -153,7 +153,7 @@ class LightGray(BoxModel):
                                          self.scipy_curve_fitters
 
     # function wrapper for scipy minimize
-    def _mean_square_errror(self, c: Sequence[float], 
+    def _mean_square_errror(self, c: Iterable[float], 
                             **kwargs: Any) -> Float2D:
         y: Float2D = BoxModel.predict(self, self.X, *c,
                                       **self.kwargs_del(kwargs, 'x'))
@@ -163,12 +163,13 @@ class LightGray(BoxModel):
         return np.mean(dy**2)
 
     # function wrapper for scipy least_square and leastsq
-    def _difference(self, c: Sequence[float], **kwargs: Any) -> Float2D:
+    def _difference(self, c: Iterable[float], **kwargs: Any) -> Float2D:
         y = BoxModel.predict(self, self.X, *c, **self.kwargs_del(kwargs, 'x'))
         
         return (y - self.Y).ravel()
 
-    def _minimize_least_squares(self, trainer: str, c_ini: Sequence[float],
+    def _minimize_least_squares(self, trainer: str, 
+                                c_ini: Iterable[float],
                                 **kwargs: Any) -> Dict[str, Any]:
         """
         Minimizes least squares: sum(self.f(self.X)-self.Y)^2) / X.size
@@ -189,7 +190,7 @@ class LightGray(BoxModel):
                 initial guess of tuning parameter set
 
         Kwargs:
-            bounds (2-tuple of float or 2-tuple of sequence of float):
+            bounds (2-tuple of float or 2-tuple of iterable of float):
                 list of pairs (x_min, x_max) limiting x
 
             ... specific optimizer options
@@ -355,9 +356,11 @@ class LightGray(BoxModel):
         Args:
             X:
                 training input, shape: (n_point, n_inp)
+                shape (n_point,) is tolerated
 
             Y:
                 training target, shape: (n_point, n_out)
+                shape (n_point,) is tolerated
 
         Kwargs:
             bounds (2-tuple of float or 2-tuple of iterable of float):
@@ -389,6 +392,8 @@ class LightGray(BoxModel):
         Note:
             If argument 'c_ini' is not given, self.f(None) must return an
             iterable of float providing the initial tuning parameter set
+            
+            Global optimizers use only c_ini[0] as intial tuning pars
         """
         correct_xy_shape = kwargs.get('correct_xy_shape', True)
         correct_xy_shape = False
@@ -402,7 +407,7 @@ class LightGray(BoxModel):
                   c_ini_trials)
         assert not isinstance(c_ini_trials, int), '??? invalid c_ini ' + \
             str(c_ini_trials)
-        c_ini_trials = np.atleast_2d(c_ini_trials)     # shape: (n_trial, n_tun)
+        c_ini_trials = np.atleast_2d(c_ini_trials)  # shape: (n_trial, n_tun)
 
         # replace 'all' and 'auto' in trainer, checks validity of trainer 
         trainers = self.kwargs_get(kwargs, 'trainer')
@@ -430,7 +435,6 @@ class LightGray(BoxModel):
             self.silent = kwargs.get('silent', False)
         print_details = kwargs.get('detailed', False) and not self.silent
 
-        # loop over all trainers
         self.metrics = init_metrics({'trainer': trainers[0], 
                                      'weights': [None, ]})
         message = ''
@@ -502,13 +506,14 @@ class LightGray(BoxModel):
 
         return self.metrics
 
-    def predict(self, x: Union[Float1D, Float2D], *c: float,
+    def predict(self, x: Union[Float1D, Float2D], 
+                *c: float,
                 **kwargs) -> Float2D:
         """
         Executes box model,stores input x as self.x and output as self.y
 
         Args:
-            x (2D or 1D array of float):
+            x:
                 prediction input, shape: (n_point, n_inp)
                 shape (n_inp,) is tolerated
 
@@ -523,5 +528,6 @@ class LightGray(BoxModel):
             prediction output, shape: (n_point, n_out)
         """
         c = self.weights if self.weights is not None else c
+        
         return BoxModel.predict(self, x, *c, 
                                 **self.kwargs_del(kwargs, ('x', 'c')))

@@ -17,15 +17,15 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-02-03 DWW
+      2020-02-11 DWW
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
-from typing import Any, Tuple
+import numpy as np
+from typing import Any, Tuple, Union
 
 from grayboxes.boxmodel import BoxModel
-from grayboxes.datatypes import Float1D, Float2D
+from grayboxes.datatype import Float1D, Float2D
 from grayboxes.forward import Forward
 from grayboxes.plot import plot_bar_arrays
 
@@ -47,7 +47,8 @@ class Sensitivity(Forward):
         x, dy_dx = op(x=cross(5, *ranges) # gen. x from ranges and cross
     """
 
-    def __init__(self, model: BoxModel, identifier: str='Sensitivity') -> None:
+    def __init__(self, model: BoxModel, 
+                 identifier: str = 'Sensitivity') -> None:
         """
         Args:
             model:
@@ -62,7 +63,8 @@ class Sensitivity(Forward):
         self.dy_dx = None
         self.indices_with_equal_Xj = None
 
-    def task(self, **kwargs: Any) -> Tuple[Float1D, Float2D]:
+    def task(self, **kwargs: Any) -> Union[Tuple[None, None],
+                                           Tuple[Float1D, Float2D]]:
         """
         Analyzes sensitivity dy/dx
 
@@ -88,8 +90,8 @@ class Sensitivity(Forward):
             OR
             2-typle (None, None) if self.model.x is None
         """
-        # training if X and Y are not None, 
-        # and prediction of self.model.y if self.model.x is not None 
+        # 1. training if X and Y are not None and/or 
+        # 2. prediction of self.model.y if self.model.x is not None 
         super().task(**self.kwargs_del(kwargs, 'x'))
 
         if self.model.x is None:
@@ -128,9 +130,12 @@ class Sensitivity(Forward):
 
         return x_ref, self.dy_dx
 
-    def plot(self) -> None:
+    def plot(self, **kwargs) -> None:
         """
         Plots gradient df(x)/dx
+
+        Kwargs:
+            None            
         """
         if self.silent:
             return
