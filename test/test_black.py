@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-02-24 DWW
+      2020-03-09 DWW
 """
 
 import initialize
@@ -65,31 +65,32 @@ class TestUM(unittest.TestCase):
         
         ok = True
         for backend in [
-                        'tensorflow',
-#                        'neurolab'
+#                        'tensorflow',
+                        'neurolab'
                        ]:
             phi = Black()
             y = phi(X=X, Y=Y, x=x,
 #                    activation='auto',
-#                    activation=('leaky',),
-                    activation=('leakyrelu', 'elu', 'tanh', 'sigmoid', 'relu')
-                               if backend == 'tensorflow' else 'auto',
+                    activation=('leaky'),
+#                    activation=('leakyrelu', 'elu', 'tanh', 'sigmoid', 'relu')
+#                                if backend == 'tensorflow' else 'auto',
                     backend=backend,
-                    batch_size=None, # N // 8,
+#                    batch_size=None,
+                    batch_size=[None], # + [N // i for i in (2, 10, 20,)],
                     epochs=250 if backend == 'tensorflow' else 100,
                     expected=0.5e-3 if backend == 'tensorflow' else 1e-5, 
                     learning_rate=0.1,
 #                    neurons='auto',
-                    neurons=[[10*i] for i in range(1, 100)],
-#                    neurons=[[n]*h for h in range(1, 8+1) for n in 
-#                        range(4, 64+1)] if backend == 'tensorflow' else 'auto',
+#                    neurons=[[4*i] for i in range(4, 5)],
+                    neurons=[[nrn]*hid for hid in range(6, 6+1) 
+                                       for nrn in range(10, 10+1)],
                     output='linear',
-                    patience=25,
+                    patience=10,
                     plot=1,
-                    rr = 0.1,
+                    rr=0.1,
                     show=100,
                     silent=False,
-                    tolerated=5e-3,
+                    tolerated=50e-3,
                     trainer=('adam',) if backend == 'tensorflow' else 'rprop',
                     trials=5,
                     validation_split=0.2,

@@ -49,27 +49,28 @@ class TestUM(unittest.TestCase):
             return np.sin(x) + c0 * x + c1
 
         # training data
-        n_trn = 300
+        N = 300
         absolute_ = 0.1
-        X = grid((n_trn, 1), [-np.pi, np.pi])
+        X = grid((N, 1), [-np.pi, np.pi])
         Y_tru = White(f)(x=X, silent=True)
         Y_nse = noise(Y_tru, absolute=absolute_)
 
         # test data
         dx = 1. * np.pi
-        n_tst = 100
-        x = grid((n_tst, 1), [X.min() - dx, X.max() + dx])
+        n = 100
+        x = grid((n, 1), [X.min() - dx, X.max() + dx])
 
         if 'grayboxes.neuraltf' in sys.modules:
-            neurons = [[8]*i for i in range(1, 6+1)]
+            neurons = [[8]*i for i in range(2, 4+1)]
         else:
             neurons = [10, 10]
 
         phi = Black('black')
 
         metrics_trn = phi(X=X, Y=Y_nse, 
-                          activation='sigmoid',
-                          backend='neurolab',
+                          activation='leakyrelu',
+                          backend='tensorflow',
+                          batch_size=[None, 8, 16, 32, 64],
                           epochs=500, 
                           expected=0.1e-3,
                           neurons=neurons,
@@ -77,7 +78,7 @@ class TestUM(unittest.TestCase):
                           plot=1,
                           silent=0,
                           tolerated=5e-3,
-                          trainer='auto',
+                          trainer='adam',
                           trials=3, 
                           )
         
@@ -87,8 +88,8 @@ class TestUM(unittest.TestCase):
             y_tru = White(f)(x=x, silent=True)
             metrics_tst = phi.evaluate(x, y_tru)
     
-            plt.title('MSE$^{trn}$:' + str(round(metrics_trn['mse'], 4)) + ',' +
-                      ' MSE$^{tst}$:' + str(round(metrics_tst['mse'], 4)) + '$')
+            plt.title('MSE$^{trn}$:' + str(round(metrics_trn['mse'], 4))+',' +
+                      ' MSE$^{tst}$:' + str(round(metrics_tst['mse'], 4))+'$')
 #            plt.ylim(min(-2, Y_nse.min(), y.min()), 
 #                     max(2, Y_nse.max(), Y_nse.max()))
             plt.yscale('linear')

@@ -110,7 +110,7 @@ class TestUM(unittest.TestCase):
     def test4(self):
         m = Metrics({'value1': 3.0})
         
-        d = m.todict()
+        d = m.to_dict()
         print('m', m)
         print('d', d)
 

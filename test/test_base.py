@@ -75,7 +75,7 @@ class TestUM(unittest.TestCase):
         # creates instance
 
         foo = Foo('root1', sys.argv)
-        foo.gui = False
+        foo.has_gui = False
 
         # assigns path to files
 
@@ -211,7 +211,7 @@ class TestUM(unittest.TestCase):
         # sends warning and termination of program
         foo = Foo('root5')
         print('foo 5:', foo)
-        foo.gui = not True  # TODO toggle foo.gui if TKinter interface
+        foo.has_gui = not True  # TODO toggle foo.has_gui if TKinter interface
         foo.warn('my warning1')
         with self.assertRaises(SystemExit) as cm:
             foo.terminate('warning to GUI')
@@ -224,7 +224,7 @@ class TestUM(unittest.TestCase):
         # sends warning
         foo = Foo('root6')
 
-        foo.gui = False
+        foo.has_gui = False
         foo()
         print('foo 6:', foo)
         foo.warn('my warning1')

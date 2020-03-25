@@ -92,7 +92,8 @@ class TestUM(unittest.TestCase):
                                [21, 32, 54, 20, 15],
                                [21, 32, 54, -20, 25]],
                       # labels=['x [m]','y1','y2','y3','y4','y5','y6 [mm]'],
-                      figsize=(10, 7), title='', yrange=[10, 70])
+                      figsize=(10, 7), title='', yrange=(10, 70),
+                      )
 
         self.assertTrue(True)
 
