@@ -42,11 +42,15 @@ _grayboxes_  is the base of the extension package [_coloredlids_](https://github
     python3 setup.py install --user
     
 [[Link]](https://github.com/dwweiss/grayboxes/blob/master/doc/installation/windowsinstallation.md#installation-proposal) 
- to alternative package installation procedure on windows
+ to the package installation procedure on windows.
+ 
+ Alternatively, all files in the zip file can be copied in the current working diretory of the actual application.
+ 
+
+ 
 ### Dependencies
 
 - Modules _lightgray_ and _minimum_ are dependent on package _modestga_ [[MGA18]](https://github.com/dwweiss/grayboxes/wiki/References#mga18)
-- Module _neuraln_ is dependent on package _neurolab_ [[NLB15]](https://github.com/dwweiss/grayboxes/wiki/References#nlb15)
-- Module _neuralk_ is dependent on package _tensorflow_ [[ABA15]](https://github.com/dwweiss/grayboxes/wiki/References#aba15)
+- Module _neuralnl_ is dependent on package _neurolab_ [[NLB15]](https://github.com/dwweiss/grayboxes/wiki/References#nlb15)
+- Module _neuraltf_ is dependent on package _tensorflow_ [[ABA15]](https://github.com/dwweiss/grayboxes/wiki/References#aba15)
 
-These dependencies are satisfied if _grayboxes_ is installed with the commands in section [Installation](#installation).
