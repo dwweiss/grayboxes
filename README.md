@@ -44,7 +44,7 @@ _grayboxes_  is the base of the extension package [_coloredlids_](https://github
 [[Link]](https://github.com/dwweiss/grayboxes/blob/master/doc/installation/windowsinstallation.md#installation-proposal) 
  to the package installation procedure on windows.
  
- Alternatively, all files in the zip file can be copied in the current working diretory of the actual application.
+ Alternatively, all files in the zip file can be copied in the current working diretory of the actual application. Press [Clone and Download] and select [Download Zip].
  
 
  
