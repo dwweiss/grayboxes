@@ -17,12 +17,12 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-01-30 DWW
+      2020-11-25 DWW
 """
 
 __all__ = ['plot1', 'plot_curves', 'plot_surface', 'plot_wireframe',
            'plot_isomap', 'plot_isolines', 'plot_vectors', 'plot_trajectory',
-           'plot_bar_arrays', 'plot_bars']
+           'plot_2bars', 'plot_bar_arrays', 'plot_bars']
 
 import numpy as np
 import matplotlib as mpl
@@ -83,8 +83,11 @@ def is_regular_mesh(x: np.ndarray, y: np.ndarray, z: np.ndarray,
              for arr in [y, z] for i in range(dim)])
 
 
-def to_regular_mesh(x: np.ndarray, y: np.ndarray, z: np.ndarray,
-                    nx: Optional[int] = 50, ny: Optional[int] = None) \
+def to_regular_mesh(x: np.ndarray, 
+                    y: np.ndarray, 
+                    z: np.ndarray,
+                    nx: Optional[int] = 50, 
+                    ny: Optional[int] = None) \
         -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Maps irregular arrays to regular 2D arrays for x, y and z
@@ -323,7 +326,8 @@ def plot_curves(x: np.ndarray,
                                                      # curve style('-:')
                 marker: str = '',                # plot markers ('<>*+')
                 linestyle: str = '-',       # line style ['-','--',':'']
-                units: Optional[List[str]] = None,  # axis units
+                units: Optional[Tuple[str, str, str]] = None,  
+                                                            # axis units
                 offset_axis2: int = 90,    # space to 1st right-hd. axis
                 offset_axis3: int = 180,   # space to 2nd right-hd. axis
                 xrange: Optional[Tuple[float, float]] = None,
@@ -339,7 +343,7 @@ def plot_curves(x: np.ndarray,
                 legend_position: Optional[Tuple[float, float]] = None,
                        # dimensionless legend position in (1., 1.)-space
                 file: str = '',  # file name of image (no save if empty)
-                ):
+                ) -> None:
     x, y1 = np.asfarray(x), np.asfarray(y1)
     
     plt.figure(figsize=figsize)
@@ -478,7 +482,7 @@ def plot_surface(x: np.ndarray,
                  fontsize: Optional[int] = None,
                  legend_position: Optional[Tuple[float, float]] = None,
                  file: str = '',
-                 ):
+                 ) -> None:
     """
     Plots u(x,y) data as colored 3D surface
     """
@@ -557,7 +561,7 @@ def plot_wireframe(x: np.ndarray,
                    fontsize: Optional[int] = None,
                    legend_position: Optional[Tuple[float, float]] = None,
                    file: str = '',
-                   ):
+                   ) -> None:
     """
     Plots one z(x,y) array as 3D wiremesh surface
     """
@@ -628,14 +632,14 @@ def plot_wireframe(x: np.ndarray,
 def plot_isomap(x: np.ndarray,
                 y: np.ndarray,
                 z: np.ndarray,
-                labels: Iterable[str] = ['x', 'y', 'z'],  # axis labels
-                units: Iterable[str] = ['[/]', '[/]', '[/]'],  # axis units
+                labels: Optional[Iterable[str]] = None,  # axis labels
+                units: Optional[Iterable[str]] = None,  # axis units
                 title: str = '',  # title of plot
                 xrange: Optional[Tuple[float, float]] = None,
                 yrange: Optional[Tuple[float, float]] = None,
                 zrange: Optional[Tuple[float, float]] = None,
-                xlog:bool = False,  # logarithmic scaling of axis
-                ylog:bool = False,  # logarithmic scaling of axis
+                xlog: bool = False,  # logarithmic scaling of axis
+                ylog: bool = False,  # logarithmic scaling of axis
                 levels: int = 100,
                 scatter: bool = False,  # indicate irregular data with marker
                 triangulation: bool = False,
@@ -645,11 +649,15 @@ def plot_isomap(x: np.ndarray,
                 cmap: Optional[str] = None,  # color map
                 grid: bool = True,
                 file: str = '',  # name of image file
-                ):
+                ) -> None:
     """
     Plots one z(x,y) array as 2D isomap
     """
     x, y, z = np.asfarray(x), np.asfarray(y), np.asfarray(z) 
+    if labels is None:
+        labels = ['x', 'y', 'z']
+    if units is None:
+        units = ['[/]', '[/]', '[/]']
     
     if xrange is None:
         xrange = (0., 0.)
@@ -736,7 +744,9 @@ def plot_isomap(x: np.ndarray,
     plt.show()
 
 
-def plot_isolines(x: np.ndarray, y: np.ndarray, z: np.ndarray,
+def plot_isolines(x: np.ndarray, 
+                  y: np.ndarray, 
+                  z: np.ndarray,
                   labels: Optional[Tuple[str, str, str]] = None,
                   units: Optional[Tuple[str, str, str]] = None,
                   title: str = '',
@@ -813,20 +823,30 @@ def plot_isolines(x: np.ndarray, y: np.ndarray, z: np.ndarray,
     plt.show()
 
 
-def plot_vectors(x, y,
-                 vx, vy,
-                 labels=['x', 'y', 'z', '', '', ''],
-                 units=['[/]', '[/]', '[/]'],
-                 title='',
-                 xrange=[0, 0], yrange=[0, 0],
-                 xlog=False, ylog=False,
-                 grid=False,
-                 figsize=None,
-                 fontsize=None,
-                 legend_position='',
-                 file=''):
+def plot_vectors(x: np.ndarray, 
+                 y: np.ndarray,
+                 vx: np.ndarray, 
+                 vy: np.ndarray,
+                 labels: Optional[Tuple[str, str, str]] = None,
+                 units: Optional[Tuple[str, str, str]] = None,
+                 title: str = '',
+                 xrange: Tuple[float, float] = (0., 0.), 
+                 yrange: Tuple[float, float] = (0., 0.), 
+                 xlog: bool = False, 
+                 ylog: bool = False,
+                 grid: bool = False,
+                 figsize: Optional[Tuple[float, float]] = None,
+                 fontsize: Optional[int] = None,
+                 legend_position: Optional[Tuple[float, float]] = None,
+                 file: str = '',
+                 ) -> None:
     x, y = np.asfarray(x), np.asfarray(y)
     vx, vy = np.asfarray(vx), np.asfarray(vy) 
+
+    if labels is None:
+        labels = ['x', 'y', 'z', '', '', '']
+    if units is None:
+        units = ['[/]', '[/]', '[/]']
 
     for i in range(len(units)):
         if not units[i].startswith('['):
@@ -856,7 +876,7 @@ def plot_vectors(x, y,
     if grid:
         plt.grid()
 
-    if not fontsize:
+    if fontsize is None:
         fontsize = round(0.5 * (figsize[0] * 3)) * 1.33
     plt.rcParams.update({'font.size': fontsize})
     plt.rcParams['legend.fontsize'] = fontsize
@@ -880,25 +900,49 @@ def plot_vectors(x, y,
 
 
 def plot_trajectory(x, y, z,  # trajectory to be plotted
-                    x2=[], y2=[], z2=[],  # second trajectory to be plotted
-                    x3=[], y3=[], z3=[],  # third trajectory to be plotted
-                    labels=['x', 'y', 'z', '', '', ''],
-                    units=['[/]', '[/]', '[/]'],
-                    title: Optional[str] ='',
+                    x2: Optional[np.ndarray] = None, 
+                    y2: Optional[np.ndarray] = None, 
+                    z2: Optional[np.ndarray] = None,  
+                                       # second trajectory to be plotted
+                    x3: Optional[np.ndarray] = None, 
+                    y3: Optional[np.ndarray] = None, 
+                    z3: Optional[np.ndarray] = None,  
+                                        # third trajectory to be plotted
+                    labels: Optional[Tuple[str, str, str, 
+                                           str, str, str]] = None,
+                    units: Optional[Tuple[str, str, str]] = None,
+                    title: Optional[str] = '',
                     xrange: Optional[Tuple[float, float]] = (0., 0.),
                     yrange: Optional[Tuple[float, float]] = (0., 0.),
                     zrange: Optional[Tuple[float, float]] = (0., 0.),
                     ylog: bool = False,
                     grid: bool = False,
-                    figsize: Tuple[float, float] = (10, 8),
+                    figsize: Optional[Tuple[float, float]] = (10, 8),
                     fontsize: Optional[int] = None,
-                    legend_position: Optional[str] = '',
+                    legend_position: Optional[Tuple[float, float]] = None,
                     file: str = '',
                     start_point: bool = False,
-                    ):
+                    ) -> None:
     """
     Plots up to three (x,y,z)  trajectories in 3D space
     """
+    if x2 is None:
+        x2 = []
+    if y2 is None:
+        y2 = []
+    if z2 is None:
+        z2 = []
+    if x3 is None:
+        x3 = []
+    if y3 is None:
+        y3 = []
+    if z3 is None:
+        z3 = []
+    if labels is None:
+        labels = ['x', 'y', 'z', '', '', '']
+    if units is None:
+        units = ['[/]', '[/]', '[/]']
+
     if xrange[0] is None:
         xrange[0] = min(x)
     if xrange[1] is None:
@@ -947,10 +991,70 @@ def plot_trajectory(x, y, z,  # trajectory to be plotted
     plt.show()
 
 
+def plot_2bars(
+        x_labels: Optional[Iterable[str]] = None,
+        y1: Optional[Iterable[float]] = None,
+        y2: Optional[Iterable[float]] = None,
+        y_labels: Tuple[str, str] = ('y1', 'y2'),
+        title: str = 'y1(x), y2(x)',
+        y_log: bool = False,
+        y_lim: Tuple[Optional[float], Optional[float]] = (None, None),
+        bar_width: float = 0.3,
+        ) -> None:
+    """
+    Plots two 1D float arrays y1 and y2 vs 1D str array with x-labels
+    
+    Example:
+        plot_2bars(x_labels=['x1', 'x2', 'x3', 'x4', 'x5'],
+                   y1=[2, 3, 1, 9, 2],
+                   y2=[7, 9, 2, 4, 5],
+                   y_labels=['y1', 'y2'],
+                   title='y(x)',
+                   y_log=True)
+    """ 
+    if y1 is None:
+        if y2 is None:
+            print('??? y1 and y2 are None')
+            return
+        else: 
+            y1, y2 = y2, y1
+
+    if x_labels is None:
+        x_labels = [str(i) for i in range(len(y1))]
+
+    assert len(x_labels) == len(y1), str((x_labels, y1))
+    if y2 is not None:
+        assert len(x_labels) == len(y2), str((x_labels, y2))
+    assert len(y_labels) == 2, str(y_labels) 
+    
+    x = np.arange(len(x_labels))
+    fig, axs = plt.subplots()
+    axs.bar(x - bar_width/2, y1, bar_width, label=y_labels[0])
+    if y2 is not None:
+        axs.bar(x + bar_width/2, y2, bar_width, label=y_labels[1])
+    
+    axs.set_title(str(title))
+    axs.set_xticks(x)
+    axs.set_xticklabels(x_labels)
+    axs.set_ylabel(str(y_labels[0]) + ', ' + str(y_labels[1]))
+    axs.legend()
+        
+    if y_log:
+        plt.yscale('log')
+    plt.ylim(y_lim)
+    plt.grid()
+    fig.tight_layout()
+    plt.xticks(rotation=45)
+    legend_position = (1.1, 1.05)
+    plt.legend(bbox_to_anchor=legend_position, loc='upper left')
+
+    plt.show()
+
+
 def plot_bar_arrays(x: Optional[np.ndarray] = None,
                     yarrays: Optional[np.ndarray] = None,
-                    labels: Optional[List[str]] = None,
-                    units: Optional[List[str]] = None,
+                    labels: Optional[Tuple[str, str, str]] = None,
+                    units: Optional[Tuple[str, str, str]] = None,
                     title: str = '',
                     yrange: Optional[Tuple[float, float]] = None,
                     grid: bool = False,
@@ -959,8 +1063,8 @@ def plot_bar_arrays(x: Optional[np.ndarray] = None,
                     legend_position: Optional[Tuple[float, float]] = None,
                     show_ylabel: bool = True,
                     width: float = 0.15,
-                    file: str=''
-                    ):
+                    file: str = ''
+                    ) -> None:
     """
     Plots bars without errorbars if y_arrays is 2D array of float
     """
@@ -968,20 +1072,20 @@ def plot_bar_arrays(x: Optional[np.ndarray] = None,
 
     yarrays = np.atleast_2d(yarrays)
     ny = yarrays.shape[0]
-    y1 = yarrays[0] if ny > 0 else []
-    y2 = yarrays[1] if ny > 1 else []
-    y3 = yarrays[2] if ny > 2 else []
-    y4 = yarrays[3] if ny > 3 else []
-    y5 = yarrays[4] if ny > 4 else []
-    y6 = yarrays[5] if ny > 5 else []
+    y1 = yarrays[0] if ny > 0 else None
+    y2 = yarrays[1] if ny > 1 else None
+    y3 = yarrays[2] if ny > 2 else None
+    y4 = yarrays[3] if ny > 3 else None
+    y5 = yarrays[4] if ny > 4 else None
+    y6 = yarrays[5] if ny > 5 else None
 
     plot_bars(x=x,
-              y1=y1, y1error=[],
-              y2=y2, y2error=[],
-              y3=y3, y3error=[],
-              y4=y4, y4error=[],
-              y5=y5, y5error=[],
-              y6=y6, y6error=[],
+              y1=y1, y1error=None,
+              y2=y2, y2error=None,
+              y3=y3, y3error=None,
+              y4=y4, y4error=None,
+              y5=y5, y5error=None,
+              y6=y6, y6error=None,
               yrange=yrange,
               labels=labels, 
               figsize=figsize, 
@@ -997,24 +1101,60 @@ def plot_bar_arrays(x: Optional[np.ndarray] = None,
 
 
 def plot_bars(x: Optional[np.ndarray] = None,
-              y1=[], y1error=[],
-              y2=[], y2error=[],
-              y3=[], y3error=[],
-              y4=[], y4error=[],
-              y5=[], y5error=[],
-              y6=[], y6error=[],
-              labels=[],
-              units=[],
-              title: str='',
-              yrange: Optional[Tuple[float, float]]=None,
-              grid: bool=False,
-              figsize: Optional[Tuple[float, float]]=None,
-              fontsize: Optional[int]=14,
-              legend_position: Optional[Tuple[float, float]]=None,
-              show_ylabel: bool=True,
-              width: float=0.15,
-              file: str=''
-              ):
+              y1: Optional[np.ndarray] = None, 
+              y1error: Optional[np.ndarray] = None,
+              y2: Optional[np.ndarray] = None, 
+              y2error: Optional[np.ndarray] = None,
+              y3: Optional[np.ndarray] = None, 
+              y3error: Optional[np.ndarray] = None,
+              y4: Optional[np.ndarray] = None, 
+              y4error: Optional[np.ndarray] = None,
+              y5: Optional[np.ndarray] = None, 
+              y5error: Optional[np.ndarray] = None,
+              y6: Optional[np.ndarray] = None, 
+              y6error: Optional[np.ndarray] = None,
+              labels: Optional[Union[str, str, str]] = None,
+              units: Optional[Tuple[str, str, str]] = None,
+              title: str ='',
+              yrange: Optional[Tuple[float, float]] = None,
+              grid: bool = False,
+              figsize: Optional[Tuple[float, float]] = None,
+              fontsize: Optional[int] = 14,
+              legend_position: Optional[Tuple[float, float]] = None,
+              show_ylabel: bool = True,
+              width: float = 0.15,
+              file: str = ''
+              ) -> None:
+
+    if y1 is None:
+        y1 = []
+    if y1error is None:
+        y1error = []
+    if y2 is None:
+        y2 = []
+    if y2error is None:
+        y2error = []
+    if y3 is None:
+        y3 = []
+    if y3error is None:
+        y3error = []
+    if y4 is None:
+        y4 = []
+    if y4error is None:
+        y4error = []
+    if y5 is None:
+        y5 = []
+    if y5error is None:
+        y5error = []
+    if y6 is None:
+        y6 = []
+    if y6error is None:
+        y6error = []
+        
+    if labels is None:
+        labels = ['x', 'y', 'z', '', '', '']
+    if units is None:
+        units = ['[/]','[/]', '[/]']
 
     assert x is None or len(x) == 0 or len(x) == len(y1)
     x = [] if x is None else x
@@ -1182,7 +1322,7 @@ def plot_bars(x: Optional[np.ndarray] = None,
 def plot_x_y_y_ref(x: np.ndarray,  # 2D array 
                    y: np.ndarray,  # 2D array
                    y_ref: np.ndarray,  # 2D array
-                   labels: Optional[Iterable[str]] = None, 
+                   labels: Optional[Tuple[str, str, str]] = None, 
                    presentation: str = 'all') -> None:
     """
     Plots y(x), y_ref(x) and the difference y-y_ref(x) as 
