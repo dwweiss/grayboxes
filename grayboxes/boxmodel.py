@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-02-10 DWW
+      2020-11-25 DWW
 """
 
 import inspect
@@ -166,10 +166,14 @@ class BoxModel(Base):
         self.Y = Y if Y is not None else self.Y
         
         if correct_xy_shape:
+            save_shapes = self._X.shape, self._Y.shape 
             if self._X.shape[0] == 1:
                 self._X = self._X.T
             if self._Y.shape[0] == 1:
                 self._Y = self._Y.T
+            if self.X.shape[0] != self.Y.shape[0]:
+                self.write('!!! BoxModel.set_XY: Correction of X' +
+                           ' and Y shapes failed, shapes:' + str(save_shapes))
 
         self._n_inp = self.X.shape[1]
 
@@ -515,21 +519,25 @@ class BoxModel(Base):
             or
             None if x is None or not self.ready
         """        
-        self.x = x  # ensures valid 2D array
+        self.x = x  # self.x is a setter ensuring valid 2D array
 
         assert self._n_inp == -1 or self._n_inp == self.x.shape[1], \
             str((self._n_inp, self.x.shape, self.x))
 
+        print('box 527 x self.x', x.shape, self.x.shape)
+
         if not self.ready:
             self._y = None
         elif not communicator() or x.shape[0] <= 1:
-            # self.y is a setter ensuring valid 2D array
-            self.y = [np.atleast_1d(self.f(x, *c)) for x in self.x]
+            # self.y is a setter ensuring valid 2D array            
+            self.y = [self.f(x, *c) for x in self.x]
         else:
             # self.y is a setter ensuring valid 2D array
             self.y = predict_scatter(
                 self.f, self.x, *c, **self.kwargs_del(kwargs, 'x'))
             
+        print('box 539 self.x self.y', self.x.shape, self.y.shape)
+
         return self.y
 
     def evaluate(self, X: Float2D, Y: Float2D, 
