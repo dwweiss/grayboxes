@@ -722,9 +722,6 @@ class BruteForce(object):
                 best_metrics = metrics
 
             # plots all training histories and indicates best one
-            
-            print('tbk726', plot)
-            
             if plot >= 2: 
                 print('tbk729', plot)
                 self._plot_all_trials(best_metrics, all_metrices)
