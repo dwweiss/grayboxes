@@ -36,10 +36,16 @@ try:
 except ImportError:
     print('??? Package modestga not imported')
 
-from grayboxes.base import Base
-from grayboxes.boxmodel import BoxModel
-from grayboxes.datatype import Float1D, Float2D
-from grayboxes.forward import Forward
+try:
+    from grayboxes.base import Base
+    from grayboxes.boxmodel import BoxModel
+    from grayboxes.datatype import Float1D, Float2D
+    from grayboxes.forward import Forward
+except:
+    from base import Base
+    from boxmodel import BoxModel
+    from datatype import Float1D, Float2D
+    from forward import Forward
 
 
 # return type of single evaluation: [x_opt, y_opt, objective]

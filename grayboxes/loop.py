@@ -24,7 +24,10 @@ import numpy as np
 from time import time
 from typing import Any
 
-from grayboxes.base import Base
+try:
+    from grayboxes.base import Base
+except:
+    from grayboxes.base import Base
 
 
 class Loop(Base):

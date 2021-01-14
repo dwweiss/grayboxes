@@ -33,7 +33,7 @@ try:
     from grayboxes.datatype import Float1D, Float2D, Function
 except ImportError:
     try:
-        from datatype import Float1D, Float2D
+        from datatype import Float1D, Float2D, Function
     except ImportError:
         print('!!! module datatype not loaded')
         print('    continue with local definition of Float1D, ' +
@@ -568,7 +568,7 @@ class BruteForce(object):
                 output_layer_activation = default_output_layer_activation
 
         patience: int = kwargs.get('patience', 10)
-        plot: int = kwargs.get('plot', 0)
+        plot: int = kwargs.get('plot', 1)
         regularization: Optional[float] = kwargs.get('regularization', None)
         if regularization is None:
             regularization = kwargs.get('rr', None)
@@ -722,9 +722,15 @@ class BruteForce(object):
                 best_metrics = metrics
 
             # plots all training histories and indicates best one
-            if plot > 1: 
+            
+            print('tbk726', plot)
+            
+            if plot >= 2: 
+                print('tbk729', plot)
                 self._plot_all_trials(best_metrics, all_metrices)
             print()
+
+            print('tbk733', plot)
 
             if self._key_pressed():
                 break
@@ -766,7 +772,7 @@ class BruteForce(object):
             print('+++ mse_trn/val:', (self._metrics['mse_trn'],
                   self._metrics['mse_val']), 'L2:', self._metrics['L2'])
 
-        if plot > 0:
+        if plot >= 1:
             n_best = 5
 
             print('*** history of all trainings')
@@ -782,7 +788,7 @@ class BruteForce(object):
             if len(all_metrices) > n_best:
                 self._plot_err_bars(best_metrics, sorted_histories)
                 
-        if plot > 0:
+        if plot >= 1:
             self._plot_network()
             
         return self.metrics
@@ -1544,19 +1550,26 @@ class BruteForce(object):
         plt.grid()
         plt.show()
             
+        try:
+            plt.xlabel(r'$\alpha$')
+            latex_in_label = True
+        except:
+            latex_in_label = False
+        
         plt.title('Prediction minus target')
-        plt.xlabel('$x$')
-        plt.ylabel(r'$\Delta y = \phi(X) - Y$')
+        plt.xlabel('$x$' if latex_in_label else 'x')
+        plt.ylabel(r'$\Delta y = \phi(X) - Y$'  
+                   if latex_in_label else 'phi(X) - Y')
         plt.plot(X_, dY_, '.')
         plt.yscale('linear')
         plt.grid()
         plt.show()
 
         plt.title('Target versus prediction')
-        plt.xlabel('target $Y$')
-        plt.ylabel('prediction $y$')
-        plt.plot(Y_, Y_, '-', label='$Y(X)$')
-        plt.plot(Y_, Y_prd_, '.', label='$y(X)$')
+        plt.xlabel('target ' + '$Y$' if latex_in_label else 'Y')
+        plt.ylabel('prediction ' + '$y$' if latex_in_label else 'y')
+        plt.plot(Y_, Y_, '-', label='$Y(X)$' if latex_in_label else 'Y(X)')
+        plt.plot(Y_, Y_prd_, '.', label='$y(X)$' if latex_in_label else 'y(X)')
         plt.yscale('linear')
         plt.legend()
         plt.grid()
@@ -1596,9 +1609,15 @@ class BruteForce(object):
         X_, Y_ = X_val[:,0], Y_val[:,0]
         Y_prd_, dY_ = Y_prd[:,0], dY[:,0]
 
+        try:
+            plt.xlabel(r'$\alpha$')
+            latex_in_label = True
+        except:
+            latex_in_label = False
+
         plt.title('Validation data versus prediction')
-        plt.xlabel('$x$')
-        plt.ylabel('$y$')
+        plt.xlabel('$x$' if latex_in_label else 'x')
+        plt.ylabel('$y$' if latex_in_label else 'y')
         plt.plot(X_, Y_, '.', c='r', label='validation')
         plt.plot(X_, Y_prd_, '.', c='b', label='prediction')
         plt.legend()
@@ -1609,18 +1628,19 @@ class BruteForce(object):
         plt.show()
             
         plt.title('Prediction minus validation data')
-        plt.xlabel('$x$')
-        plt.ylabel(r'$\Delta y = \phi(X) - Y$')
+        plt.xlabel('$x$' if latex_in_label else 'x')
+        plt.ylabel(r'$\Delta y = \phi(X) - Y$' 
+                   if latex_in_label else 'phi(X) - Y')
         plt.plot(X_, dY_, '.')
         plt.yscale('linear')
         plt.grid()
         plt.show()
 
         plt.title('Validation data versus prediction')
-        plt.xlabel('validation $Y$')
-        plt.ylabel('prediction $y$')
-        plt.plot(Y_, Y_, '-', label='$Y(X)$')
-        plt.plot(Y_, Y_prd_, '.', label='$y(X)$')
+        plt.xlabel('validation $Y$' if latex_in_label else 'Y')
+        plt.ylabel('prediction $y$' if latex_in_label else 'y')
+        plt.plot(Y_, Y_, '-', label='$Y(X)$' if latex_in_label else 'Y(X)')
+        plt.plot(Y_, Y_prd_, '.', label='$y(X)$' if latex_in_label else 'y(X)')
         plt.yscale('linear')
         plt.legend()
         plt.grid()

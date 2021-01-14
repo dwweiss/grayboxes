@@ -23,11 +23,18 @@
 import numpy as np
 from typing import Any, Dict, List
 
-from grayboxes.black import Black
-from grayboxes.boxmodel import BoxModel
-from grayboxes.datatype import Float2D, Function
-from grayboxes.lightgray import LightGray
-from grayboxes.neuraltf import Neural
+try:
+    from grayboxes.black import Black
+    from grayboxes.boxmodel import BoxModel
+    from grayboxes.datatype import Float2D, Function
+    from grayboxes.lightgray import LightGray
+    from grayboxes.neuraltf import Neural
+except:
+    from black import Black
+    from boxmodel import BoxModel
+    from datatype import Float2D, Function
+    from lightgray import LightGray
+    from neuraltf import Neural
 
 
 class MediumGray(BoxModel):

@@ -24,10 +24,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from typing import Any, List, Optional, Tuple, Union
 
-from grayboxes.boxmodel import BoxModel
-from grayboxes.datatype import Float1D, Float2D
-from grayboxes.forward import Forward
-from grayboxes.plot import plot_bar_arrays
+try:
+    from grayboxes.boxmodel import BoxModel
+    from grayboxes.datatype import Float1D, Float2D
+    from grayboxes.forward import Forward
+    from grayboxes.plot import plot_bar_arrays
+except:
+    from boxmodel import BoxModel
+    from datatype import Float1D, Float2D
+    from forward import Forward
+    from plot import plot_bar_arrays
 
 
 class Sensitivity(Forward):

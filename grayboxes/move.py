@@ -25,8 +25,12 @@ import numpy as np
 from typing import Iterable, List, Optional, Union
 import matplotlib.pyplot as plt
 
-from grayboxes.loop import Loop
-from grayboxes.xyz import xyz, xyzt
+try:
+    from grayboxes.loop import Loop
+    from grayboxes.xyz import xyz, xyzt
+except:
+    from loop import Loop
+    from xyz import xyz, xyzt
 
 
 class Move(Loop):

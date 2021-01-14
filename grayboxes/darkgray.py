@@ -22,11 +22,17 @@
 
 import numpy as np
 from typing import Any, Dict
- 
-from grayboxes.black import Black
-from grayboxes.boxmodel import BoxModel
-from grayboxes.datatype import Float2D, Function
-from grayboxes.metrics import init_metrics
+
+try: 
+    from grayboxes.black import Black
+    from grayboxes.boxmodel import BoxModel
+    from grayboxes.datatype import Float2D, Function
+    from grayboxes.metrics import init_metrics
+except:
+    from black import Black
+    from boxmodel import BoxModel
+    from datatype import Float2D, Function
+    from metrics import init_metrics
 
 
 class DarkGray(BoxModel):

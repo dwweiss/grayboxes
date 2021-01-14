@@ -27,10 +27,16 @@ import numpy as np
 from pandas import DataFrame
 from typing import Any, Dict, Iterable, Optional, List, Tuple, Union
 
-from grayboxes.array import convert_to_2d
-from grayboxes.base import Base
-from grayboxes.datatype import Float1D, Float2D, Function, Str1D
-from grayboxes.metrics import init_metrics, update_errors
+try:
+    from grayboxes.array import convert_to_2d
+    from grayboxes.base import Base
+    from grayboxes.datatype import Float1D, Float2D, Function, Str1D
+    from grayboxes.metrics import init_metrics, update_errors
+except:
+    from array import convert_to_2d
+    from base import Base
+    from datatype import Float1D, Float2D, Function, Str1D
+    from metrics import init_metrics, update_errors
 
 try:
     from grayboxes.parallel import communicator, predict_scatter

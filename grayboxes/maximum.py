@@ -22,8 +22,12 @@
 
 from typing import Any, Union
 
-from grayboxes.datatype import Float2D, Float1D
-from grayboxes.minimum import Minimum
+try:
+    from grayboxes.datatype import Float2D, Float1D
+    from grayboxes.minimum import Minimum
+except:
+    from datatype import Float2D, Float1D
+    from minimum import Minimum
 
 
 class Maximum(Minimum):

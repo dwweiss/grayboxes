@@ -22,9 +22,14 @@
 
 from typing import Any, Dict
 
-from grayboxes.boxmodel import BoxModel
-from grayboxes.datatype import Float2D, Function
-from grayboxes.metrics import init_metrics
+try:
+    from grayboxes.boxmodel import BoxModel
+    from grayboxes.datatype import Float2D, Function
+    from grayboxes.metrics import init_metrics
+except:
+    from boxmodel import BoxModel
+    from datatype import Float2D, Function
+    from metrics import init_metrics
 
 
 class White(BoxModel):

@@ -23,9 +23,14 @@
 import sys
 from typing import Any, Dict, Optional, Union
 
-from grayboxes.boxmodel import BoxModel
-from grayboxes.datatype import Float2D, Function
-from grayboxes.metrics import init_metrics
+try:
+    from grayboxes.boxmodel import BoxModel
+    from grayboxes.datatype import Float2D, Function
+    from grayboxes.metrics import init_metrics
+except:
+    from boxmodel import BoxModel
+    from datatype import Float2D, Function
+    from metrics import init_metrics
 
 try:
     from grayboxes.neuraltf import Neural as NeuralTf
@@ -161,13 +166,16 @@ class Black(BoxModel):
                 backend = kwargs.get('backend', 'keras').lower()
                 if backend in ('tensorflow', 'tf', 'keras',):
                     backend = 'tensorflow'
-                    assert 'grayboxes.neuraltf' in sys.modules
+                    assert 'grayboxes.neuraltf' in sys.modules or \
+                        'neuraltf' in sys.modules
                 elif backend in ('nl', 'neurolab',):
                     backend = 'neurolab'
-                    assert 'grayboxes.neuralnl' in sys.modules
+                    assert 'grayboxes.neuralnl' in sys.modules or \
+                        'neuralnl' in sys.modules
                 elif backend in ('torch', 'pytorch',):
                     backend = 'torch'
-                    assert 'grayboxes.neuralto' in sys.modules
+                    assert 'grayboxes.neuralto' in sys.modules or \
+                        'neuralto' in sys.modules
                 else:
                     backend = 'tensorflow'
                 self.write('+++ backend: ' + str(backend))

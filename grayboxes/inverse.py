@@ -23,8 +23,12 @@
 import numpy as np
 from typing import Any, Union
 
-from grayboxes.datatype import Float1D, Float2D
-from grayboxes.minimum import Minimum
+try:
+    from grayboxes.datatype import Float1D, Float2D
+    from grayboxes.minimum import Minimum
+except:
+    from datatype import Float1D, Float2D
+    from minimum import Minimum
 
 
 class Inverse(Minimum):

@@ -23,10 +23,16 @@
 import numpy as np
 from typing import Any, Optional, Tuple
 
-from grayboxes.base import Base
-from grayboxes.boxmodel import BoxModel
-from grayboxes.datatype import Float2D
-from grayboxes.white import White
+try:
+    from grayboxes.base import Base
+    from grayboxes.boxmodel import BoxModel
+    from grayboxes.datatype import Float2D
+    from grayboxes.white import White
+except:
+    from base import Base
+    from boxmodel import BoxModel
+    from datatype import Float2D
+    from white import White
 
 
 class Forward(Base):

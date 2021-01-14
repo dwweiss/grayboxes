@@ -28,9 +28,14 @@ import sys
 import scipy.optimize
 from typing import Any, Dict, Iterable, List, Union
 
-from grayboxes.boxmodel import BoxModel
-from grayboxes.datatype import Float1D, Float2D, Function
-from grayboxes.metrics import init_metrics
+try:
+    from grayboxes.boxmodel import BoxModel
+    from grayboxes.datatype import Float1D, Float2D, Function
+    from grayboxes.metrics import init_metrics
+except:
+    from boxmodel import BoxModel
+    from datatype import Float1D, Float2D, Function
+    from metrics import init_metrics
 
 try:
     import modestga

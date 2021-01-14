@@ -31,9 +31,13 @@ try:
     import neurolab as nl
 except ImportError:
     print('??? Package neurolab not imported')
-    
-from grayboxes.bruteforce import BruteForce
-from grayboxes.datatype import Float2D, Function
+
+try:    
+    from grayboxes.bruteforce import BruteForce
+    from grayboxes.datatype import Float2D, Function
+except:
+    from bruteforce import BruteForce
+    from datatype import Float2D, Function
         
 
 class Neural(BruteForce):
