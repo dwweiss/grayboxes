@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-02-04 DWW
+      2020-07-31 DWW
 
   Note on program arguments:
     - no arguments          : program starts in default mode
@@ -30,23 +30,23 @@
                     '--silent', '--gui'
     - one argument '-g'     : graphic mode with information to console
                     '--gui'
-
 """
 
 __all__ = ['Base']
 
-import os
+import collections
 from datetime import datetime
 from getpass import getpass
 from hashlib import sha224
-import collections
+import logging
 from matplotlib.figure import Figure
 import numpy as np
+import os
 from path import Path
 from re import sub
 import sys
-from time import time
 from tempfile import gettempdir
+from time import time
 from typing import Any, Dict, Iterable, Tuple, List, Optional, Union
 try:
     from tkinter import Button
@@ -58,9 +58,10 @@ except ImportError:
     print("\n!!! Wrong Python interpreter (version: '" +
           str(sys.version_info.major) + '.' + str(sys.version_info.major) +
           '.' + str(sys.version_info.micro) + "') or 'tkinter' not imported")
-import logging
+
 logger = logging.getLogger(__name__)
-#logging.getLogger('tensorflow').disabled = True # disable tensorflow log
+# uncomment the following line in order to disable the tensorflow log:
+# logging.getLogger('tensorflow').disabled = True
 
 try:
     from grayboxes.datatype import Float1D, Float2D
@@ -69,7 +70,7 @@ except ImportError:
         from datatype import Float1D, Float2D
     except ImportError:
         print('!!! Module datatype not imported')
-        print('    continue with unauthorized definition of Float1D, Float2D')
+        print('    continue with local definition of Float1D, Float2D')
         Float1D = Optional[np.ndarray]
         Float2D = Optional[np.ndarray]
 try:
@@ -83,13 +84,14 @@ except ImportError:
 
 class Base(object):
     """
-    Connects model objects and controls their execution
+    Connects model objects and controls their execution,
+    see examples in ../test/test_base.py 
 
     The objects are organized in overlapping tree structures. The
     concept of conservative leader-follower relationships
     (authoritarian) is extended by leader-cooperator relationships
     (partnership). The differentiation into leader-follower and
-    leader-cooperator relationships allows the creation of complex
+    leader-cooperator relationships supports the creation of complex
     object structures which can coexist in space, time or abstract
     contexts.
 
@@ -207,7 +209,7 @@ class Base(object):
         self._exe_time_start: float = 0.0      # start measure exec.time
         self._min_exe_time_shown: float = 1.0  # times < limit not shown
 
-        self._gui: bool = False                # graph.interface if True
+        self._has_gui: bool = False            # graphic interf. if True
         self._batch: bool = False              # user interact. if False
         self._silent: bool = False             # console output if False
 
@@ -221,7 +223,7 @@ class Base(object):
         self._followers: List[Optional['Base']] = []
                                                # follower list
         self._links: List[Optional['Base']] = []
-                                               # link list 
+                                               # link list
 
         self._data: Optional[Any] = None       # data sets
         self._csv_separator: str = ','         # separator in csv-files
@@ -229,14 +231,14 @@ class Base(object):
         # figure requires subplots, eg axes = self.figure.suplots(2)
         #                              axes[0].plot([1.,2.], [4.5, 9.1])
         self._figure: Optional[Figure] = Figure()
-        
+
     def __call__(self, **kwargs: Any) \
-            -> Union[float,              
-                     Dict[str, Any],   
-                     Float2D,                    
-                     Tuple[Float1D, Float1D],    
-                     Tuple[Float1D, Float2D],    
-                     Tuple[Float2D, Float2D]]:   
+            -> Union[float,
+                     Dict[str, Any],
+                     Float2D,
+                     Tuple[Float1D, Float1D],
+                     Tuple[Float1D, Float2D],
+                     Tuple[Float2D, Float2D]]:
         """
         Executes object
 
@@ -259,13 +261,13 @@ class Base(object):
         ok = self.prolog()
         if not ok:
             self.write('??? Base.prolog() returned with False\n')
-       
+
         ok = self.pre(**kwargs)
         if not ok:
             self.write('??? Base.pre() returned with False\n')
 
         task_result: Union[float,                     # residuum
-                           Dict[str, Any],            # model training  
+                           Dict[str, Any],            # model training
                            Float2D,                   # model prediction
                            Tuple[Float2D, Float2D]    # operation
                            ] = self.control(**kwargs)
@@ -273,7 +275,7 @@ class Base(object):
         ok = self.post(**kwargs)
         if not ok:
             self.write('??? Base.post() returned with False\n')
-            
+
         ok = self.epilog()
         if not ok:
             self.write('??? Base.epilog() returned with False\n')
@@ -320,7 +322,7 @@ class Base(object):
 
     def destruct(self) -> bool:
         """
-        Destructs all followers. Cooperators will be kept
+        Destructs all followers. Cooperators are not destructed
 
         Returns:
             True on success
@@ -335,7 +337,7 @@ class Base(object):
     def destruct_downwards(self, from_node: 'Base') -> bool:
         """
         Destructs all followers downwards from 'from_node'.
-        Cooperators will be kept
+        Cooperators are not destructed
 
         Args:
             from_node:
@@ -353,12 +355,12 @@ class Base(object):
                     self.destruct_downwards(node)
         if from_node.leader:
             from_node.leader._destruct_follower(from_node)
-            
+
         return True
 
     def _destruct_follower(self, node: 'Base') -> bool:
         """
-        Destructs the followers of 'node'. Cooperators will be kept
+        Destructs the followers of 'node'.Cooperators are not destructed
 
         Args:
             node:
@@ -380,7 +382,7 @@ class Base(object):
             return False
         del node._data
         self._followers[i] = None
-        
+
         return True
 
     def is_root(self) -> bool:
@@ -434,18 +436,19 @@ class Base(object):
             self._argv = list(value)
 
     @property
-    def gui(self) -> bool:
-        return self._gui
+    def has_gui(self) -> bool:
+        return self._has_gui
 
-    @gui.setter
-    def gui(self, value: bool) -> None:
+    @has_gui.setter
+    def has_gui(self, value: bool) -> None:
         if 'tkinter' not in sys.modules:
             value = False
-            self.warn("!!! 'gui' is not set: module 'tkinter' not imported")
-        self._gui = value
+            self.warn("!!! 'has_gui' is not set: module 'tkinter'" + \
+                      ' not imported')
+        self._has_gui = value
         for node in self._followers:
             if node:
-                node._gui = value
+                node._has_gui = value
 
     @property
     def figure(self) -> Optional[Figure]:
@@ -499,7 +502,7 @@ class Base(object):
             p = gettempdir()
         else:
             p = Path(str(value))
-        self._path = p 
+        self._path = p
 
     @property
     def extension(self) -> str:
@@ -540,7 +543,7 @@ class Base(object):
         return self._followers
 
     @followers.setter
-    def followers(self, other: Union[Optional['Base'], 
+    def followers(self, other: Union[Optional['Base'],
                                      Iterable[Optional['Base']]]) -> None:
         self.set_follower(other)
 
@@ -549,7 +552,7 @@ class Base(object):
         return self._links
 
     @links.setter
-    def links(self, other: Union[Optional['Base'], 
+    def links(self, other: Union[Optional['Base'],
                                  Iterable[Optional['Base']]]) -> None:
         self.set_link(other)
 
@@ -567,10 +570,10 @@ class Base(object):
 
     def __getitem__(self, identifier: str) -> Optional['Base']:
         """
-        Indexing, eg b = Base(); b.followers = ('f1', 'f2'); f1 = b['f1']
+        Indexing, eg b = Base(); b.followers = ('f1','f2'); f1 = b['f1']
 
         Searches for node with 'identifier'. Starts downwards from root
-        If node is not in tree of followers, search will be continued in 
+        If node is not in tree of followers, search will be continued in
         list of links
 
         Args:
@@ -578,14 +581,14 @@ class Base(object):
                 Identifier of searched node
 
         Returns:
-            Node with given identifier 
-            or 
+            Node with given identifier
+            OR
             None if node not found
         """
         node = self.get_follower(identifier)
         if node is None:
             node = self.get_link(identifier)
-        
+
         return node
 
     def get_follower(self, identifier: str) -> Optional['Base']:
@@ -597,8 +600,8 @@ class Base(object):
                 Identifier of searched node
 
         Returns:
-            Node with given identifier 
-            or 
+            Node with given identifier
+            OR
             None if node not found
         """
         return self.get_follower_downwards(identifier)
@@ -618,8 +621,8 @@ class Base(object):
                 search starts from root
 
         Returns:
-            Node with given identifier 
-            or 
+            Node with given identifier
+            OR
             None if node not found
         """
         if self.identifier == identifier:
@@ -643,7 +646,7 @@ class Base(object):
 
     def set_follower(self, other: Union[Optional['Base'], \
                                         Iterable[Optional['Base']]])\
-                               -> Union[Optional['Base'], 
+                               -> Union[Optional['Base'],
                                         Iterable[Optional['Base']]]:
         """
         Adds other node(s)
@@ -654,16 +657,16 @@ class Base(object):
 
         Returns:
             Reference to 'other'
-            
+
         Example:
             b = Base()
             b.set_follower(Base('follower1'))
             b.set_follower([Base('follower2'), Base('follower3')])
-            
+
             node = b.get_follower('follower2')
             assert node.identifier == 'follower2'
             assert node == b['follower2']
-            
+
             node2 = b['follower2']
             assert node == node2
         """
@@ -682,7 +685,7 @@ class Base(object):
 
     def set_link(self, other: Union[Optional['Base'], \
                                     Iterable[Optional['Base']]])\
-                           -> Union[Optional['Base'], 
+                           -> Union[Optional['Base'],
                                     Iterable[Optional['Base']]]:
         """
         Adds other node(s) to array of links
@@ -692,12 +695,12 @@ class Base(object):
                 Other node or sequence of other nodes
 
         Returns:
-            Reference to 'other'            
+            Reference to 'other'
 
         Example:
             b1 = Base()
             b1.set_follower([Base('follower11'), Base('follower12')])
-            
+
             b2 = Base()
             b2.set_link(b1['follower12'])
 
@@ -722,8 +725,8 @@ class Base(object):
                 Identifier of searched node
 
         Returns:
-            Node with given identifier 
-            or 
+            Node with given identifier
+            OR
             None if node not found
         """
         node = None
@@ -749,10 +752,10 @@ class Base(object):
 
     def set_cooperator(self, other: Union[Optional['Base'], \
                                           Iterable[Optional['Base']]])\
-                                 -> Union[Optional['Base'], 
+                                 -> Union[Optional['Base'],
                                           Iterable[Optional['Base']]]:
         """
-        Adds other node as cooperator.
+        Adds other node(s) as cooperator(s) if 'other' is/are not None
         'other' keep(s) its/their original leader(s)
 
         Args:
@@ -778,9 +781,9 @@ class Base(object):
         Args:
             other:
                 Other node
-        
+
         Returns:
-            True if 'other' is follower and has another leader 
+            True if 'other' is follower and has another leader
             than 'self'
         """
         if not other:
@@ -792,7 +795,7 @@ class Base(object):
         Args:
             s:
                 string containing control characters
-        
+
         Returns:
             copy of string 's' without control characters
         """
@@ -820,7 +823,7 @@ class Base(object):
         return dic
 
     def kwargs_get(self, kwargs_: Any,
-                   keys: Union[str, Iterable[str]], 
+                   keys: Union[str, Iterable[str]],
                    default: Any = None) -> Any:
         """
         Returns value of _kwargs for first matching key or 'default' if
@@ -845,13 +848,23 @@ class Base(object):
         return default
 
     def terminate(self, message: str = '') -> None:
+        """
+        - Destructs tree of followers
+        - Sends message to logger
+        - Sends message to TKinter widget if self.has_gui, otherwise to console
+        - Terminates program
+
+        Args:
+            message:
+                Warning to be written to log file and console
+        """
         if not message:
             message = 'Fatal error'
 
         if not self.silent:
             print("\n???\n??? '" + self.program + "', terminated due to: '" +
                   message + "'\n???")
-        if self.gui:
+        if self.has_gui:
             messagebox.showerror("Termination: '" + self.program + "'",
                                  message)
         logger.propagate = False
@@ -862,8 +875,9 @@ class Base(object):
 
     def warn(self, message: str = '', wait: bool = False) -> None:
         """
-        - Message to logger
-        - Message to TKinter widget if self.gui, otherwise to console
+        - Sends message to logger
+        - Sends message to TKinter widget if self.has_gui, otherwise to 
+          console
 
         Args:
             message:
@@ -872,21 +886,21 @@ class Base(object):
             wait:
                 Wait with program execution if True
         """
-#        save_propagate = logger.propagate 
+#        save_propagate = logger.propagate
 #        logger.propagate = False
 
         if not self.silent:
             print("!!! '" + self.program + "', warning: '" + message + "'")
-        if self.gui:
+        if self.has_gui:
             messagebox.showinfo(self.program + ' - Warning', message)
         logger.warning(self.identifier + ' : ' + message)
         if not self.silent and wait:
             # consider to replace input() with os.system('pause')
             input('!!! Press Enter to continue ...')
 
-#        logger.propagate = save_propagate  
+#        logger.propagate = save_propagate
 
-    def write(self, message: str) -> None:
+    def write(self, message: str, end: str = '\n') -> None:
         """
         - Message to logger with file handler
         - Message to console if not in silent mode
@@ -894,20 +908,23 @@ class Base(object):
         Args:
             message:
                 Message to be written to log file and console
+                
+            end:
+                end-of-line string
         """
-#        save_propagate = logger.propagate 
+#        save_propagate = logger.propagate
 #        logger.propagate = False
-#
+
         now = datetime.now().strftime('%H:%M:%S.%f')[:-4]
         if not self.silent:
-            print(self.indent() + message)
+            print(self.indent() + message, end=end)
         logger.info(now + ' ' + self.indent() + message)
 
-#        logger.propagate = save_propagate  
+#        logger.propagate = save_propagate
 
     def _authenticate(self) -> None:
         """
-        Asks for password. Terminates program if wrong password
+        Asks for password. Terminates program if password is invalid
 
         Note:
             Create new hash string 's' with:
@@ -916,7 +933,7 @@ class Base(object):
                     'new password'.encode('UTF-8')).hexdigest()
         """
         s = 'c0dad715ce5501ea5e382d3a44a7cf816f9a1a309dfeb88cbe9ebfbd'
-        if self.gui:
+        if self.has_gui:
             parent = Tk()
             parent.title(self.program)
             Label(parent, text='').grid(row=0, column=0)
@@ -948,12 +965,12 @@ class Base(object):
         ok = True
         authenticate = False
         if len(self.argv) > 1+0:
-            self.gui = '-g' in self.argv or '--gui' in self.argv
+            self.has_gui = '-g' in self.argv or '--gui' in self.argv
             self.silent = '-s' in self.argv or '--silent' in self.argv
-            if not self.gui and self.silent:
+            if not self.has_gui and self.silent:
                 authenticate = False
         else:
-            if not self.gui:
+            if not self.has_gui:
                 # TODO self.silent = False
                 pass
 
@@ -979,7 +996,7 @@ class Base(object):
             self.write('    Path: ' + "'" + str(self.path) + "'")
             self.write('=== Pre-processing')
             self._exe_time_start = time()
-            
+
         return ok
 
     def epilog(self) -> bool:
@@ -1004,7 +1021,7 @@ class Base(object):
                 logger.removeHandler(handler)
 #            logger.handlers = []
         sys.stdout.flush()
-    
+
         return ok
 
     def load(self) -> bool:
@@ -1058,7 +1075,7 @@ class Base(object):
             ok = self.load()
         self._pre_done = True
         sys.stdout.flush()
-        
+
         return ok
 
     def task(self, **kwargs: Any) -> float:
@@ -1081,7 +1098,7 @@ class Base(object):
             self.write('--- Task (' + self.identifier + ')')
         self._task_done = True
         sys.stdout.flush()
-        
+
         return 0.0
 
     def post(self, **kwargs: Any) -> bool:
@@ -1105,17 +1122,17 @@ class Base(object):
             ok = self.save()
         self._post_done = True
         sys.stdout.flush()
-        
+
         return ok
 
     def control(self, **kwargs: Any) \
             -> Union[float,              # residuum of children of Base or Loop
                      Dict[str, Any],    # metrics of train of BoxModel children
                      Float2D,            # y of prediction of BoxModel children
-                     Tuple[Float1D, Float1D], # x_opt+y_opt of Min., Max., Inv. 
-                     Tuple[Float1D, Float2D],     # x_ref, dy/dx of Sensitivity 
-                     Tuple[Float2D, Float2D]]:             # x and y of Forward 
-                                                                      
+                     Tuple[Float1D, Float1D], # x_opt+y_opt of Min., Max., Inv.
+                     Tuple[Float1D, Float2D],     # x_ref, dy/dx of Sensitivity
+                     Tuple[Float2D, Float2D]]:             # x and y of Forward
+
         """
         Kwargs:
             Keyword arguments to be passed to task() of this object
@@ -1123,13 +1140,13 @@ class Base(object):
         Returns:
             Residuum from range [0., 1.], indicating error of task
                 Base or Loop and its children
-            OR 
-            metrics of training for all children of BoxModel 
+            OR
+            metrics of training for all children of BoxModel
                 exclusive White if x is None,
                 see fifth code line of BoxModel.task()
-            OR 
+            OR
             y array of prediction of BoxModel and its children
-            OR            
+            OR
             x and y arrays of prediction of Forward and its children
         """
         if self.is_root():
@@ -1141,13 +1158,13 @@ class Base(object):
 
         if self.is_root():
             self.write('=== Task-processing')
-        task_result: Union[float,                        
-                           Dict[str, Any],         
+        task_result: Union[float,
+                           Dict[str, Any],
                            Float2D,
                            Tuple[Float1D, Float1D],
                            Tuple[Float1D, Float2D],
                            Tuple[Float2D, Float2D]] = self.task(**kwargs)
-                                                              
+
         if self.is_root():
             exe_time = time() - self._exe_time_start
             if exe_time >= self._min_exe_time_shown:
@@ -1155,5 +1172,5 @@ class Base(object):
                                                                       2)))
             self._exe_time_start = time()
         self.write('=== Post-processing')
-                
+
         return task_result

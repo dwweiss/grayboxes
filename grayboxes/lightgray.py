@@ -17,20 +17,21 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-02-07 DWW
+      2021-01-06 DWW
 
   Acknowledgement:
       Modestga is a contribution by Krzyzstof Arendt
 """
 
-import sys
 import numpy as np
+import sys
 import scipy.optimize
 from typing import Any, Dict, Iterable, List, Union
 
 from grayboxes.boxmodel import BoxModel
 from grayboxes.datatype import Float1D, Float2D, Function
 from grayboxes.metrics import init_metrics
+
 try:
     import modestga
 except ImportError:
@@ -115,32 +116,32 @@ class LightGray(BoxModel):
 
         # populate list of valid trainers
         self.scipy_minimizers: List[str] = [
-                'BFGS',                                  # standard BFGS
-                'L-BFGS-B',                      # BFGS with less memory
-                'Nelder-Mead',                   # gradient-free simplex
-                'Powell',                       # gradient-free shooting
-                'CG',
-                # 'Newton-CG',                       # requires Jacobian
-                'TNC',
-                # 'COBYLA',                   # failed in grayboxes test
-                'SLSQP',
-                # 'dogleg',                          # requires Jacobian
-                # 'trust-ncg',                       # requires Jacobian
-                'basinhopping',            # global (brute) optimization
-                'differential_evolution',          # global optimization
-                ]
+            'BFGS',                                  # standard BFGS
+            'L-BFGS-B',                      # BFGS with less memory
+            'Nelder-Mead',                   # gradient-free simplex
+            'Powell',                       # gradient-free shooting
+            'CG',
+            # 'Newton-CG',                       # requires Jacobian
+            'TNC',
+            # 'COBYLA',                   # failed in grayboxes test
+            'SLSQP',
+            # 'dogleg',                          # requires Jacobian
+            # 'trust-ncg',                       # requires Jacobian
+            'basinhopping',            # global (brute) optimization
+            'differential_evolution',          # global optimization
+            ]
         self.scipy_root_finders: List[str] = [
-                'lm',                              # Levenberg-Marquardt
-                # 'hybr', 'broyden1', 'broyden2',
-                # 'anderson', 'linearmixing',
-                # 'diagbroyden', 'excitingmixing',
-                # 'krylov', 'df-sane'
-                ]
+            'lm',                              # Levenberg-Marquardt
+            # 'hybr', 'broyden1', 'broyden2',
+            # 'anderson', 'linearmixing',
+            # 'diagbroyden', 'excitingmixing',
+            # 'krylov', 'df-sane'
+            ]
         self.scipy_equ_minimizers: List[str] = [
-                'leastsq',                # good for n_inp == n_out == 1
-                'least_squares',
-                # Levenberg-Marquardt
-                ]
+            'leastsq',                # good for n_inp == n_out == 1
+            'least_squares',
+            # Levenberg-Marquardt
+            ]
         self.genetic_minimizers: List[str] = \
             ['genetic', 'ga'] if 'modestga' in sys.modules else []
 
@@ -152,9 +153,11 @@ class LightGray(BoxModel):
                                          self.genetic_minimizers + \
                                          self.scipy_curve_fitters
 
-    # function wrapper for scipy minimize
     def _mean_square_errror(self, c: Iterable[float], 
                             **kwargs: Any) -> Float2D:
+        """
+        function wrapper for scipy minimize
+        """
         y: Float2D = BoxModel.predict(self, self.X, *c,
                                       **self.kwargs_del(kwargs, 'x'))
         dy = y - self.Y
@@ -162,8 +165,10 @@ class LightGray(BoxModel):
         
         return np.mean(dy**2)
 
-    # function wrapper for scipy least_square and leastsq
     def _difference(self, c: Iterable[float], **kwargs: Any) -> Float2D:
+        """
+        function wrapper for scipy least_square and leastsq
+        """
         y = BoxModel.predict(self, self.X, *c, **self.kwargs_del(kwargs, 'x'))
         
         return (y - self.Y).ravel()
@@ -250,6 +255,10 @@ class LightGray(BoxModel):
                         kw['options']['maxiter'] = kwargs.get('n_it_max', None)
                     if trainer == 'Nelder-Mead':
                         kw['options']['xatol'] = kwargs.get('goal', 1e-4)
+                    if trainer == 'BFGS':
+                        kw['options']['gtol'] = kwargs.get('goal', 1e-4)
+                    if trainer in ['Powell', 'CG', 'Newton-CG']:
+                        kw['options']['xtol'] = kwargs.get('goal', 1e-4)
                 try:
                     res = scipy.optimize.minimize(fun=self._mean_square_errror,
                                                   x0=c_ini, method=trainer, 
@@ -341,7 +350,6 @@ class LightGray(BoxModel):
             self.ready = self.weights is not None
         else:
             results['weights'] = None
-            # TODO .
             self.weights = None
             self.ready = False
         
@@ -379,9 +387,9 @@ class LightGray(BoxModel):
 
             c_ini (2D or 1D array of float):
                 sequence of initial guess of tuning parameter set 
-                per trial 
-                If c_ini is None, the initialvalues are returned from
-                f(x=None)
+                    per trial 
+                If c_ini is None, the initial values are returned from
+                    f(x=None)
 
                 c_ini.shape: (number of trials, number of tuning params)
                 [IS PASSED IN KWARGS to be compatible to parallel.py]
@@ -439,7 +447,6 @@ class LightGray(BoxModel):
                                      'weights': [None, ]})
         message = ''
         self.write('+++ Loop over trainers')
-
                 
         self.ready = True
         for trainer_ in trainers:
@@ -459,6 +466,7 @@ class LightGray(BoxModel):
 
                 if results['weights'] is not None:
                     self.weights = results['weights']  # for BoxModel.predict()
+
                     metrics = self.evaluate(X=X, Y=Y, silent=True)
                     
                     metrics['trainer'] = trainer_
@@ -466,7 +474,10 @@ class LightGray(BoxModel):
                     if self.metrics['L2'] > metrics['L2']:
                         self.metrics['trainer'] = trainer_
                         self.metrics.update(results)
+                        w = self.metrics['weights']
                         self.metrics.update(metrics)
+                        self.metrics['weights'] = w
+
                         self.metrics['i_trial'] = i_trial
                         if print_details:
                             message += ' +++'
@@ -475,6 +486,7 @@ class LightGray(BoxModel):
                 else:
                     if print_details:
                         message += ' ---'
+                    print("??? min.least.squared: results['weights'] is None")
                 if print_details:
                     self.write(message)
 
@@ -500,7 +512,7 @@ class LightGray(BoxModel):
                 message += key + ': ' + str(self.metrics[key]) + ', '
         self.write(message)
 
-        # the 'weights' keys is only locally used in self.train()
+        # the 'weights' item is only locally used in self.train()
         del self.metrics['weights']
         self.metrics['ready'] = self.ready
 
@@ -529,5 +541,6 @@ class LightGray(BoxModel):
         """
         c = self.weights if self.weights is not None else c
         
-        return BoxModel.predict(self, x, *c, 
-                                **self.kwargs_del(kwargs, ('x', 'c')))
+        y = BoxModel.predict(self, x, *c, 
+                             **self.kwargs_del(kwargs, ('x', 'c')))
+        return y

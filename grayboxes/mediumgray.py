@@ -27,7 +27,7 @@ from grayboxes.black import Black
 from grayboxes.boxmodel import BoxModel
 from grayboxes.datatype import Float2D, Function
 from grayboxes.lightgray import LightGray
-from grayboxes.neural import Neural
+from grayboxes.neuraltf import Neural
 
 
 class MediumGray(BoxModel):
@@ -236,7 +236,8 @@ class MediumGray(BoxModel):
         Returns:
             prediction output, shape: (n_point, n_out)
         """
-        assert self._black is not None and self._black.ready
+        assert self._black is not None
+        assert self._black.ready
         
         kwargs_ = self.kwargs_del(kwargs, 'x')
         

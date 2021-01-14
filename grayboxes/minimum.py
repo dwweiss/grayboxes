@@ -31,14 +31,15 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D   # needed for "projection='3d'"
 from typing import Any, Iterable, List, Optional, Tuple, Union
 
-from grayboxes.base import Base
-from grayboxes.boxmodel import BoxModel
-from grayboxes.datatype import Float1D, Float2D
-from grayboxes.forward import Forward
 try:
     import modestga as mg
 except ImportError:
     print('??? Package modestga not imported')
+
+from grayboxes.base import Base
+from grayboxes.boxmodel import BoxModel
+from grayboxes.datatype import Float1D, Float2D
+from grayboxes.forward import Forward
 
 
 # return type of single evaluation: [x_opt, y_opt, objective]
@@ -293,11 +294,31 @@ class Minimum(Forward):
                 success = res.success
 
             elif optimizer == 'ga':
-                valid_keys = ['tol', 'options', 'bounds']
+                valid_keys = ['options', 'bounds']
+                """ valid keys in 'options' are:
+                    'generations': 1000,    # Max. number of generations
+                    'pop_size': 500,        # Population size
+                    'mut_rate': 0.01,       # Initial mutation rate (adaptive mutation)
+                    'trm_size': 20,         # Tournament size
+                    'tol': 1e-3 
+                
+                if 'options' is missing in kwargs, then 'maxiter' and 'tol'
+                are tolerated as keyword arguments
+                e.g. minimize(fun, x0, bounds=[...], tol=1e-3, maxiter=10)
+                """
                 kw = {k: kwargs[k] for k in valid_keys if k in kwargs}
+                if 'options' not in kw:
+                    options = {}
+                if 'maxiter' in kwargs and 'generations' not in options:
+                    options['generations'] = kwargs.get('maxiter')
+                for key in ['tol', 'generations']:
+                    if key in kwargs and key not in options:
+                        options[key] = kwargs.get('key')
                 res = mg.minimize(fun=self.objective, x0=x0,
+                                  bounds=bounds,
                                   # method=optimizer, # TODO .
-                                  **kw)
+                                  options=options
+                                  )
                 # x, y = np.atleast_1d(res.x), np.atleast_1d(res.fx)
                 success = True  # TODO .
             else:
@@ -373,8 +394,6 @@ class Minimum(Forward):
             if len(trial) == 0:
                 continue
             
-            print('min372 trial', trial)
-            
             self.write('    Plot[i_trial: ' + str(i_trial) + '] ' +
                        str(trial[-1][1]) + ' = f(' +
                        str(trial[-1][0]) + ')')
@@ -411,6 +430,9 @@ class Minimum(Forward):
                 plt.title(y_lab + '(x0..x' + str(n_inp-1) + ')')
                 for j_inp in range(n_inp):
 
+                    print('x_seq[j_inp][0]], [_y[0]', x_seq[j_inp][0], _y[0])
+                    
+                    
                     plt.plot(x_seq[j_inp], _y,
                              label=y_lab+'(x'+str(j_inp)+')')
                     plt.scatter([x_seq[j_inp][0]], [_y[0]], color='r',

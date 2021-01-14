@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-11-25 DWW
+      2020-11-26 DWW
 """
 
 import inspect
@@ -31,7 +31,11 @@ from grayboxes.array import convert_to_2d
 from grayboxes.base import Base
 from grayboxes.datatype import Float1D, Float2D, Function, Str1D
 from grayboxes.metrics import init_metrics, update_errors
-from grayboxes.parallel import communicator, predict_scatter
+
+try:
+    from grayboxes.parallel import communicator, predict_scatter
+except ImportError:
+    print('!!! Module parallel not imported')
 
 
 class BoxModel(Base):
@@ -62,18 +66,18 @@ class BoxModel(Base):
                 Unique object identifier
         """
         super().__init__(identifier=identifier)
-        
-        self.f: Function = f 
-                                 # theoretical submodel if not black box
+
+        self._backend: Optional[str] = None        
+        self.f: Function = f     # theoretical submodel if not black box
+        self._metrics: Dict[str, Any] = init_metrics()         # metrics
+        self._n_inp: int = -1                         # number of inputs
+        self._weights: Float1D = None    # weights of empirical submodel
         self._X: Float2D = None                         # training input
         self._Y: Float2D = None                        # training target
         self._x: Union[Float1D, Float2D] = None       # prediction input
         self._y: Union[Float1D, Float2D] = None      # prediction output 
         self._x_keys: Str1D = None           # x-keys for data selection
         self._y_keys: Str1D = None           # y-keys for data selection
-        self._metrics: Dict[str, Any] = init_metrics()         # metrics
-        self._weights: Float1D = None    # weights of empirical submodel
-        self._n_inp: int = -1                         # number of inputs
 
     @property
     def f(self) -> Function:
@@ -454,14 +458,14 @@ class BoxModel(Base):
                 training target, shape: (n_point, n_out)
 
         Kwargs:
-            trainer (str or list of str):
-                training methods
-
             epochs (int):
                 maximum number of epochs
 
             goal (float):
                 residuum to be met
+
+            trainer (str or list of str):
+                training methods
 
             trials (int):
                 number of repetitions of training with same method
@@ -524,19 +528,21 @@ class BoxModel(Base):
         assert self._n_inp == -1 or self._n_inp == self.x.shape[1], \
             str((self._n_inp, self.x.shape, self.x))
 
-        print('box 527 x self.x', x.shape, self.x.shape)
-
         if not self.ready:
             self._y = None
         elif not communicator() or x.shape[0] <= 1:
-            # self.y is a setter ensuring valid 2D array            
-            self.y = [self.f(x, *c) for x in self.x]
+            # self.y is a setter ensuring valid 2D array
+            y_ = np.asfarray([self.f(x, *c) for x in self.x])
+            if y_.ndim == 1:
+                self._y = np.atleast_2d(y_).T
+            elif y_.ndim == 2:
+                self._y = np.atleast_2d(y_)
+            else:
+                assert 0, str(np.shape(y_), np.shape(self._y))
         else:
             # self.y is a setter ensuring valid 2D array
             self.y = predict_scatter(
                 self.f, self.x, *c, **self.kwargs_del(kwargs, 'x'))
-            
-        print('box 539 self.x self.y', self.x.shape, self.y.shape)
 
         return self.y
 

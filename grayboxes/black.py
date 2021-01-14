@@ -26,18 +26,31 @@ from typing import Any, Dict, Optional, Union
 from grayboxes.boxmodel import BoxModel
 from grayboxes.datatype import Float2D, Function
 from grayboxes.metrics import init_metrics
+
 try:
     from grayboxes.neuraltf import Neural as NeuralTf
 except ImportError:
-    print('!!! Module neuraltf not imported')
+    try:
+        from neuraltf import Neural as NeuralTf
+    except ImportError:
+        print('!!! Module neuraltf not imported')
+
 try:
     from grayboxes.neuralnl import Neural as NeuralNl
 except ImportError:
-    print('!!! Module neuralnl not imported')
+    try:
+        from neuralnl import Neural as NeuralNl
+    except ImportError:
+        print('!!! Module neuralnl not imported')
+
 try:
     from grayboxes.neuralto import Neural as NeuralTo
 except ImportError:
-    print('!!! Module neuralto not imported')
+    try:
+        from neuralto import Neural as NeuralTo
+    except ImportError:
+        print('!!! Module neuralto not imported')
+
 try:
     from grayboxes.splines import Splines
 except ImportError:

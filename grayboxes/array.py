@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-02-07 DWW
+      2020-12-16 DWW
 """
 
 __all__ = ['grid', 'cross', 'rand', 'noise', 'xy_rand_split', \
@@ -28,7 +28,7 @@ import numpy as np
 from pandas import DataFrame
 import random
 from statsmodels.nonparametric.smoothers_lowess import lowess
-from typing import Optional
+from typing import Iterable, Optional, List, Tuple, Union
 
 try:
     from grayboxes.datatype import Float1D, Float2D
@@ -36,13 +36,11 @@ except ImportError:
     try:
         from datatype import Float1D, Float2D
     except ImportError:
-        print('    continue with unauthorized definition of Float1D, ' +
+        print('!!! module datatype not loaded')
+        print('    continue with local definition of Float1D, ' +
               'Float2D')        
-        
         Float1D = Optional[np.ndarray]
         Float2D = Optional[np.ndarray]
-
-from typing import Iterable, Optional, List, Tuple, Union
 
 
 def grid(size: Union[int, Iterable[int]], 
@@ -170,7 +168,7 @@ def cross(n: Union[int, Iterable[int]],
             number of nodes per axis for which initial values generated
             n is corrected to the next odd number if n is even
 
-            if n is array_like, it defines the number of points per axis 
+            if n is an array, then it defines number of points per axis 
 
         ranges:
             Variable length argument list of (min, max) pairs
@@ -287,7 +285,7 @@ def noise(y: np.ndarray,
             noise value is 60.7% of max noise )
 
     Returns:
-        copy of y plus noise if y is not None, return shape is: x.shape
+        copy of y plus noise if y is not None, shape is same as x.shape
         or
         None if y is None
 
@@ -506,7 +504,7 @@ def convert_to_2d(value: Optional[Union[float, Iterable[float],
     """
     Args:
         value:
-            Scalar, iterable, 1D array, or 2D array of float
+            Scalar or float array
             
     Returns:
         2D numpy array

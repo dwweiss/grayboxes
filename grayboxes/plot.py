@@ -1063,7 +1063,7 @@ def plot_bar_arrays(x: Optional[np.ndarray] = None,
                     legend_position: Optional[Tuple[float, float]] = None,
                     show_ylabel: bool = True,
                     width: float = 0.15,
-                    file: str = ''
+                    file: str = '',
                     ) -> None:
     """
     Plots bars without errorbars if y_arrays is 2D array of float
@@ -1113,9 +1113,9 @@ def plot_bars(x: Optional[np.ndarray] = None,
               y5error: Optional[np.ndarray] = None,
               y6: Optional[np.ndarray] = None, 
               y6error: Optional[np.ndarray] = None,
-              labels: Optional[Union[str, str, str]] = None,
+              labels: Optional[Iterable[str]] = None,
               units: Optional[Tuple[str, str, str]] = None,
-              title: str ='',
+              title: str = '',
               yrange: Optional[Tuple[float, float]] = None,
               grid: bool = False,
               figsize: Optional[Tuple[float, float]] = None,
@@ -1152,9 +1152,9 @@ def plot_bars(x: Optional[np.ndarray] = None,
         y6error = []
         
     if labels is None:
-        labels = ['x', 'y', 'z', '', '', '']
+        labels = ['x', 'y', '', '', '', '']
     if units is None:
-        units = ['[/]','[/]', '[/]']
+        units = ['[/]','[/]', '']
 
     assert x is None or len(x) == 0 or len(x) == len(y1)
     x = [] if x is None else x
@@ -1249,9 +1249,11 @@ def plot_bars(x: Optional[np.ndarray] = None,
     plt.xlabel(labels[0])
     if show_ylabel:
         la = ''
-        for i in range(1, len(labels) - 1):
-            la += labels[i] + ', '
-        la += labels[-1]
+        for i in range(1, len(labels)):
+            if len(labels[i]):
+                la += labels[i] + ', '
+        if la.endswith(', '):
+            la = la[:-2]
         ax.set_ylabel(la)
 
     if title:
@@ -1261,10 +1263,11 @@ def plot_bars(x: Optional[np.ndarray] = None,
     tics = []
     for i in range(len(y1)):
         if len(x):
-            tics.append(str(x[i]))           # tics.append(labels[0] + str(i))
+            tics.append(str(x[i]))     # tics.append(labels[0] + str(i))
         else:
-            tics.append(str(i))              # tics.append(labels[0] + str(i))
+            tics.append('x' + str(i))  # tics.append(labels[0] + str(i))
     ax.set_xticklabels(tics)
+    plt.xticks(rotation=45)    
 
     r = [rects1[0]]
     la = [labels[1]]
@@ -1303,6 +1306,8 @@ def plot_bars(x: Optional[np.ndarray] = None,
     if grid:
         plt.grid()
         
+    fig.tight_layout()
+    
     if file:
         if not file.endswith('.png'):
             file += '.png'
@@ -1319,24 +1324,25 @@ def plot_bars(x: Optional[np.ndarray] = None,
     plt.show()
 
 
-def plot_x_y_y_ref(x: np.ndarray,  # 2D array 
-                   y: np.ndarray,  # 2D array
-                   y_ref: np.ndarray,  # 2D array
+def plot_x_y_y_ref(x: np.ndarray,   
+                   y: np.ndarray,
+                   y_ref: np.ndarray,
                    labels: Optional[Tuple[str, str, str]] = None, 
-                   presentation: str = 'all') -> None:
+                   presentation: str = 'all'
+                   ) -> None:
     """
     Plots y(x), y_ref(x) and the difference y-y_ref(x) as 
         - isomap and surface if x, y and y_ref are 2D arrays
         - or as curves otherwise
         
     Args:
-        x (2D array of float):
+        x (array of float):
             arguments, shape: (n_point, n_inp)
 
-        y (2D array of float):
-            dependent variable Y(x), shape: (n_point, n_out)
+        y (array of float):
+            dependent variable y(x), shape: (n_point, n_out)
 
-        y_ref (2D array of float):
+        y_ref (array of float):
             reference y_ref(x), shape: (n_point, n_out)
         
         labels:
@@ -1359,6 +1365,7 @@ def plot_x_y_y_ref(x: np.ndarray,  # 2D array
     if any(len(arr.shape) != 2 for arr in (x, y, y_ref, )):
         plot_curves(x.flatten(), y.flatten(), y_ref.flatten(), labels=labels)
     else:
+        # plots y
         plot_isomap(x[:, 0], x[:, 1], y[:, 0], title='$' + labels[1] + '$',
                     labels=['$' + labels[0] + '_0$',
                             '$' + labels[0] + '_1$', '$' + labels[1] + '$'])

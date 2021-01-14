@@ -29,7 +29,8 @@ from typing import Iterable, Optional, Tuple, Union
 def _rotate2d(phi_rad: Union[float, Iterable[float]],
               xx: Union[float, Iterable[float]],
               yy: Union[float, Iterable[float]],
-              xx0: float = 0., yy0: float = 0.) \
+              xx0: float = 0., 
+              yy0: float = 0.) \
         -> Union[Tuple[float, float], 
                  Tuple[np.ndarray, np.ndarray]]:
     """
@@ -65,7 +66,9 @@ class xyz(object):
     """
 
     def __init__(self, 
-                 x: float = 0., y: float = 0., z: float = 0.,
+                 x: float = 0., 
+                 y: float = 0., 
+                 z: float = 0.,
                  point: Optional['xyz'] = None) -> None:
         """
         Args:
@@ -258,7 +261,9 @@ class xyzt(xyz):
     """
 
     def __init__(self,
-                 x: float = 0., y: float = 0., z: float = 0., 
+                 x: float = 0., 
+                 y: float = 0., 
+                 z: float = 0., 
                  t: float = 0., 
                  point: Optional[Union[xyz, 'xyzt']] = None) -> None:
         """

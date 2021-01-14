@@ -22,7 +22,7 @@
 
 import numpy as np
 from typing import Any, Dict
-
+ 
 from grayboxes.black import Black
 from grayboxes.boxmodel import BoxModel
 from grayboxes.datatype import Float2D, Function

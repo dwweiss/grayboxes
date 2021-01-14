@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-01-30 DWW
+      2020-11-26 DWW
 """
 
 import numpy as np
@@ -108,7 +108,7 @@ class Forward(Base):
           if X is not None and Y is not None
 
         Kwargs:
-            XY (2-tuple of 2D array_like of float):
+            XY (2-tuple of 2D array of float):
                 input and target of training, 
                 shapes: (n_point, n_inp) and (n_point, n_out)
                 Note: this argument supersedes X, Y
@@ -171,8 +171,8 @@ class Forward(Base):
         if self.model.x is None:
             self.model._y = None
         else:
-            self.model.y = np.asfarray(self.model.predict(x=self.model.x,
-                                       **self.kwargs_del(kwargs, 'x')))
+            self.model.y = self.model.predict(x=self.model.x,
+                                              **self.kwargs_del(kwargs, 'x'))
         return self.model.x, self.model.y
 
     def post(self, **kwargs: Any) -> bool:

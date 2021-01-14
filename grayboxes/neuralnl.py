@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2021-02-24 DWW
+      2021-01-14 DWW
 
   Acknowledgements:
       Neurolab is a contribution by E. Zuev (pypi.python.org/pypi/neurolab)
@@ -26,41 +26,20 @@
 __all__ = ['Neural']
 
 import numpy as np
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 try:
     import neurolab as nl
-    _has_neurolab = True
 except ImportError:
     print('??? Package neurolab not imported')
-    _has_neurolab = False
     
-try:
-    from grayboxes.datatype import Float2D, Function
-except:
-    try:
-        from datatype import Float2D, Function
-    except:
-        print('??? module datatype not imported')
-        print('    ==> copy file datatype.py to this directory')
-        print('    continue with unauthorized definition of Float2D, Function')
-        
-        Float2D = Optional[np.ndarray]
-        Function = Optional[Callable[..., List[float]]]
-try:
-    from grayboxes.bruteforce import BruteForce
-except:
-    try:
-        from bruteforce import BruteForce
-    except:
-        print('??? module bruteforce not imported')
-        print('    ==> copy file bruteforce.py to this directory')
+from grayboxes.bruteforce import BruteForce
+from grayboxes.datatype import Float2D, Function
         
 
 class Neural(BruteForce):
     """
-    - Wraps neural network implementations from
+    - Wraps neural network implementation from
         - Neurolab: trains exclusively with backpropagation
-        - NeuralGenetic: trains exclusively with genetic algorithm
 
     References:
         - Recommended training algorithms:
@@ -84,9 +63,9 @@ class Neural(BruteForce):
         super().__init__(f)
         self._backend = 'neurolab'
     
-    def _get_trainers(self) -> Tuple[Dict[str, Any], List[str]]:
+    def _get_trainer_pool(self) -> Tuple[Dict[str, Any], List[str]]:
         """
-        See super()._get_trainers()
+        See super()._get_trainer_pool()
         """
         trainer_pool = {
             'bfgs':       nl.train.train_bfgs,
@@ -162,6 +141,7 @@ class Neural(BruteForce):
         """
         epochs = kwargs.get('epochs', 300)
         mse_expected = kwargs.get('mse_expected', 1e-3)
+        
         rr = kwargs.get('regularization', None)
         if rr is None:
             rr = kwargs.get('rr', 1.)
@@ -175,6 +155,7 @@ class Neural(BruteForce):
             hist = self._net.train(X, Y, epochs=epochs, show=show, 
                                    goal=mse_expected)
         else:
+            # this repetition shall correct a failure of neurolab
             for i in range(5+1):
                 self._net.init()
                 hist = self._net.train(X, Y, epochs=epochs, show=show, 
@@ -185,22 +166,16 @@ class Neural(BruteForce):
         mse_history = hist
         
         if validation_data is None:
-            mse_val_last = np.nan
+            mse_valid_last = np.nan
         else:
-            x_val_scaled = self._scale(validation_data[0], self._X_stats, 
+            x_valid_scaled = self._scale(validation_data[0], self._X_stats, 
                                        self._min_max_scale)
-            y_val = self._predict_scaled(x_val_scaled)
-            mse_val_last = np.mean((y_val - validation_data[1])**2)
+            y_valid = self._predict_scaled(x_valid_scaled)
+            mse_valid_last = np.mean((y_valid - validation_data[1])**2)
             
-#            y_trn = self._predict_scaled(X)
-#            mse_trn_last = np.mean((y_trn - Y)**2)
-                       
-#            print('mse_trn[-1]', mse_history[-1])
-#            print('mse_trn_last', mse_trn_last)
-#            print('mse_val_last', mse_val_last)
-        val_mse_history = [np.nan] * (len(mse_history)-1) + [mse_val_last] 
+        valid_mse_history = [np.nan] * (len(mse_history)-1) + [mse_valid_last] 
         
-        return {'mse': mse_history, 'val_mse': val_mse_history}
+        return {'mse': mse_history, 'val_mse': valid_mse_history}
 
     def _predict_scaled(self, x_scaled: Float2D, **kwargs) -> Float2D:
         """

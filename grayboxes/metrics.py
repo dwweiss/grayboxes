@@ -17,31 +17,29 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-03-08 DWW
+      2020-03-24 DWW
 """
 
-__all__ = ['Metrics', 'init_metrics', 'update_errors']
+__all__ = ['Metrics', 'best_metrics', 'init_metrics', 'update_errors']
 
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, Optional
 
 try:
     from grayboxes.datatype import Float2D
-except:
+except ImportError:
     try:
         from datatype import Float2D
-    except:
-        print('??? module datatype not imported')
-        print('    ==> copy file datatype.py to this directory')
-        print('    continue with unauthorized definition of Float2D')
-        
-        Float2D = np.ndarray
+    except ImportError:
+        print('!!! Module datatype not loaded')
+        print('    continue with local definition of Float2D')        
+        Float2D = Optional[np.ndarray]
 
 
 class Metrics(dict):
     """
-    Stores metrics describing the model performance as a dictionary
+    Stores metrics of model performance as a dictionary
     Sets errors from reference data and prediction output (abs, mse, L2) 
     Plots target, prediction and location of maximum absolure error
     """
@@ -49,7 +47,7 @@ class Metrics(dict):
     def __init__(self, other: Optional[Dict[str, Any]] = None) -> None:
         """
         Sets default values to metrics describing model performance,
-        see init_metrics() fro default values 
+        see init_metrics() for default values 
     
         Args:
             other:
@@ -99,7 +97,7 @@ class Metrics(dict):
         
         return self
         
-    def todict(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         """
         Returns:
             content as dictionary
@@ -109,14 +107,14 @@ class Metrics(dict):
             dict_[key] = value
         return dict_
 
-    def plot_histories(self, key: str, 
-                       histories: List[Dict[str, Any]]) -> None:        
+    def plot(self, key: str, 
+             metrices: Iterable[Dict[str, Any]]) -> None:
         plt.title("History of '" + str(key) + "'")
         has_labels = False
-        for history in histories:
-            if key in history:
+        for metrics in metrices:
+            if key in metrics:
                 has_labels = True
-                y = np.atleast_1d(history[key])
+                y = np.atleast_1d(metrics[key])
                 label = 'key: ' + str(round(y[-1], 3))
                 if len(y) > 1:
                     plt.plot(y, label=label)
@@ -143,8 +141,7 @@ def init_metrics(other: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         dictionary with default settings for 
             - metrics of best training trial 
             - model evaluation
-    """
-    
+    """    
     metrics = {
        'abs': np.inf,                           # maximum absolure error
        'activation': None,           # activation function of best trial
@@ -156,7 +153,8 @@ def init_metrics(other: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
        'mse': np.inf,                 # prediction minus validation data
        'ready': True,                     # True if ready for prediction
        'trainer': None,                          # trainer of best trial
-       'trial': -1,                                # index of best trial 
+       'trial': -1,                                # index of best trial
+       'weights': None,
        }
 
     if other is not None:            
@@ -165,11 +163,37 @@ def init_metrics(other: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
             
     return metrics
 
-def best_metrics(metrics_sequence: Iterable[Dict[str, Any]]) \
-        -> Optional[Dict[str, Any]]:
-    best = metrics_sequence
-    metrics_sequence
 
+def best_metrics(metrics_sequence: Iterable[Dict[str, Any]], 
+                 key: str = 'mse') -> Optional[Dict[str, Any]]:
+    """
+    Args:
+        metrics_sequence:
+            sequence of metrices having 'key' as dictionary key
+            
+        key:
+            key of value used for comparisons
+            
+    Returns:
+        best metrics out of sequence of metrices
+    """
+    metrics_sequence = np.atleast_1d(metrics_sequence)
+    if len(metrics_sequence) == 0:
+        return None
+    
+    if any(key not in metrics for metrics in metrics_sequence):
+        return None
+    
+#    i_best = 0
+#    for i in range(len(metrics_sequence)):
+#        if metrics_sequence[i][key] < metrics_sequence[i_best][key]:
+#            i_best = i
+#    return metrics_sequence[i_best]
+            
+    sorted_list = sorted(metrics_sequence, key=lambda dic: dic[key])
+    
+    return sorted_list[0]
+            
 
 def update_errors(metrics: Dict[str, Any], 
                   X: Float2D, 
@@ -224,7 +248,8 @@ def update_errors(metrics: Dict[str, Any],
     if len(Y) != len(y):
         if not silent:
             print('??? metrics: len(Y) != len(y)')
-            print('??? metrics: shapes of X Y y:', X.shape, Y.shape, y.shape)
+            print('??? metrics: shapes of X Y y:', 
+                  np.shape(X), np.shape(Y), np.shape(y))
         return metrics
 
     X = np.asfarray(X)

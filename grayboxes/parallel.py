@@ -23,33 +23,34 @@
 __all__ = ['mpi', 'communicator', 'rank', 'predict_scatter', 'split', 'merge']
 
 import numpy as np
+import os
 import psutil
 import sys
 from typing import Any, Callable, List, Optional, Union
-import os
 if os.name == 'posix':
     try:
         import mpi4py
         try:
             import mpi4py.MPI
         except AttributeError:
-            print('!!! mpi4py.MPI import failed')
+            print('!!! module mpi4py.MPI not loaded')
     except ImportError:
-        print('!!! mpi4py import failed')
-        
+        print('!!! module mpi4py.MPI not loaded')
+
 try:
     from grayboxes.datatype import Float1D, Float2D, Float3D, None2D
 except ImportError:
     try:
-        from datatype import Float1D, Float2D, Float3D, None2D
+        from datatype import Float1D, Float2D, Float3D
     except ImportError:
-        print('!!! Module datatype not imported')
-        print('    continue with unauthorized definition of Float1D, ' +
-              'Float2D, Float3D, None2D')
+        print('!!! module datatype not loaded')
+        print('    continue with local definition of Float1D, ' +
+              'Float2D, Float3D, None2D')        
         Float1D = Optional[np.ndarray]
         Float2D = Optional[np.ndarray]
         Float3D = Optional[np.ndarray]
         None2D = Optional[np.ndarray]
+        
 
 """
     Tools for splitting & merging data sets, and execution of task on 

@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-09 DWW
+      2020-11-26 DWW
 """
 
 import numpy as np
@@ -68,10 +68,12 @@ class Inverse(Minimum):
             The target is given as self.y with self.y.shape: (n_out,)
 
         Returns:
-            L2-norm as measure of difference between prediction & target
+            norm as measure of difference between prediction & target
             or
             np.inf if self.model.prediction() returns None
         """
+        classic_objective = kwargs.get('classic_objective', True)
+        
         # x is prediction input, x.shape:(n_inp,), y_opt.shape:(1, n_out)
         y_opt = self.model.predict(np.asfarray(x),
                                    **self.kwargs_del(kwargs, 'x'))
@@ -80,9 +82,14 @@ class Inverse(Minimum):
             return np.inf
 
         # y is target, self.y.shape: (n_out,), y_opt[0].shape: (n_out,)
-        # Note: This L2-norm is only computed for a single data point 
-        L2_norm = np.sqrt(np.mean((y_opt[0] - self.y)**2))
+        # Note: norm is only computed for a single data point 
+        if classic_objective:       
+            # standard L2-norm
+            obj = np.sqrt(np.mean(((y_opt[0] - self.y))**2))
+        else:
+            # alternative formulation for big or small numbers
+            obj = np.sqrt(np.mean(((y_opt[0] - self.y) / (1. + y_opt[0]))**2))
 
-        self._single_hist.append((x, y_opt[0], L2_norm))
+        self._single_hist.append((x, y_opt[0], obj))
 
-        return L2_norm
+        return obj

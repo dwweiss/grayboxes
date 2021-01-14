@@ -27,12 +27,15 @@ __all__ = ['Float1D', 'Float2D', 'Float3D', 'Float4D',
            'None1D', 'None2D', 'None3D', 'None4D', 
            'Range', 'Ranges',
            'Scalar',
-           'Str1D', 'Str2D', 'Str3D', 'Str4D',
+           'Str', 'Str1D', 'Str2D', 'Str3D', 'Str4D',
            ]
 
 import numpy as np
 from typing import Callable, Iterable, List, Optional, Tuple, Union
 
+"""
+    Collection of data types for type hints, see module typing
+"""
 
 # type of numpy arrays of float
 Float1D = Optional[np.ndarray]
@@ -66,7 +69,8 @@ Ranges = Iterable[Range]
 Scalar = Union[None, int, float, str]
 
 # type of list of str
-Str1D = Optional[Iterable[str]]
-Str2D = Optional[Iterable[Iterable[str]]]
-Str3D = Optional[Iterable[Iterable[Iterable[str]]]]
-Str4D = Optional[Iterable[Iterable[Iterable[Iterable[str]]]]]
+Str = Optional[str]
+Str1D = Optional[Iterable[Str]]
+Str2D = Optional[Iterable[Str1D]]
+Str3D = Optional[Iterable[Str2D]]
+Str4D = Optional[Iterable[Str3D]]

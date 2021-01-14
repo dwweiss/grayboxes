@@ -92,7 +92,7 @@ class Loop(Base):
             self.omega = omega
 
     def set_transient(self, t_begin: float = 0., t_end: float = 0., 
-                      dt: float = 0., theta: float = .5, n: int = 100) -> None:
+                      dt: float = 0., theta: float = .5, n: int = 50) -> None:
         """
         transient loops can be set with two parameter combinations:
             1. dt and n
@@ -110,6 +110,8 @@ class Loop(Base):
                 self.t_end = self.t_begin + n * dt
 
         if self.t_end > 0.:
+            if dt is None:
+                dt = 0.
             if dt < 1e-20:
                 assert n > 0, 'n must be greater zero'
             dt = (self.t_end - t_begin) / n
@@ -147,7 +149,10 @@ class Loop(Base):
         self.theta = self.root().theta
 
         return ok
-
+    
+    def early_stop(self) -> bool:
+        return False
+    
     def control(self, **kwargs: Any) -> float:
         """
         Kwargs:
@@ -201,7 +206,7 @@ class Loop(Base):
         else:
             self.t = 0.0
             res = np.inf
-            while (self.t + 1e-10) < self.t_end:
+            while (self.t + 1e-10) < self.t_end and not self.early_stop():
                 self.t += self.dt
                 self.write('### Physical time: {:f}'.format(self.t))
                 self.update_transient()

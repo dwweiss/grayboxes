@@ -17,12 +17,12 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-02-11 DWW
+      2020-11-26 DWW
 """
 
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import Any, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 from grayboxes.boxmodel import BoxModel
 from grayboxes.datatype import Float1D, Float2D
@@ -59,9 +59,11 @@ class Sensitivity(Forward):
         """
         super().__init__(model=model, identifier=identifier)
 
-        self.axis_indices = None  # point indices for which x[j] is equal
-        self.dy_dx = None
-        self.indices_with_equal_Xj = None
+        self.axis_indices: Optional[List[int]] = None  
+                                 # point indices for which x[j] is equal
+        self.x_ref: Optional[np.array] = None
+        self.dy_dx: Optional[np.array] = None
+        self.indices_with_equal_Xj: Optional[List[List[int]]] = None
 
     def task(self, **kwargs: Any) -> Union[Tuple[None, None],
                                            Tuple[Float1D, Float2D]]:
@@ -78,7 +80,7 @@ class Sensitivity(Forward):
                 default: self.model.Y
 
             x (2D array of float):
-                cross-type input points, see array.cross()
+                cross-type input points, see grayboxes.array.cross()
                 default: self.model.x
 
         Returns:
@@ -91,18 +93,25 @@ class Sensitivity(Forward):
             2-typle (None, None) if self.model.x is None
         """
         # 1. training if X and Y are not None and/or 
-        # 2. prediction of self.model.y if self.model.x is not None 
+        # 2. prediction of self.model.y if self.model.x is not None:
         super().task(**self.kwargs_del(kwargs, 'x'))
-
         if self.model.x is None:
-            return None, None
-
+            return None, None    
+        
         # (x, y)_ref is stored as: (self.model.x[0], self.model.y[0])
         x, y = self.model.x, self.model.y
-        x_ref = x[0]
+
+        if y.ndim == 3:
+            print('!!! y.ndim: 3 -> reduce dim from:', np.shape(y), end='')
+            if y.shape[1] == 1:
+                y = y[:, 0, :]
+            print(' to:', np.shape(y))
+        
+        self.x_ref = x[0]
+        
         n_point, n_inp, n_out = x.shape[0], x.shape[1], y.shape[1]
 
-        self.indices_with_equal_Xj = [[] for _ in range(n_inp)]
+        self.indices_with_equal_Xj = [[] for empty_item in range(n_inp)]
 
         # i is point index, j is input index
         for i in range(1, n_point):
@@ -110,25 +119,37 @@ class Sensitivity(Forward):
                 if np.isclose(x[0, j], x[i, j]):
                     self.indices_with_equal_Xj[j].append(i)
 
-        self.dy_dx = np.full((n_inp, n_out), np.inf)
-        j_center = n_inp // 2
+        self.dy_dx = np.zeros((n_inp, n_out))
         for k in range(n_out):
             for j in range(n_inp):
-                xx, yy = [], []
+                x_unq, y_unq = [], []
                 for i in range(n_point):
                     if i not in self.indices_with_equal_Xj[j]:
-                        xx.append(x[i, j])
-                        yy.append(y[i, k])
-                    yy = [a for _, a in sorted(zip(xx, yy))]
-                    xx = sorted(xx)
-                dx = (xx[j_center+1] - xx[j_center-1]) * 0.5
-                grad = np.gradient(yy, dx)
-                self.dy_dx[j, k] = grad[j_center]
-        s = np.array2string(self.dy_dx).replace(' ', '').replace('\n',
+                        x_unq.append(x[i, j])
+                        y_unq.append(y[i, k])
+                    y_unq = [_y for _x, _y in sorted(zip(x_unq, y_unq))]
+                    x_unq = sorted(x_unq)
+                n_unq = len(x_unq)
+
+                if n_unq == 1: 
+                    grad = 0
+                elif n_unq == 2:
+                    j_cen = 1
+                    dx = x_unq[1] - x_unq[0]
+                    dy = y_unq[1] - y_unq[0]
+                    grad = dy / dx
+                else:
+                    j_cen = len(x_unq) // 2
+                    dx = (x_unq[j_cen+1] - x_unq[j_cen-1]) * 0.5                    
+                    grad = np.gradient(y_unq, dx)
+                    grad = grad[j_cen]
+                self.dy_dx[j, k] = grad
+
+        s = np.array2string(self.dy_dx).replace('  ', ' ').replace('\n',
                                                                  '\n' + ' '*22)
         self.write('    grad: ' + str(s[1:-1]))
 
-        return x_ref, self.dy_dx
+        return self.x_ref, self.dy_dx
 
     def plot(self, **kwargs) -> None:
         """
@@ -160,7 +181,6 @@ class Sensitivity(Forward):
                     xx = sorted(xx)
                 plt.plot(xx, yy, '-o')
                 plt.grid()
-                plt.legend(bbox_to_anchor=(1.1, 1.03), loc='upper left')
                 plt.show()
 
         for k in range(n_out):
@@ -199,6 +219,34 @@ class Sensitivity(Forward):
                 plt.legend(bbox_to_anchor=(1.1, 1.04), loc='upper left')
                 plt.show()
 
-        plot_bar_arrays(yarrays=self.dy_dx.T, legend_position=(1.1, 1.03),
-                        title=r'Gradient $d y_k \ / \ d x_j$', grid=True,
-                        figsize=(6, 4))
+        plot_bar_arrays(x=self.x_ref,
+                        yarrays=self.dy_dx.T,
+                        title=r'Gradient d$y_k$ / d$x_j$',
+                        labels=['$x_{ref}$'] + ['$y^\prime_' + str(j) + '$' \
+                                for j in range(self.dy_dx.shape[1])],
+                        figsize=(10, 8),
+                        )
+
+        hat_dy_dx = np.zeros(shape=self.dy_dx.shape)
+        for i in range(self.dy_dx.shape[0]):
+            hat_dy_dx[i] = self.dy_dx[i] / self.dy_dx[0]
+        plot_bar_arrays(x=self.x_ref,
+                        yarrays=hat_dy_dx.T,
+                        title=r'Normalized d$\hat y_k$ / d$x_j$',
+                        labels=['$x_{ref}$'] + ['$\hat y^\prime_' + str(j) 
+                                + '$' for j in range(self.dy_dx.shape[1])],
+                        figsize=(10, 8),
+                        )
+
+        hat_dy_dx_minus_one = np.zeros(shape=self.dy_dx.shape)
+        for i in range(self.dy_dx.shape[0]):
+            hat_dy_dx_minus_one[i] = self.dy_dx[i] / self.dy_dx[0]
+            hat_dy_dx_minus_one[i] -= 1.        
+        plot_bar_arrays(x=self.x_ref,
+                        yarrays=hat_dy_dx_minus_one.T,
+                        title=r'Normalized d$\hat y_k$ / d$x_j$ - 1',
+                        labels=['$x_{ref}$'] + ['$\hat y^\prime_' + str(j) 
+                                + '$' for j in range(self.dy_dx.shape[1])],
+                        figsize=(10, 8),
+                        )
+
