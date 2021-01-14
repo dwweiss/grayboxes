@@ -27,7 +27,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import unittest
 
-from grayboxes.black import Black
+try:
+    from grayboxes.black import Black
+except:
+    from black import Black
     
 
 class TestUM(unittest.TestCase):
@@ -83,7 +86,7 @@ class TestUM(unittest.TestCase):
                 neurons=[4, 6, 8, 10, 12, 10, 8, 6, 4],
                 output='linear',
                 patience=10,
-                plot=2,    # plot=0:none, 1:plot final only, 2:plot all
+                plot=1,    # plot=0:none, 1:plot final only, 2:plot all
                 rr=0.1,    # no weight decay (regularization) if neurolab:rprop
                 show=100,
                 silent=False,
