@@ -20,10 +20,10 @@
       2020-01-13 DWW
 """
 
+import unittest
+
 import initialize
 initialize.set_path()
-
-import unittest
 
 from grayboxes.metrics import init_metrics, Metrics, update_errors
 
@@ -33,7 +33,6 @@ class TestUM(unittest.TestCase):
     def setUp(self):
         pass
 
-
     def tearDown(self):
         pass
 
@@ -42,7 +41,7 @@ class TestUM(unittest.TestCase):
         m = Metrics({'aaa': 999})
         print(m)
     
-        for plot in (False, True, ):    
+        for plot in [False, True]:    
             x = m.update_errors([1,2,3], [3,4,5], [2.1, 4.2, 5], plot=plot)
         
         print(m)
@@ -68,8 +67,8 @@ class TestUM(unittest.TestCase):
     def test2(self):
         m = init_metrics({'aaa': 3})
         
-        for silent in (True, False):
-            for plot in (True, False):
+        for silent in [True, False]:
+            for plot in [True, False]:
                 x = update_errors(m, X=[1,2,3], Y=[2,4,6], y=[2.1, 4.3, 5.7], 
                                   silent=silent, plot=plot)
                 print(x)
@@ -79,7 +78,7 @@ class TestUM(unittest.TestCase):
         m = Metrics({'aaa': 999})
         print(m)
     
-        for plot in (False, True, ):    
+        for plot in [False, True]:    
             x = m.update_errors([1,2,3], [3,4,5], [2.1, 4.2, 5], plot=plot)
         
         print(m)
@@ -121,7 +120,7 @@ class TestUM(unittest.TestCase):
         histories = [Metrics({'a': 4}), Metrics({'a': 5}), Metrics({'a': 11})]
         
         m = Metrics()
-        m.plot_histories('a', histories)
+        m.plot('a', histories)
         
         self.assertTrue(True)
 
@@ -132,9 +131,9 @@ class TestUM(unittest.TestCase):
                      dict({'a': [6, 7, 8]})]
         
         m = Metrics()
-        m.plot_histories('a', histories)
+        m.plot('a', histories)
 
-        m.plot_histories('i_abs', histories)
+        m.plot('i_abs', histories)
         
         self.assertTrue(True)
 
@@ -145,11 +144,11 @@ class TestUM(unittest.TestCase):
                      Metrics({'b': [6, 7, 8]})]
         
         m = Metrics()
-        m.plot_histories('b', histories)
+        m.plot('b', histories)
 
-        m.plot_histories('i_abs', histories)
+        m.plot('i_abs', histories)
 
-        m.plot_histories('?', histories)
+        m.plot('?', histories)
         
         self.assertTrue(True)
 

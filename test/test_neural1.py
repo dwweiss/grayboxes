@@ -23,11 +23,11 @@
 import initialize
 initialize.set_path()
 
-import unittest
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import unittest
 
-from grayboxes.array import grid
+from grayboxes.array import grid, noise
 from grayboxes.neuralnl import Neural as NeuralNl
 from grayboxes.neuraltf import Neural as NeuralTf
 from grayboxes.plot import (plot_surface, plot_isolines, plot_isomap, \
@@ -146,6 +146,7 @@ class TestUM(unittest.TestCase):
 
         X = grid((256,)*2, [0, 1]*2)
         Y = np.sin(X * 2 * np.pi)
+        Y = noise(Y, relative=1e-2)
         print('+++ shapes X Y:', X.shape, Y.shape)
         x = X.copy()
 
@@ -155,29 +156,32 @@ class TestUM(unittest.TestCase):
                 plot=1, epochs=250, expected=1e-3,
                 trainer='adam', trials=3, activation='tanh', output='tanh',
                 validation_split=0.2)
-        dy = y - Y
-        X, Y, x = net.X, net.Y, net.x
-        if X.shape[1] == 2:
-            plot_wireframe(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$',
-                           labels=['$x_0$', '$x_1$', r'$Y_{trg}$'])
-            plot_wireframe(X[:, 0], X[:, 1], Y[:, 0], title='$Y_{trg}$',
-                           labels=['$x_0$', '$x_1$', r'$Y_{trg}$'])
-            plot_wireframe(X[:, 0], X[:, 1], dy[:, 0], title=r'$\Delta y$',
-                           labels=['$x_0$', '$x_1$', r'$\Delta y$'])
-            plot_isolines(X[:, 0], X[:, 1], y[:, 0], labels=['$x_0$', '$x_1$'], 
-                          title='$y_{prd}$')
-            plot_isomap(X[:, 0], X[:, 1], y[:, 0], labels=['$x_0$', '$x_1$'], 
-                        title='$y_{prd}$')
-            plot_isomap(X[:, 0], X[:, 1], Y[:, 0], labels=['$x_0$', '$x_1$'], 
-                        title='$Y_{trg}$')
-            plot_isolines(X[:, 0], X[:, 1], Y[:, 0], labels=['$x_0$', '$x_1$'], 
-                          title='$Y_{trg}$')
-            plot_isomap(X[:, 0], X[:, 1], dy[:, 0], labels=['$x_0$', '$x_1$'], 
-                        title=r'$\Delta y$')
-            plot_surface(X[:, 0], X[:, 1], dy[:, 0], labels=['$x_0$', '$x_1$'], 
-                         title=r'$\Delta y$')
-            plot_surface(X[:, 0], X[:, 1], y[:, 0], labels=['$x_0$', '$x_1$'], 
-                         title='$y_{prd}$')
+        if y is None:
+            print('??? y is None')
+        else:
+            dy = y - Y
+            X, Y, x = net.X, net.Y, net.x
+            if X.shape[1] == 2:
+                plot_wireframe(X[:, 0], X[:, 1], y[:, 0], title='$y_{prd}$',
+                               labels=['$x_0$', '$x_1$', r'$Y_{trg}$'])
+                plot_wireframe(X[:, 0], X[:, 1], Y[:, 0], title='$Y_{trg}$',
+                               labels=['$x_0$', '$x_1$', r'$Y_{trg}$'])
+                plot_wireframe(X[:, 0], X[:, 1], dy[:, 0], title=r'$\Delta y$',
+                               labels=['$x_0$', '$x_1$', r'$\Delta y$'])
+                plot_isolines (X[:, 0], X[:, 1], y[:, 0], 
+                               labels=['$x_0$', '$x_1$'], title='$y_{prd}$')
+                plot_isomap   (X[:, 0], X[:, 1], y[:, 0], 
+                               labels=['$x_0$', '$x_1$'], title='$y_{prd}$')
+                plot_isomap   (X[:, 0], X[:, 1], Y[:, 0], 
+                               labels=['$x_0$', '$x_1$'], title='$Y_{trg}$')
+                plot_isolines (X[:, 0], X[:, 1], Y[:, 0], 
+                               labels=['$x_0$', '$x_1$'], title='$Y_{trg}$')
+                plot_isomap   (X[:, 0], X[:, 1], dy[:, 0], 
+                               labels=['$x_0$', '$x_1$'], title=r'$\Delta y$')
+                plot_surface  (X[:, 0], X[:, 1], dy[:, 0], 
+                               labels=['$x_0$', '$x_1$'], title=r'$\Delta y$')
+                plot_surface  (X[:, 0], X[:, 1], y[:, 0], 
+                               labels=['$x_0$', '$x_1$'], title='$y_{prd}$')
 
         self.assertTrue(True)
 

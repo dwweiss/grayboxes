@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-03-09 DWW
+      2020-12-18 DWW
 """
 
 import initialize
@@ -28,7 +28,7 @@ import numpy as np
 import unittest
 
 from grayboxes.black import Black
-
+    
 
 class TestUM(unittest.TestCase):
     def setUp(self):
@@ -38,80 +38,79 @@ class TestUM(unittest.TestCase):
         pass
 
     def test1(self):
-        N = 200          # number training samples
+        N = 2000         # number training samples
         n = 2 * N        # number of test samples
-        noise = 0.2      # absolute noise added to true values
+        noise = 0.10     # absolute noise added to true values
         
-        def f_true(x):   # calculate true values
+        def f_true(x):   # calculates true values
             return np.sin(x * 2. * np.pi)
         
-        # training data
+        # training data, input and target: (X, Y)
         X = np.linspace(-1., 1., N).reshape(-1, 1)
-        Y_tru = f_true(X)
-        Y = Y_tru + np.random.uniform(-noise, +noise, Y_tru.shape)
+        Y_true = f_true(X)
+        Y = Y_true + np.random.uniform(-noise, +noise, Y_true.shape)
 
-        # test data
+        # test data, input: x
         x = np.linspace(-2., 2., n).reshape(-1, 1)
-        y_tru = f_true(x)
+        y_true = f_true(x)
 
         plt.title('training data and true values')
-        plt.plot(X.ravel(), Y_tru.ravel(), '-', label='true')
-        plt.plot(X.ravel(), Y.ravel(), '-', label='train')
-        plt.plot(x.ravel(), y_tru.ravel(), ':', label='true')
-        plt.ylim(-2., 2.)
-        plt.legend()
-        plt.grid()
+        plt.plot(X.ravel(), Y_true.ravel(), '-', label='true')
+        plt.plot(X.ravel(), Y.ravel(),      '-', label='train')
+        plt.plot(x.ravel(), y_true.ravel(), ':', label='true cont.')
+        plt.yscale('linear'); plt.ylim(-2., 2.); plt.legend(); plt.grid()
         plt.show()
         
         ok = True
         for backend in [
-#                        'tensorflow',
-                        'neurolab'
-                       ]:
+             'tensorflow',
+#            'neurolab'         
+            ]:
             phi = Black()
             y = phi(X=X, Y=Y, x=x,
-#                    activation='auto',
-                    activation=('leaky'),
-#                    activation=('leakyrelu', 'elu', 'tanh', 'sigmoid', 'relu')
-#                                if backend == 'tensorflow' else 'auto',
-                    backend=backend,
-#                    batch_size=None,
-                    batch_size=[None], # + [N // i for i in (2, 10, 20,)],
-                    epochs=250 if backend == 'tensorflow' else 100,
-                    expected=0.5e-3 if backend == 'tensorflow' else 1e-5, 
-                    learning_rate=0.1,
-#                    neurons='auto',
-#                    neurons=[[4*i] for i in range(4, 5)],
-                    neurons=[[nrn]*hid for hid in range(6, 6+1) 
-                                       for nrn in range(10, 10+1)],
-                    output='linear',
-                    patience=10,
-                    plot=1,
-                    rr=0.1,
-                    show=100,
-                    silent=False,
-                    tolerated=50e-3,
-                    trainer=('adam',) if backend == 'tensorflow' else 'rprop',
-                    trials=5,
-                    validation_split=0.2,
-                    verbose=0,
-                    )
+#                activation=('leakyrelu', 'elu',)  # 'tanh', 'sigmoid', 'relu')
+#                           if backend == 'tensorflow' else 'sigmoid', #'auto',
+#                activation='leakyrelu' if backend == 'tensorflow' else 'sigmoid',
+                activation=('leakyrelu', 'elu'),
+                backend=backend,
+                batch_size=[None],            # + [N // i for i in (2,10,20,)],
+                epochs=250 if backend == 'tensorflow' else 150,
+                expected=0.5e-3, 
+                learning_rate=0.1,                             
+                # neurons='auto',
+#                neurons=[[nrn]*hid for hid in range(2, 20+1)          # 2, 5+1
+#                                   for nrn in range(5, 5+1)],         # 2, 8+1
+                neurons=[4, 6, 8, 10, 12, 10, 8, 6, 4],
+                output='linear',
+                patience=10,
+                plot=2,    # plot=0:none, 1:plot final only, 2:plot all
+                rr=0.1,    # no weight decay (regularization) if neurolab:rprop
+                show=100,
+                silent=False,
+                tolerated=5e-3,
+                trainer='adam' if backend=='tensorflow' else ('bfgs',),#'rprop'
+                trials=10,
+                validation_split=0.2,
+                verbose=0,
+                )
     
             if phi.ready:
                 plt.title('train and pred, mse (trn/val): ' + 
                     str(np.round(phi.metrics['mse_trn']*1e3, 3)) + 'e-3 / ' + 
                     str(np.round(phi.metrics['mse_val']*1e3, 3)) + 'e-3')
-                plt.plot(X.ravel(), Y.ravel(), '-', label='train')
-                plt.plot(x.ravel(), y.ravel(), '-', label='test')
-                plt.plot(x.ravel(), y_tru.ravel(), ':', label='true')
+                plt.plot(X.ravel(), Y.ravel(),      '-', label='train')
+                plt.plot(x.ravel(), y.ravel(),      '-', label='test')
+                plt.plot(x.ravel(), y_true.ravel(), ':', label='true')
+                plt.yscale('linear')
                 plt.ylim(-2., 2.)
                 plt.legend() 
                 plt.grid()
                 plt.show()
 
-                plt.title('true values minus prediction/training data')
-                plt.plot(X.ravel(), (Y - Y_tru).ravel(), '-', label='train')
-                plt.plot(x.ravel(), (y - y_tru).ravel(), ':', label='test')
+                plt.title('training/prediction data minus true values')
+                plt.plot(X.ravel(), (Y - Y_true).ravel(), '-', label='train')
+                plt.plot(x.ravel(), (y - y_true).ravel(), ':', label='test')
+                plt.yscale('linear')
                 plt.ylim(-0.2, 0.2)
                 plt.legend() 
                 plt.grid()

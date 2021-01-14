@@ -23,10 +23,10 @@
 import initialize
 initialize.set_path()
 
-import unittest
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+import unittest
 
 import grayboxes.array as arr
 

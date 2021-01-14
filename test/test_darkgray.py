@@ -23,15 +23,15 @@
 import initialize
 initialize.set_path()
 
-import unittest
 from io import StringIO
 import numpy as np
 import pandas as pd
+import unittest
 
-from grayboxes.darkgray import DarkGray
-from grayboxes.plot import plot_isomap, plot_wireframe
 from grayboxes.array import frame_to_arrays
 from grayboxes.black import Black
+from grayboxes.darkgray import DarkGray
+from grayboxes.plot import plot_isomap, plot_wireframe
 
 
 df = pd.DataFrame({'x0': [2, 3, 4.5, 5, 9],

@@ -17,23 +17,27 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2019-12-10 DWW
+      2020-11-26 DWW
 """
 
 import initialize
 initialize.set_path()
 
-import unittest
 import numpy as np
-from typing import List, Optional, Iterable
+from typing import List, Optional, Iterable, Union
+import unittest
 
-from grayboxes.sensitivity import Sensitivity
 from grayboxes.array import cross
+from grayboxes.sensitivity import Sensitivity
 from grayboxes.white import White
 
 
-def f(self, x: Optional[Iterable[float]], *c: float) -> List[float]:
+def f(self, x: Optional[Iterable[float]], *c: float
+      ) -> Union[float, Iterable[float]]:
     return np.sin(x[0]) + (x[1] - 1)**2
+
+def f2(self, x: Optional[Iterable[float]], *c: float) -> List[float]:
+    return [x[0]**2, np.sin(x[0]) + (x[1] - 1)**2]
 
 
 class TestUM(unittest.TestCase):
@@ -48,11 +52,26 @@ class TestUM(unittest.TestCase):
         pass
 
 
+    def test0(self):
+        s = 'One-liner, Sensitivity with method f(self, x)'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+
+        x_ref, dy_dx = Sensitivity(White(f=f))(x=cross((3, 3, 3), [2, 3], 
+                                                               [3, 4], [5, 6]))
+        if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
+            dy_dx = dy_dx.tolist()
+
+        print('dy_dx:', dy_dx)
+        print('x_ref:', x_ref)
+
+        self.assertTrue(True)
+
     def test1(self):
         s = 'Sensitivity with method f(self, x)'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        x_ref, dy_dx = Sensitivity(White(f))(x=cross((3, 3), [2, 3], [3, 4]))
+        operation = Sensitivity(White(f=f))
+        x_ref, dy_dx = operation(x=cross((3, 3, 3), [2, 3], [3, 4], [5, 6]))
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()
 
@@ -71,6 +90,37 @@ class TestUM(unittest.TestCase):
         if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
             dy_dx = dy_dx.tolist()
             
+        print('dy_dx:', dy_dx)
+        print('x_ref:', x_ref)
+
+        self.assertTrue(True)
+
+    def test3(self):
+        s = 'Sensitivity with demo function'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+
+        operation = Sensitivity(White(f='demo'))
+        x_ref, dy_dx = operation(x=cross((3, 3, 3, 3, 3), 
+                                         [2, 3], [3, 4], [4, 5],
+                                         [6, 7], [8, 9],))
+        if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
+            dy_dx = dy_dx.tolist()
+            
+        print('dy_dx:', dy_dx)
+        print('x_ref:', x_ref)
+
+        self.assertTrue(True)
+
+
+    def test4(self):
+        s = 'Sensitivity with method f2(self, x)'
+        print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
+
+        operation = Sensitivity(White(f=f2))
+        x_ref, dy_dx = operation(x=cross((3, 3, 3), [2, 3], [3, 4], [5, 6]))
+        if dy_dx.shape[0] == 1 or dy_dx.shape[1] == 1:
+            dy_dx = dy_dx.tolist()
+
         print('dy_dx:', dy_dx)
         print('x_ref:', x_ref)
 

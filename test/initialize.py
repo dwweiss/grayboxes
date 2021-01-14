@@ -20,8 +20,8 @@
       2018-12-10 DWW
 """
 
-import sys
 import os
+import sys
 
 
 def set_path():

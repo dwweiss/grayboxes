@@ -23,16 +23,16 @@
 import initialize
 initialize.set_path()
 
-import unittest
 import numpy as np
 from typing import Any, List, Optional, Iterable
+import unittest
 
 from grayboxes.array import grid, noise
-from grayboxes.white import White
-from grayboxes.lightgray import LightGray
-from grayboxes.darkgray import DarkGray
 from grayboxes.black import Black
+from grayboxes.darkgray import DarkGray
 from grayboxes.inverse import Inverse
+from grayboxes.lightgray import LightGray
+from grayboxes.white import White
 
 """
     Demonstrating of use of class Inverse with box models:

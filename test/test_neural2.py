@@ -23,9 +23,9 @@
 import initialize
 initialize.set_path()
 
-import unittest
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import unittest
 
 from grayboxes.black import Black
 
@@ -46,7 +46,10 @@ class TestUM(unittest.TestCase):
         pass
 
     def test11(self):
-
+        """ 
+        target is a sine curve, training input is this curce + noise
+        prediction fails outside of input of training data
+        """
         s = 'Example: Train with sin() + noise, predict outside train range'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 

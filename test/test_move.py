@@ -23,9 +23,9 @@
 import initialize
 initialize.set_path()
 
-import unittest
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import unittest
 
 from grayboxes.move import Move
 from grayboxes.xyz import xyz

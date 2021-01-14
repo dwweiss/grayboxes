@@ -26,8 +26,8 @@ initialize.set_path()
 import unittest
 import numpy as np
 
-from grayboxes.plot import (plot_curves, plot_surface, plot_wireframe, \
-    plot_isomap, plot_isolines, plot_vectors, plot_trajectory, \
+from grayboxes.plot import (plot_curves, plot_surface, plot_wireframe,
+    plot_isomap, plot_isolines, plot_vectors, plot_trajectory,
     plot_bar_arrays, plot_bars, plot_x_y_y_ref, to_regular_mesh, clip_xyz)
 
 

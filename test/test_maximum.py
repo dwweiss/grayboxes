@@ -23,9 +23,9 @@
 import initialize
 initialize.set_path()
 
-import unittest
 import numpy as np
 from typing import List, Optional, Iterable
+import unittest
 
 from grayboxes.array import rand
 from grayboxes.maximum import Maximum

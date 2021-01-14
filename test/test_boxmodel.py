@@ -23,16 +23,16 @@
 import initialize
 initialize.set_path()
 
-import unittest
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from typing import List, Optional, Iterable
+import unittest
 
-from grayboxes.boxmodel import BoxModel
-from grayboxes.plot import plot_isomap, plot_surface, plot_isolines
 from grayboxes.array import rand, noise, grid, frame_to_arrays
-from grayboxes.white import White
+from grayboxes.boxmodel import BoxModel
 from grayboxes.lightgray import LightGray
+from grayboxes.plot import plot_isomap, plot_surface, plot_isolines
+from grayboxes.white import White
 
 
 def f(x: Optional[Iterable[float]], *c: float) -> List[float]:
@@ -159,23 +159,26 @@ class TestUM(unittest.TestCase):
         x = rand(n_point, [0, 10], [0, 10])
         y_tru = White(f)(x=x)
         y = model(X=X, Y=Y, x=x)
-
-        plt.title('Target, true solution and prediction')
-        plt.scatter(X[:, 0], Y[:, 0], marker='o', label='$Y_0(X_0)$ target')
-        plt.scatter(x[:, 0], y_tru[:, 0], marker='s', label='$y_{tru,0}(x_0)$')
-        plt.scatter(x[:, 0], y[:, 0], marker='v', label='$y_0(x_0)$')
-        plt.legend()
-        plt.grid()
-        plt.show()
-
-        plt.title('Absolute error')
-        plt.scatter(x[:, 0], y[:, 0] - y_tru[:, 0], marker='s',
-                    label='$y_0 - y_{tru,0}$')
-        plt.scatter(x[:, 0], y[:, 1] - y_tru[:, 1], marker='s',
-                    label='$y_1 - y_{tru,1}$')
-        plt.legend()
-        plt.grid()
-        plt.show()
+        
+        if y is not None:
+            plt.title('Target, true solution and prediction')
+            plt.scatter(X[:, 0], Y[:, 0], marker='o', 
+                        label='$Y_0(X_0)$ target')
+            plt.scatter(x[:, 0], y_tru[:, 0], marker='s', 
+                        label='$y_{tru,0}(x_0)$')
+            plt.scatter(x[:, 0], y[:, 0], marker='v', label='$y_0(x_0)$')
+            plt.legend()
+            plt.grid()
+            plt.show()
+    
+            plt.title('Absolute error')
+            plt.scatter(x[:, 0], y[:, 0] - y_tru[:, 0], marker='s',
+                        label='$y_0 - y_{tru,0}$')
+            plt.scatter(x[:, 0], y[:, 1] - y_tru[:, 1], marker='s',
+                        label='$y_1 - y_{tru,1}$')
+            plt.legend()
+            plt.grid()
+            plt.show()
 
         self.assertTrue(True)
  

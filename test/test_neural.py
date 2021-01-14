@@ -17,17 +17,17 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-02-13 DWW
+      2020-08-03 DWW
 """
 
 import initialize
 initialize.set_path()
 
-import unittest
-import numpy as np
-from pandas import DataFrame
 import matplotlib.pyplot as plt
 import neurolab as nl
+import numpy as np
+from pandas import DataFrame
+import unittest
 
 from grayboxes.neuraltf import Neural as NeuralTf
 from grayboxes.neuralnl import Neural as NeuralNl
@@ -53,7 +53,7 @@ class TestUM(unittest.TestCase):
         pass
 
 
-    def _test1(self):
+    def test1(self):
         s = 'Example 1: newff and train from Neurolab'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
@@ -149,22 +149,31 @@ class TestUM(unittest.TestCase):
         self.assertTrue(True)
 
 
-    def _test3(self):
+    def test3(self):
         s = 'Example 3 compact form'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
         def f(x):
             return np.sin(x) * 10 + 0
 
-        X = np.linspace(-1.75 * np.pi, 1.75 * np.pi, 50).reshape(-1, 1)
+        nx = 200
+        X = np.linspace(-1.75 * np.pi, 1.75 * np.pi, nx).reshape(-1, 1)
         Y = f(X)
         dx = 0.5 * (X.max() - X.min())
         x = np.linspace(X.min() - dx, X.max() + dx).reshape(-1, 1)
         
-        net = NeuralTf()
-        y = net(X=X, Y=Y, x=x, neurons=[6], plot=1, epochs=500, goal=1e-5,
-                trials=5, trainer='cg gdx rprop bfgs',
-                regularization=0.0, show=None,
+        net = NeuralNl()
+        net._plot_network()
+
+        y = net(X=X, Y=Y, x=x, 
+                epochs=500, 
+                goal=1e-5,
+                neurons=[6], 
+                plot=2,   # plot=1: no histories after every trial 
+                regularization=0.0, 
+                show=None,
+                trainer=('rprop', 'bfgs'),
+                trials=5, 
                 )
 
         if net.ready:
@@ -190,11 +199,16 @@ class TestUM(unittest.TestCase):
         ykeys = ['r0', 'r1']
         net = NeuralTf()
         net.set_XY(df[xkeys], df[ykeys], xkeys, ykeys)
-        metrics = net.train(X=None, Y=None, goal=1e-6, neurons=[10, 3], 
-                            plot=1, epochs=2000,
-                            trainer='cg gdx rprop bfgs', trials=10,
-                            regularization=0.01, smartTrials=False)
-
+        metrics = net.train(X=None, Y=None, 
+                            epochs=2000,
+                            goal=1e-6, 
+                            neurons=[10, 3], 
+                            plot=1, 
+                            regularization=0.01, 
+                            smartTrials=False,
+                            trainer=('rprop', 'bfgs'), 
+                            trials=10,
+                            )
         print('Metrics:', metrics)
 
         self.assertTrue(True)
@@ -208,11 +222,13 @@ class TestUM(unittest.TestCase):
         x = X.copy()
 
         net = NeuralTf()
-        y = net(X, Y, x, neurons=[10, 10], 
+        y = net(X, Y, x, 
+                neurons=[(10, 8, 6, 4), (5, 3, 2),], 
                 activation='sigmoid', 
-                epochs=1000, 
+                epochs=300, 
                 expected=0.5e-4,
-                output='sigmoid',
+                output='lin',
+                patience=3,
                 plot=1, 
                 tolerated=5e-3,
                 trainer='auto', 
@@ -256,14 +272,15 @@ class TestUM(unittest.TestCase):
         self.assertTrue(net.ready)
 
 
-    def test6(self):
+    def _test6(self):
         s = 'Example 6'
         print('-' * len(s) + '\n' + s + '\n' + '-' * len(s))
 
-        N = 2000
-        n = 300
-        m = 1   
-        nse = 0e-2
+        N = 2000    # number of training sets
+        n = 300     # number of test sets
+        m = 1       # number of inputs
+        nse = 0e-2  # noise relative to x-value
+        
         X = np.random.uniform(-2*np.pi, 2*np.pi, size=(N, m))
         Y_tru = np.sin(X)
         Y = Y_tru + np.random.uniform(-nse, +nse, size=X.shape)
@@ -277,16 +294,16 @@ class TestUM(unittest.TestCase):
                     ):
             phi = phi()
             y = phi(X=X, Y=Y, x=x,
-                    activation='tanh',
+                    activation=('tanh', 'leaky'),
                     epochs=150,
-                    expected=1e-3, 
-                    learning_rate=0.1,
-                    neurons=[[i]*j for i in range(3, 6) for j in range(1, 5)],
-                    output=None,
+                    expected=1e-3,
+                    learning_rate=0.1,                  # i: neurons, j: layer           
+                    neurons=[[i]*j for i in range(2, 6) for j in range(2, 4)],
+                    output='lin',
                     patience=25,
                     plot=1, 
                     tolerated=5e-3,
-                    trainer='adam', 
+                    trainer=('adam', 'rprop'), 
                     trials=5,
                     )
             

@@ -23,9 +23,9 @@
 import initialize
 initialize.set_path()
 
-import unittest
 import numpy as np
 from typing import List, Optional, Iterable
+import unittest
 
 from grayboxes.array import grid, rand, noise
 from grayboxes.black import Black
@@ -68,7 +68,7 @@ class TestUM(unittest.TestCase):
         operation = Inverse(White('demo'), 'test2')
         x_inv, y_inv = operation(x=rand(3, [-5, 5], [-5, 5]), y=[0.5],
                                  optimizer='ga', bounds=2*[(-8, 8)], 
-                                 generations=2000)
+                                 )
         operation.plot()
 
         self.assertTrue(True)

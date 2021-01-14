@@ -23,15 +23,15 @@
 import initialize
 initialize.set_path()
 
-import unittest
 import numpy as np
 import scipy
 from typing import Any, List, Optional, Iterable
+import unittest
 
-from grayboxes.minimum import Minimum
-from grayboxes.plot import plot_surface, plot_isomap
 from grayboxes.array import rand, grid
 from grayboxes.forward import Forward
+from grayboxes.minimum import Minimum
+from grayboxes.plot import plot_surface, plot_isomap
 from grayboxes.white import White
 
 
@@ -133,7 +133,8 @@ class TestUM(unittest.TestCase):
                 x = rand(3, [0, 2], [0, 2])
                 if optimizer == 'ga':
                     x, y = op(x=x, optimizer=optimizer, bounds=2*[(0, 2)],
-                              generations=5000)
+#                              generations=5000
+                              )
                 else:
                     x, y = op(x=x, optimizer=optimizer, silent=True)
 

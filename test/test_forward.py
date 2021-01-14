@@ -23,11 +23,11 @@
 import initialize
 initialize.set_path()
 
-import unittest
 import numpy as np
 from typing import Any, List, Optional, Iterable
+import unittest
 
-from grayboxes.array import grid, cross, rand
+from grayboxes.array import grid, cross, noise, rand
 from grayboxes.forward import Forward
 from grayboxes.lightgray import LightGray
 from grayboxes.plot import plot_isomap
@@ -105,7 +105,9 @@ class TestUM(unittest.TestCase):
         Y = [[func(x_)] for x_ in X]
 
         operation = Forward(LightGray(func), 'test5')
-        result = operation(X=X, Y=Y, c_ini=[1, 1], trainer='least_squares')
+        result = operation(X=X, Y=Y, c_ini=[1, 1], 
+                           # trainer='least_squares'
+                           silent=0)
         print('result:', result)
         print('metrics:', operation.model.metrics)
         x, y = operation(x=X)
@@ -120,11 +122,15 @@ class TestUM(unittest.TestCase):
 
         X = rand(20, (-1, 1), (-1, 1))
         Y = [[func(x_)] for x_ in X]
-
+        Y = noise(Y, relative=1e-2)
+        
         operation = Forward(LightGray(func), 'test5')
-        metrics = operation(X=X, Y=Y, c_ini=[1, 1], trainer='least_squares')
-        print('metrics:', metrics)
+        operation(X=X, Y=Y, c_ini=[1, 1], 
+#!                  trainer='least_squares', 
+                  trainer='lm', 
+                  )
         print('metrics:', operation.model.metrics)
+
         x, y = operation(x=X)
         print('x:', x, '\n', 'y:', y)
 
