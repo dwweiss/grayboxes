@@ -53,6 +53,6 @@ _grayboxes_  is the base of the extension package [_coloredlids_](https://github
 - Module _neuralnl_ is dependent on package _neurolab_ [[NLB15]](https://github.com/dwweiss/grayboxes/wiki/References#nlb15)
 - Module _neuraltf_ is dependent on package _tensorflow_ [[ABA15]](https://github.com/dwweiss/grayboxes/wiki/References#aba15)
 
-One way of installation of the needed packages is:
+Manual installation of the needed packages can be done with pip:
 
      pip install tensorflow=2.2.2 neurolab matplotlib modestga numpy pandas scipy
