@@ -4,7 +4,7 @@ _grayboxes_ contributes to the creation and evaluation of [white](https://github
 
 - are hybrids of theory-driven and data-driven submodels
 
-- can have adjustable [degrees of transparency](https://github.com/dwweiss/grayboxes/wiki/5.-Model-evaluation#52-degree-of-model-transparency) (the blacker, the more data-driven) 
+- can have adjustable [degrees of transparency](https://github.com/dwweiss/grayboxes/wiki/5.-Model-evaluation#52-degree-of-model-transparency) (the more transparent, the more theory-driven) 
 
 - are compatible to all [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model#61-operations) of the _grayboxes_ library:
 
