@@ -17,50 +17,32 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-07-31 DWW
+      2022-01-01 DWW
 
   Note on program arguments:
     - no arguments          : program starts in default mode
-    - two arguments: 'path input_file'
-                            : command line mode with password protection
+    - two arguments: 'path input_file' 
     - three arguments '-s path input_file' or
                       '--silent path input_file'
-                            : command line mode, no password
-    - two arguments '-s -g' : graphic mode, no console output or
-                    '--silent', '--gui'
-    - one argument '-g'     : graphic mode with information to console
-                    '--gui'
 """
+
+from __future__ import print_function
 
 __all__ = ['Base']
 
 import collections
 from datetime import datetime
-from getpass import getpass
-from hashlib import sha224
 import logging
-from matplotlib.figure import Figure
 import numpy as np
 import os
-from path import Path
-from re import sub
+from pathlib import Path
 import sys
 from tempfile import gettempdir
 from time import time
 from typing import Any, Dict, Iterable, Tuple, List, Optional, Union
-try:
-    from tkinter import Button
-    from tkinter import Entry
-    from tkinter import Label
-    from tkinter import messagebox
-    from tkinter import Tk
-except ImportError:
-    print("\n!!! Wrong Python interpreter (version: '" +
-          str(sys.version_info.major) + '.' + str(sys.version_info.major) +
-          '.' + str(sys.version_info.micro) + "') or 'tkinter' not imported")
 
 logger = logging.getLogger(__name__)
-# uncomment the following line in order to disable the tensorflow log:
+# uncomment following line to disable the tensorflow log:
 # logging.getLogger('tensorflow').disabled = True
 
 try:
@@ -73,13 +55,6 @@ except ImportError:
         print('    continue with local definition of Float1D, Float2D')
         Float1D = Optional[np.ndarray]
         Float2D = Optional[np.ndarray]
-try:
-    import grayboxes.parallel as parallel
-except ImportError:
-    try:
-        import parallel as parallel
-    except ImportError:
-        print('!!! Module parallel not imported')
 
 
 class Base(object):
@@ -209,7 +184,6 @@ class Base(object):
         self._exe_time_start: float = 0.0      # start measure exec.time
         self._min_exe_time_shown: float = 1.0  # times < limit not shown
 
-        self._has_gui: bool = False            # graphic interf. if True
         self._batch: bool = False              # user interact. if False
         self._silent: bool = False             # console output if False
 
@@ -228,9 +202,6 @@ class Base(object):
         self._data: Optional[Any] = None       # data sets
         self._csv_separator: str = ','         # separator in csv-files
 
-        # figure requires subplots, eg axes = self.figure.suplots(2)
-        #                              axes[0].plot([1.,2.], [4.5, 9.1])
-        self._figure: Optional[Figure] = Figure()
 
     def __call__(self, **kwargs: Any) \
             -> Union[float,
@@ -251,10 +222,6 @@ class Base(object):
         Returns:
             see self.control()
         """
-        # skip model execution if parallelized with MPI and rank > 0
-        if 'parallel' in sys.modules and parallel.rank():
-            return -1.0
-
         if 'silent' in kwargs:
             self.silent = kwargs['silent']
 
@@ -436,32 +403,6 @@ class Base(object):
             self._argv = list(value)
 
     @property
-    def has_gui(self) -> bool:
-        return self._has_gui
-
-    @has_gui.setter
-    def has_gui(self, value: bool) -> None:
-        if 'tkinter' not in sys.modules:
-            value = False
-            self.warn("!!! 'has_gui' is not set: module 'tkinter'" + \
-                      ' not imported')
-        self._has_gui = value
-        for node in self._followers:
-            if node:
-                node._has_gui = value
-
-    @property
-    def figure(self) -> Optional[Figure]:
-        return self._figure
-
-    @figure.setter
-    def figure(self, value: Optional[Figure]) -> None:
-        self._figure = value
-        for node in self._followers:
-            if node:
-                node._figure = value
-
-    @property
     def batch(self) -> bool:
         return self._batch
 
@@ -474,8 +415,7 @@ class Base(object):
 
     @property
     def silent(self) -> bool:
-        return self._silent or \
-            bool('parallel' in sys.modules and parallel.rank())
+        return self._silent
 
     @silent.setter
     def silent(self, value: bool) -> None:
@@ -570,7 +510,7 @@ class Base(object):
 
     def __getitem__(self, identifier: str) -> Optional['Base']:
         """
-        Indexing, eg b = Base(); b.followers = ('f1','f2'); f1 = b['f1']
+        Indexing, e.g. b = Base(); b.followers = ('f1','f2'); f1 = b['f1']
 
         Searches for node with 'identifier'. Starts downwards from root
         If node is not in tree of followers, search will be continued in
@@ -750,10 +690,9 @@ class Base(object):
             return False
         return other._leader == self and other in self._followers
 
-    def set_cooperator(self, other: Union[Optional['Base'], \
-                                          Iterable[Optional['Base']]])\
-                                 -> Union[Optional['Base'],
-                                          Iterable[Optional['Base']]]:
+    def set_cooperator(self, 
+        other: Union[Optional['Base'], Iterable[Optional['Base']]]
+    ) ->       Union[Optional['Base'], Iterable[Optional['Base']]]:
         """
         Adds other node(s) as cooperator(s) if 'other' is/are not None
         'other' keep(s) its/their original leader(s)
@@ -789,17 +728,6 @@ class Base(object):
         if not other:
             return False
         return other._leader != self and other in self._followers
-
-    def clean_string(self, s: str) -> str:
-        """
-        Args:
-            s:
-                string containing control characters
-
-        Returns:
-            copy of string 's' without control characters
-        """
-        return sub('[ \t\n\v\f\r]', '', s)
 
     def kwargs_del(self, kwargs_: Dict[str, Any],
                    remove: Union[str, Iterable[str]]) -> Dict[str, Any]:
@@ -851,7 +779,7 @@ class Base(object):
         """
         - Destructs tree of followers
         - Sends message to logger
-        - Sends message to TKinter widget if self.has_gui, otherwise to console
+        - Sends message to console
         - Terminates program
 
         Args:
@@ -864,9 +792,6 @@ class Base(object):
         if not self.silent:
             print("\n???\n??? '" + self.program + "', terminated due to: '" +
                   message + "'\n???")
-        if self.has_gui:
-            messagebox.showerror("Termination: '" + self.program + "'",
-                                 message)
         logger.propagate = False
         logger.critical(self.identifier + ' : ' + message)
         self.destruct()
@@ -876,8 +801,7 @@ class Base(object):
     def warn(self, message: str = '', wait: bool = False) -> None:
         """
         - Sends message to logger
-        - Sends message to TKinter widget if self.has_gui, otherwise to 
-          console
+        - Sends message to console
 
         Args:
             message:
@@ -891,8 +815,6 @@ class Base(object):
 
         if not self.silent:
             print("!!! '" + self.program + "', warning: '" + message + "'")
-        if self.has_gui:
-            messagebox.showinfo(self.program + ' - Warning', message)
         logger.warning(self.identifier + ' : ' + message)
         if not self.silent and wait:
             # consider to replace input() with os.system('pause')
@@ -922,39 +844,9 @@ class Base(object):
 
 #        logger.propagate = save_propagate
 
-    def _authenticate(self) -> None:
-        """
-        Asks for password. Terminates program if password is invalid
-
-        Note:
-            Create new hash string 's' with:
-                import hashlib
-                s = hashlib.sha224(
-                    'new password'.encode('UTF-8')).hexdigest()
-        """
-        s = 'c0dad715ce5501ea5e382d3a44a7cf816f9a1a309dfeb88cbe9ebfbd'
-        if self.has_gui:
-            parent = Tk()
-            parent.title(self.program)
-            Label(parent, text='').grid(row=0, column=0)
-            Label(parent, text='Enter password').grid(row=1, column=0)
-            Label(parent, text='').grid(row=2, column=0)
-            entry2 = Entry(parent, show='*')
-            entry2.grid(row=1, column=1)
-            Button(parent, text='Continue',
-                   command=parent.quit).grid(row=3, column=5, pady=10)
-            parent.mainloop()
-            pw = entry2.get()
-            parent.withdraw()
-        else:
-            sys.stdout.flush()
-            pw = getpass('Enter password: ')
-        if sha224(pw.encode('UTF-8')).hexdigest() != s:
-            self.terminate('wrong password')
-
     def prolog(self, purpose: str = 'Processing data',
-               usage: str = '[ path sourceFile [ --silent --gui ] | --help ]',
-               example: str = '-g -s /tmp test.xml') -> bool:
+               usage: str = '[ path sourceFile [ --silent ] | --help ]',
+               example: str = '-s /tmp test.xml') -> bool:
         if '-h' in self.argv or '--help' in self.argv:
             print("This is: '" + self.program + "', version " + self.version)
             print('\nPurpose: ' + purpose)
@@ -963,16 +855,8 @@ class Base(object):
             exit()
 
         ok = True
-        authenticate = False
         if len(self.argv) > 1+0:
-            self.has_gui = '-g' in self.argv or '--gui' in self.argv
             self.silent = '-s' in self.argv or '--silent' in self.argv
-            if not self.has_gui and self.silent:
-                authenticate = False
-        else:
-            if not self.has_gui:
-                # TODO self.silent = False
-                pass
 
         global logger
         if not logger.handlers:
@@ -983,9 +867,6 @@ class Base(object):
             logger.addHandler(handler)
 
         if self.is_root():
-            if authenticate:
-                self._authenticate()
-
             message = "*** This is: '" + self.program + "'"
             if self.identifier and self.identifier != self.program:
                 message += ", id: '" + self.identifier + "'"
@@ -1026,16 +907,19 @@ class Base(object):
 
     def load(self) -> bool:
         ok = True
-        # import json
-        # f = os.path.join((self.path,'data.json')
-        # json.load(self.data, open(f, 'r'))
+        
+        # Example:
+        #   import json
+        #   f = os.path.join((self.path,'data.json')
+        #   json.load(self.data, open(f, 'r'))
         return ok
 
     def save(self) -> bool:
         ok = True
-        # import json
-        # f = os.path.join(self.path, self.identifier + '.data.json')
-        # json.dump(self.data, open(f, 'w'))
+        # Example:
+        #   import json
+        #   f = os.path.join(self.path, self.identifier + '.data.json')
+        #   json.dump(self.data, open(f, 'w'))
         return ok
 
     def initial_condition(self) -> bool:
