@@ -43,8 +43,8 @@ except ImportError:
         Float2D = Optional[np.ndarray]
 
 
-def grid(size: Union[int, Iterable[int]], 
-         *ranges: Union[Tuple[float, float], Iterable[float]]) -> Float2D:
+def grid(size: int | Iterable[int], 
+         *ranges: Tuple[float, float] | Iterable[float]) -> Float2D:
     """
     Sets initial (uniformly spaced) grid input, for instance for 2 input
     with 4 nodes on all axes: grid(n=4, [3., 6.], [-7., -5.5])
@@ -143,13 +143,12 @@ def grid(size: Union[int, Iterable[int]],
              zip(x0.ravel(), x1.ravel(), x2.ravel(),
                  x3.ravel(), x4.ravel(), x5.ravel())]
     else:
-        assert 0, 'ranges_: ' + str(ranges_)
+        assert 0, f'ranges_: {ranges_}'
 
     return np.asfarray(x)
 
 
-def cross(n: Union[int, Iterable[int]], 
-          *ranges: Tuple[float, float]) -> Float2D:
+def cross(n: int | Iterable[int], *ranges: Tuple[float, float]) -> Float2D:
     """
     Sets initial (uniformly spaced) cross input, for instance for 2 
     input with 5 nodes per axis: cross(5, [3., 7.], [-4., -2.])
@@ -346,10 +345,8 @@ def frame_to_arrays(df: DataFrame, *keys: str) -> Optional[List[Float1D]]:
     return col
 
 
-def xy_rand_split(x: Float2D,
-                  y: Float2D = None,
-                  fractions: Optional[Iterable[float]] = None) \
-        -> Tuple[Float2D, Float2D]:
+def xy_rand_split(x: Float2D, 
+                  y: Float2D, fractions: Iterable[float] | None) -> Tuple[Float2D, Float2D]:
     """
     Splits randomly one or two 2D arrays into sub-arrays, size of sub 
     arrays is defined by a list of 'fractions'
@@ -414,10 +411,8 @@ def xy_rand_split(x: Float2D,
     return x_split, y_split
 
 
-def xy_thin_out(x: Iterable[float], 
-                y: Iterable[float], 
-                bins: int = 32) \
-        -> Tuple[Float1D, Float1D]:
+def xy_thin_out(x: Iterable[float], y: Iterable[float], 
+                bins: int = 32) -> Tuple[Float1D, Float1D]:
     """
     Thinning out an a fine array of (x, y) points -> to coarse array
     
@@ -448,8 +443,8 @@ def xy_thin_out(x: Iterable[float],
     if len(x) < bins:
         return x, y
 
-    assert len(x) == len(y), str((x.shape, y.shape))
-    assert len(x.shape) == 1, str((x.shape, y.shape))
+    assert len(x) == len(y),  f'{x.shape=}, {y.shape=}'
+    assert len(x.shape) == 1, f'{x.shape=}, {y.shape=}'
 
     x_thin_corner, y_thin_center = [], []
     delta_i = len(x) // bins
@@ -467,10 +462,8 @@ def xy_thin_out(x: Iterable[float],
     return np.asfarray(x_thin_corner), np.asfarray(y_thin_center)
 
 
-def scale(X: Iterable[float], 
-          lo: float = 0., 
-          hi: float = 1., 
-          axis: Optional[int] = None) -> Float1D:
+def scale(X: Iterable[float], lo: float = 0., hi: float = 1., 
+          axis: int|None = None) -> Float1D:
     """
     Normalizes elements of array to [lo, hi] interval (linear)
 
@@ -499,8 +492,7 @@ def scale(X: Iterable[float],
     return hi - (((hi - lo) * (max_ - X)) / delta)
 
 
-def convert_to_2d(value: Optional[Union[float, Iterable[float], 
-                                        Float1D, Float2D]]) -> Float2D: 
+def convert_to_2d(value: float | Iterable[float] | Float1D | Float2D | None) -> Float2D: 
     """
     Args:
         value:
@@ -523,9 +515,7 @@ def convert_to_2d(value: Optional[Union[float, Iterable[float],
     return value
 
 
-def smooth(x: Optional[Iterable[float]], 
-           y: Iterable[float],  
-           frac: float = 0.2, 
+def smooth(x: Iterable[float] | None, y: Iterable[float],  frac: float = 0.2, 
            it: int = 3) -> Float1D:
     """
     Smoothes array elements
