@@ -17,7 +17,7 @@
   02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
   Version:
-      2020-12-16 DWW
+      2023-12-01 DWW
 """
 
 __all__ = ['grid', 'cross', 'rand', 'noise', 'xy_rand_split', \
