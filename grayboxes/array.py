@@ -28,7 +28,7 @@ import numpy as np
 from pandas import DataFrame
 import random
 from statsmodels.nonparametric.smoothers_lowess import lowess
-from typing import Iterable, Optional, List, Tuple, Union
+from typing import Iterable, Optional, List, Tuple
 
 try:
     from grayboxes.datatype import Float1D, Float2D
