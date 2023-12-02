@@ -143,7 +143,7 @@ def grid(size: int | Iterable[int],
              zip(x0.ravel(), x1.ravel(), x2.ravel(),
                  x3.ravel(), x4.ravel(), x5.ravel())]
     else:
-        assert 0, f'ranges_: {ranges_}'
+        assert 0, f'{ranges_=}'
 
     return np.asfarray(x)
 
@@ -382,10 +382,10 @@ def xy_rand_split(x: Float2D,
         OR
         2-tuple of (list of 2D x-sub-arrays, None)
     """
-    assert len(x.shape) == 2, str(x.shape)
+    assert len(x.shape) == 2, f'{x.shape=}
     if y is not None:
-        assert len(y.shape) == 2, str((x.shape, y.shape))
-        assert x.shape[0] == y.shape[0], str((x.shape, y.shape))
+        assert len(y.shape) == 2, f'{x.shape=}, {y.shape=}'
+        assert x.shape[0] == y.shape[0], f'{x.shape=}, {y.shape=}'
 
     if fractions is None:
         fractions = (0.8, 0.2)
@@ -463,7 +463,7 @@ def xy_thin_out(x: Iterable[float], y: Iterable[float],
 
 
 def scale(X: Iterable[float], lo: float = 0., hi: float = 1., 
-          axis: int|None = None) -> Float1D:
+          axis: int | None = None) -> Float1D:
     """
     Normalizes elements of array to [lo, hi] interval (linear)
 
@@ -487,7 +487,7 @@ def scale(X: Iterable[float], lo: float = 0., hi: float = 1.,
     X = np.asfarray(X)
     max_ = np.max(X, axis=axis)
     delta = max_ - np.min(X, axis=axis)
-    assert not np.isclose(delta, 0), str(delta)
+    assert not np.isclose(delta, 0), f'{delta=}'
 
     return hi - (((hi - lo) * (max_ - X)) / delta)
 
