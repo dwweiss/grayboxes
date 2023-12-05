@@ -13,7 +13,7 @@ _grayboxes_ contributes to the creation and evaluation of [white](https://github
      - Inverse problem solution
      - Sensitivity analysis 
 
-_grayboxes_  is the base of the extension package [_coloredlids_](https://github.com/dwweiss/coloredlids/wiki) for  implementation of distributed theoretical submodels. _coloredlids_  based models are compatible to the model [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model) of the _grayboxes_ package, see figure below.
+_grayboxes_  is the base of the extension package [_whiteboxes_](https://github.com/dwweiss/whiteboxes/wiki) for  implementation of distributed theoretical submodels. _whiteboxes_  based models are compatible to the model [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model) of the _grayboxes_ package, see figure below.
 
 
 <br>
