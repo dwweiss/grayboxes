@@ -44,7 +44,7 @@ _grayboxes_  is the base of the extension package [_whiteboxes_](https://github.
 [[Link]](https://github.com/dwweiss/grayboxes/blob/master/doc/installation/windowsinstallation.md#installation-proposal) 
  to the package installation procedure on windows.
  
- Alternatively, all files in the zip file can be copied in the current working diretory of the actual application. Press [Clone and Download] and select [Download Zip].
+ Alternatively, all files in the zip file can be copied in the current working directory of the actual application. Press [Clone and Download] and select [Download Zip].
 
  
 ### Dependencies
@@ -52,7 +52,8 @@ _grayboxes_  is the base of the extension package [_whiteboxes_](https://github.
 - Modules _lightgray_ and _minimum_ are dependent on package _modestga_ [[MGA18]](https://github.com/dwweiss/grayboxes/wiki/References#mga18)
 - Module _neuralnl_ is dependent on package _neurolab_ [[NLB15]](https://github.com/dwweiss/grayboxes/wiki/References#nlb15)
 - Module _neuraltf_ is dependent on package _tensorflow_ [[ABA15]](https://github.com/dwweiss/grayboxes/wiki/References#aba15)
+- Module _neuralto_ is dependent on package _torch_ [[ABA15]](https://github.com/dwweiss/grayboxes/wiki/References#aba15)
 
 As an alternative to installation with _setup.py_, manual installation of the needed packages can be done with pip:
 
-     pip install tensorflow=2.2.2 neurolab matplotlib modestga numpy pandas scipy
+     pip3 install tensorflow=2.2.2 neurolab matplotlib modestga numpy pandas scipy torch
