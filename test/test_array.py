@@ -19,10 +19,6 @@
   Version:
       2019-12-04 DWW
 """
-
-import initialize
-initialize.set_path()
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
