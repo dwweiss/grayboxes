@@ -50,9 +50,9 @@ _grayboxes_  is the base of the extension package [_whiteboxes_](https://github.
 ### Dependencies
 
 - Modules _lightgray_ and _minimum_ are dependent on package _modestga_ [[MGA18]](https://github.com/dwweiss/grayboxes/wiki/References#mga18)
-- Module _neuralnl_ is dependent on package _neurolab_ [[NLB15]](https://github.com/dwweiss/grayboxes/wiki/References#nlb15)
-- Module _neuraltf_ is dependent on package _tensorflow_ [[ABA15]](https://github.com/dwweiss/grayboxes/wiki/References#aba15)
-- Module _neuralto_ is dependent on package _torch_ [[ABA15]](https://github.com/dwweiss/grayboxes/wiki/References#aba15)
+- Module _neuralnlb_ is dependent on package _neurolab_ [[NLB15]](https://github.com/dwweiss/grayboxes/wiki/References#nlb15)
+- Module _neuraltfl_ is dependent on package _tensorflow_ [[ABA15]](https://github.com/dwweiss/grayboxes/wiki/References#aba15)
+- Module _neuraltor_ is dependent on package _torch_ [[ABA15]](https://github.com/dwweiss/grayboxes/wiki/References#aba15)
 
 As an alternative to installation with _setup.py_, manual installation of the needed packages can be done with pip:
 
