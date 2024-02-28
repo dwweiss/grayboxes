@@ -2,7 +2,9 @@
 
 
 
-_grayboxes_ contributes to the creation and evaluation of [white](https://github.com/dwweiss/grayboxes/wiki/2.-White-box-model), [gray](https://github.com/dwweiss/grayboxes/wiki/3.-Gray-box-model), and [black](https://github.com/dwweiss/grayboxes/wiki/4.-Black-box-model) box models of physical and chemical transport phenomena. Gray box models:
+_grayboxes_ contributes to the creation and evaluation of [white](https://github.com/dwweiss/grayboxes/wiki/2.-White-box-model), [gray](https://github.com/dwweiss/grayboxes/wiki/3.-Gray-box-model), and [black](https://github.com/dwweiss/grayboxes/wiki/4.-Black-box-model) box models of physical and chemical transport phenomena. 
+
+Gray box models
 
 - are hybrids of theory-driven and data-driven submodels,
 - can have adjustable [degrees of transparency](https://github.com/dwweiss/grayboxes/wiki/5.-Model-evaluation#52-degree-of-model-transparency) (the more transparent, the more theory-driven),
@@ -12,7 +14,7 @@ _grayboxes_ contributes to the creation and evaluation of [white](https://github
   - Inverse problem solution
   - Sensitivity analysis.
 
-_grayboxes_ is the base of the extension package [_whiteboxes_](https://github.com/dwweiss/whiteboxes/wiki) for the implementation of distributed theoretical submodels. _Whiteboxes_-based models are compatible with the model [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model) of the _grayboxes_ package; see the figure below."
+_grayboxes_ is the base of the extension package [_whiteboxes_](https://github.com/dwweiss/whiteboxes/wiki) for the implementation of distributed theoretical submodels. _whiteboxes_-based models are compatible with the model [operations](https://github.com/dwweiss/grayboxes/wiki/6.-Operations-on-model) of the _grayboxes_ package; see the figure below.
 
 
 
